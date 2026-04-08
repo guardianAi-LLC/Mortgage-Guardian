@@ -483,10 +483,14 @@ struct DocumentFilterSheet: View {
     }
 }
 
-// MARK: - Document Detail View (Placeholder)
+// MARK: - Document Detail View
 struct DocumentDetailView: View {
     let document: MortgageDocument
     @Environment(\.dismiss) private var dismiss
+    @State private var serverFindings: [ServerFinding] = []
+    @State private var isLoadingAnalysis = false
+    @State private var analysisError: String?
+    @State private var hasFetchedAnalysis = false
 
     var body: some View {
         NavigationView {
@@ -506,7 +510,7 @@ struct DocumentDetailView: View {
                         }
                     }
 
-                    // Analysis Results
+                    // Local Analysis Results
                     if !document.analysisResults.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Analysis Results")
@@ -517,8 +521,22 @@ struct DocumentDetailView: View {
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
 
-                            // TODO: Add detailed analysis results
+                            ForEach(document.analysisResults) { result in
+                                FindingRowView(
+                                    title: result.title,
+                                    description: result.description,
+                                    severity: result.severity.displayName,
+                                    severityColor: result.severity.color,
+                                    confidence: result.confidence,
+                                    icon: result.issueType.icon
+                                )
+                            }
                         }
+                    }
+
+                    // Server Analysis Results
+                    if document.isAnalyzed, document.serverDocumentId != nil {
+                        serverAnalysisSection
                     }
 
                     Spacer()
@@ -534,6 +552,83 @@ struct DocumentDetailView: View {
                     }
                 }
             }
+            .task {
+                await fetchServerAnalysis()
+            }
+        }
+    }
+
+    // MARK: - Server Analysis Section
+
+    @ViewBuilder
+    private var serverAnalysisSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if isLoadingAnalysis {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("Loading analysis...")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            } else if let error = analysisError {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundColor(.orange)
+                        .font(.caption)
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            } else if !serverFindings.isEmpty {
+                Text("Backend Analysis")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+
+                Text("\(serverFindings.count) findings from analysis pipeline")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+                ForEach(serverFindings) { finding in
+                    FindingRowView(
+                        title: finding.title,
+                        description: finding.description,
+                        severity: finding.severity,
+                        severityColor: severityColor(finding.severity),
+                        confidence: finding.confidence,
+                        icon: "magnifyingglass.circle.fill"
+                    )
+                }
+            }
+        }
+    }
+
+    // MARK: - Fetch Server Analysis
+
+    private func fetchServerAnalysis() async {
+        guard let serverId = document.serverDocumentId,
+              document.isAnalyzed,
+              !hasFetchedAnalysis else { return }
+
+        isLoadingAnalysis = true
+        defer { isLoadingAnalysis = false }
+
+        do {
+            let response = try await APIClient.shared.getDocumentAnalysis(documentId: serverId)
+            hasFetchedAnalysis = true
+            serverFindings = ServerFinding.parse(from: response.analysis)
+        } catch {
+            analysisError = "Could not load analysis details."
+        }
+    }
+
+    private func severityColor(_ severity: String) -> Color {
+        switch severity.lowercased() {
+        case "critical": return .red
+        case "high": return .orange
+        case "medium": return .yellow
+        case "low": return .green
+        default: return .secondary
         }
     }
 
@@ -542,6 +637,117 @@ struct DocumentDetailView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - Server Finding Model
+
+struct ServerFinding: Identifiable {
+    let id = UUID()
+    let title: String
+    let description: String
+    let severity: String
+    let confidence: Double
+
+    static func parse(from analysis: AnyCodable?) -> [ServerFinding] {
+        guard let analysis = analysis,
+              let dict = analysis.value as? [String: Any] else {
+            return []
+        }
+
+        // Try "findings" array first, then "issues", then "violations"
+        let findingsArray: [[String: Any]]
+        if let findings = dict["findings"] as? [[String: Any]] {
+            findingsArray = findings
+        } else if let issues = dict["issues"] as? [[String: Any]] {
+            findingsArray = issues
+        } else if let violations = dict["violations"] as? [[String: Any]] {
+            findingsArray = violations
+        } else {
+            return []
+        }
+
+        return findingsArray.compactMap { item in
+            let title = (item["title"] as? String)
+                ?? (item["issueType"] as? String)
+                ?? (item["type"] as? String)
+                ?? "Finding"
+            let description = (item["description"] as? String)
+                ?? (item["message"] as? String)
+                ?? (item["detail"] as? String)
+                ?? ""
+            let severity = (item["severity"] as? String) ?? "medium"
+            let confidence = (item["confidence"] as? Double) ?? 0.0
+
+            return ServerFinding(
+                title: title,
+                description: description,
+                severity: severity,
+                confidence: confidence
+            )
+        }
+    }
+}
+
+// MARK: - Finding Row View
+
+struct FindingRowView: View {
+    let title: String
+    let description: String
+    let severity: String
+    let severityColor: Color
+    let confidence: Double
+    let icon: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .foregroundColor(severityColor)
+                    .font(.subheadline)
+
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+
+                Spacer()
+
+                Text(severity.capitalized)
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(severityColor.opacity(0.15))
+                    )
+                    .foregroundColor(severityColor)
+            }
+
+            if !description.isEmpty {
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(3)
+            }
+
+            if confidence > 0 {
+                HStack(spacing: 4) {
+                    Text("Confidence:")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Text("\(Int(confidence * 100))%")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(.systemGray6))
+        )
     }
 }
 
