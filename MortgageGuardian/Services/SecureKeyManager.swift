@@ -167,6 +167,7 @@ enum APIService: String, CaseIterable {
     case claude = "com.mortgageguardian.api.claude"
     case plaidClientId = "com.mortgageguardian.api.plaid.client"
     case plaidSecret = "com.mortgageguardian.api.plaid.secret"
+    case plaidAccessToken = "com.mortgageguardian.api.plaid.accesstoken"
 
     // Market Data Services
     case marketData = "com.mortgageguardian.api.marketdata"
@@ -181,6 +182,8 @@ enum APIService: String, CaseIterable {
             return "Plaid Client ID"
         case .plaidSecret:
             return "Plaid Secret"
+        case .plaidAccessToken:
+            return "Plaid Access Token"
         case .marketData:
             return "Market Data API"
         case .realEstate:
@@ -194,7 +197,7 @@ enum APIService: String, CaseIterable {
         switch self {
         case .claude:
             return "Required for AI-powered document analysis"
-        case .plaidClientId, .plaidSecret:
+        case .plaidClientId, .plaidSecret, .plaidAccessToken:
             return "Required for bank account integration"
         case .marketData:
             return "Optional: For real-time market data"
@@ -207,7 +210,7 @@ enum APIService: String, CaseIterable {
 
     var isRequired: Bool {
         switch self {
-        case .claude, .plaidClientId, .plaidSecret:
+        case .claude, .plaidClientId, .plaidSecret, .plaidAccessToken:
             return true
         default:
             return false

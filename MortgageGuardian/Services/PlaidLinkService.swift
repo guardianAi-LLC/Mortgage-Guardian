@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import UIKit
 import os.log
+import Clerk
 
 #if canImport(LinkKit)
 import LinkKit
@@ -24,12 +25,6 @@ public final class PlaidLinkService: ObservableObject {
     // MARK: - Private Properties
     private let logger = Logger(subsystem: "com.mortgageguardian", category: "PlaidLinkService")
     private let secureKeyManager = SecureKeyManager.shared
-    private let networkSession = URLSession.shared
-
-    // API Configuration - Uses centralized API configuration
-    private var apiBaseURL: String {
-        return APIConfiguration.baseURL + "/v1/plaid"
-    }
 
     // Plaid Link Handler
     #if canImport(LinkKit)
@@ -148,41 +143,18 @@ public final class PlaidLinkService: ObservableObject {
 
     // MARK: - Private Implementation
 
+    private var currentUserId: String {
+        Clerk.shared.user?.id ?? "mortgage_guardian_user"
+    }
+
     private func fetchLinkToken() async throws {
-        guard let url = URL(string: "\(apiBaseURL)/link_token") else {
-            throw PlaidError.invalidConfiguration
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let requestBody: [String: Any] = [
-            "user": [
-                "client_user_id": "mortgage_guardian_user_\(UUID().uuidString)"
-            ],
-            "client_name": "Mortgage Guardian",
-            "products": ["transactions", "accounts"],
-            "country_codes": ["US"],
-            "language": "en"
-        ]
-
-        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-
-        let (data, response) = try await networkSession.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw PlaidError.linkTokenFailed
-        }
-
-        let responseJson = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        guard let token = responseJson?["link_token"] as? String else {
-            throw PlaidError.linkTokenFailed
-        }
+        let response = try await APIClient.shared.createPlaidLinkToken(
+            userId: currentUserId,
+            clientName: "Mortgage Guardian"
+        )
 
         await MainActor.run {
-            self.linkToken = token
+            self.linkToken = response.linkToken
         }
     }
 
@@ -258,93 +230,23 @@ public final class PlaidLinkService: ObservableObject {
     }
 
     private func handleLinkSuccess(publicToken: String, metadata: Any) async throws {
-        // Exchange public token for access token via backend
-        guard let url = URL(string: "\(apiBaseURL)/exchange_token") else {
-            throw PlaidError.invalidConfiguration
-        }
+        let response = try await APIClient.shared.exchangePlaidToken(
+            publicToken: publicToken,
+            userId: currentUserId
+        )
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let requestBody: [String: Any] = [
-            "public_token": publicToken
-        ]
-
-        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-
-        let (data, response) = try await networkSession.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw PlaidError.tokenExchangeFailed
-        }
-
-        let responseJson = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        guard let accessToken = responseJson?["access_token"] as? String else {
-            throw PlaidError.tokenExchangeFailed
-        }
+        // Store the access token securely for future API calls
+        try secureKeyManager.saveAPIKey(response.accessToken, forService: .plaidAccessToken)
+        logger.info("Stored Plaid access token securely (item: \(response.itemId))")
 
         // Fetch accounts with the access token
-        try await fetchAccountsWithAccessToken(accessToken: accessToken)
+        try await fetchAccountsWithAccessToken(accessToken: response.accessToken)
     }
 
     private func fetchAccountsWithAccessToken(accessToken: String) async throws {
-        guard let url = URL(string: "\(apiBaseURL)/accounts") else {
-            throw PlaidError.invalidConfiguration
-        }
+        let response = try await APIClient.shared.getPlaidAPIAccounts(accessToken: accessToken)
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let requestBody: [String: Any] = [
-            "access_token": accessToken
-        ]
-
-        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-
-        let (data, response) = try await networkSession.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw PlaidError.accountsFetchFailed
-        }
-
-        let responseJson = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        guard let accountsArray = responseJson?["accounts"] as? [[String: Any]] else {
-            throw PlaidError.accountsFetchFailed
-        }
-
-        // Convert Plaid accounts to our model
-        let plaidAccounts = accountsArray.compactMap { accountData -> PlaidAccount? in
-            guard let accountId = accountData["account_id"] as? String,
-                  let name = accountData["name"] as? String,
-                  let type = accountData["type"] as? String else {
-                return nil
-            }
-
-            let subtype = accountData["subtype"] as? String ?? ""
-            let mask = accountData["mask"] as? String ?? ""
-
-            // Extract balance
-            var balance: Double = 0.0
-            if let balances = accountData["balances"] as? [String: Any],
-               let available = balances["available"] as? Double {
-                balance = available
-            }
-
-            return PlaidAccount(
-                id: accountId,
-                name: name,
-                type: type,
-                subtype: subtype,
-                mask: mask,
-                institutionName: "Connected Bank", // Will be populated from metadata
-                balance: balance,
-                isActive: true
-            )
-        }
+        let plaidAccounts = response.accounts.map { bridgePlaidAccount($0, institutionName: "Connected Bank") }
 
         await MainActor.run {
             for account in plaidAccounts {
@@ -353,116 +255,36 @@ public final class PlaidLinkService: ObservableObject {
             self.isConnected = true
             self.logger.info("Successfully fetched \(plaidAccounts.count) accounts from Plaid")
         }
-
-        // Real LinkKit implementation would go here:
-        // The LinkKit SDK requires specific configuration and proper app setup
-        // For production, this would use the actual Plaid Link SDK with proper UI presentation
-        logger.info("Note: Using mock implementation - real LinkKit integration requires additional setup")
-    }
-
-    private func exchangePublicToken(_ publicToken: String) async throws {
-        guard let url = URL(string: "\(APIConfiguration.baseURL)/v1/plaid/link/token/exchange") else {
-            throw PlaidError.invalidConfiguration
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let requestBody = [
-            "public_token": publicToken
-        ]
-
-        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-
-        let (data, response) = try await networkSession.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw PlaidError.tokenExchangeFailed
-        }
-
-        let responseJson = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        guard let accessToken = responseJson?["access_token"] as? String else {
-            throw PlaidError.tokenExchangeFailed
-        }
-
-        // Fetch accounts using the access token
-        try await fetchAccountsWithAccessToken(accessToken)
-    }
-
-    private func fetchAccountsWithAccessToken(_ accessToken: String) async throws {
-        guard let url = URL(string: "\(APIConfiguration.baseURL)/v1/plaid/accounts/get") else {
-            throw PlaidError.invalidConfiguration
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let requestBody = [
-            "access_token": accessToken
-        ]
-
-        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-
-        let (data, response) = try await networkSession.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw PlaidError.accountsFetchFailed
-        }
-
-        let responseJson = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        guard let accountsData = responseJson?["accounts"] as? [[String: Any]] else {
-            throw PlaidError.accountsFetchFailed
-        }
-
-        // Parse accounts
-        let newAccounts = accountsData.compactMap { accountData -> PlaidAccount? in
-            guard let accountId = accountData["account_id"] as? String,
-                  let name = accountData["name"] as? String,
-                  let type = accountData["type"] as? String,
-                  let subtype = accountData["subtype"] as? String,
-                  let mask = accountData["mask"] as? String else {
-                return nil
-            }
-
-            let balance = (accountData["balances"] as? [String: Any])?["current"] as? Double
-            let institutionData = responseJson?["institution"] as? [String: Any]
-            let institutionName = institutionData?["name"] as? String ?? "Bank"
-
-            return PlaidAccount(
-                id: accountId,
-                name: name,
-                type: type,
-                subtype: subtype,
-                mask: mask,
-                institutionName: institutionName,
-                balance: balance,
-                isActive: true
-            )
-        }
-
-        await MainActor.run {
-            for account in newAccounts {
-                self.addAccount(account)
-            }
-        }
     }
 
     private func removeAccountFromBackend(accountId: String) async throws {
-        // Implementation for removing account from backend
-        // This would call your backend API to remove the account
-        logger.info("Removing account \(accountId) from backend")
+        let accessToken = try secureKeyManager.getAPIKey(forService: .plaidAccessToken)
+        try await APIClient.shared.deletePlaidItem(accessToken: accessToken)
+        logger.info("Removed Plaid item from backend for account \(accountId)")
     }
 
     private func fetchAccountsFromBackend() async throws -> [PlaidAccount] {
-        // Implementation for fetching accounts from backend
-        // This would call your backend API to get current account data
-        logger.info("Fetching accounts from backend")
-        return accounts // For now, return current accounts
+        let accessToken = try secureKeyManager.getAPIKey(forService: .plaidAccessToken)
+        let response = try await APIClient.shared.getPlaidAPIAccounts(accessToken: accessToken)
+        return response.accounts.map { bridgePlaidAccount($0, institutionName: "Connected Bank") }
     }
+
+    // MARK: - Bridging
+
+    private func bridgePlaidAccount(_ apiAccount: PlaidAPIAccount, institutionName: String) -> PlaidAccount {
+        PlaidAccount(
+            id: apiAccount.accountId,
+            name: apiAccount.name,
+            type: apiAccount.type,
+            subtype: apiAccount.subtype ?? "",
+            mask: "",
+            institutionName: institutionName,
+            balance: apiAccount.balances.available ?? apiAccount.balances.current,
+            isActive: true
+        )
+    }
+
+    // MARK: - Local Storage
 
     private func loadStoredAccounts() {
         // Load accounts from UserDefaults or Core Data
@@ -480,9 +302,6 @@ public final class PlaidLinkService: ObservableObject {
         }
     }
 }
-
-// MARK: - Real Plaid Link Implementation Complete
-// The service now uses actual PLKConfiguration and PLKPlaidLinkViewController from LinkKit
 
 // MARK: - Error Types
 enum PlaidError: LocalizedError {
@@ -507,6 +326,3 @@ enum PlaidError: LocalizedError {
         }
     }
 }
-
-// MARK: - Logger Import
-import os.log
