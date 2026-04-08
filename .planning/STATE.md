@@ -9,9 +9,9 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 36 of 40 (Plaid Bank Integration Rewiring) — IN PROGRESS
-Plan: 01 complete
-Status: Plan 36-01 complete, ready for next plan or phase
-Last activity: 2026-04-08 - Plan 36-01 complete (PlaidLinkService rewired to APIClient)
+Plan: 02 complete
+Status: Plan 36-02 complete, ready for 36-03
+Last activity: 2026-04-08 - Plan 36-02 complete (EnhancedPlaidService rewired to real endpoints)
 
 Progress: ███░░░░░░░ 33%
 
@@ -86,6 +86,7 @@ v6.0 Phase 35-01: ShareUtility helper (share/save/print with @MainActor, windowS
 v6.0 Phase 35-02: Chart export — PDF (UIGraphicsPDFRenderer multi-page), images (ImageRenderer 2x PNGs), CSV (sectioned with severity/issue types/trends/financial/confidence). All use ShareUtility for presentation.
 v6.0 Phase 35-03: SupportingDocument+HighlightRegion added to AuditResult (default []). DocumentEvidenceViewer rewritten — PDFKit for local PDFs, server placeholder, normalized highlight overlay. 4 actions: share/exportReport/print/shareAll.
 v6.0 Phase 36-01: PlaidLinkService rewired from raw URLRequest to APIClient+Plaid typed methods. deletePlaidItem added. plaidAccessToken keychain storage. Removed 228 lines of raw networking/duplicate code.
+v6.0 Phase 36-02: EnhancedPlaidService rewired from 5 nonexistent endpoints to typed APIClient calls. Mortgage keyword transaction filtering. UNUserNotificationCenter replaces stub. SecurityService stubs replaced with SecureKeyManager+UserDefaults.
 
 ### Deferred Issues
 
@@ -115,5 +116,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-08
-Stopped at: Plan 36-01 complete, ready for next plan or phase
+Stopped at: Plan 36-02 complete, ready for 36-03
 Resume file: None
