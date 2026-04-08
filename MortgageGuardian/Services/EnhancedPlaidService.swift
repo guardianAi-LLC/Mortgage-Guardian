@@ -233,6 +233,9 @@ public final class EnhancedPlaidService: ObservableObject {
                 self.syncProgress = nil
             }
 
+            // Track activity date for compliance reporting
+            UserDefaults.standard.set(Date(), forKey: "plaid_last_activity")
+
             // Send notification
             await sendEnhancedNotification(for: enhancedResult)
 

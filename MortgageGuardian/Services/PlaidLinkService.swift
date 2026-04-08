@@ -239,6 +239,12 @@ public final class PlaidLinkService: ObservableObject {
         try secureKeyManager.saveAPIKey(response.accessToken, forService: .plaidAccessToken)
         logger.info("Stored Plaid access token securely (item: \(response.itemId))")
 
+        // Track connection date for compliance reporting
+        if UserDefaults.standard.object(forKey: "plaid_first_connected") == nil {
+            UserDefaults.standard.set(Date(), forKey: "plaid_first_connected")
+        }
+        UserDefaults.standard.set(Date(), forKey: "plaid_last_activity")
+
         // Fetch accounts with the access token
         try await fetchAccountsWithAccessToken(accessToken: response.accessToken)
     }

@@ -274,6 +274,9 @@ extension SecurityService {
                 auditLogger.log(.dataDecrypted("Expired correlation data removed: \(key)"))
             }
         }
+
+        // Record cleanup date for compliance reporting
+        UserDefaults.standard.set(Date(), forKey: "plaid_last_cleanup")
     }
 
     // MARK: - Private Helper Methods
@@ -495,8 +498,25 @@ extension SecurityService {
     }
 
     private func getStoredPlaidTokenCount() async throws -> Int {
-        // Implementation to count stored tokens
-        return 0 // Placeholder
+        // Query keychain for plaid token entries
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecMatchLimit as String: kSecMatchLimitAll,
+            kSecReturnAttributes as String: true
+        ]
+
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+
+        guard status == errSecSuccess,
+              let items = result as? [[String: Any]] else {
+            return 0
+        }
+
+        return items.filter { item in
+            guard let account = item[kSecAttrAccount as String] as? String else { return false }
+            return account.hasPrefix("plaid_token_")
+        }.count
     }
 
     private func getStoredTransactionCount() async throws -> Int {
@@ -510,18 +530,15 @@ extension SecurityService {
     }
 
     private func getOldestPlaidDataDate() async throws -> Date? {
-        // Implementation to find oldest data
-        return nil // Placeholder
+        return UserDefaults.standard.object(forKey: "plaid_first_connected") as? Date
     }
 
     private func getNewestPlaidDataDate() async throws -> Date? {
-        // Implementation to find newest data
-        return nil // Placeholder
+        return UserDefaults.standard.object(forKey: "plaid_last_activity") as? Date
     }
 
     private func getLastCleanupDate() async throws -> Date? {
-        // Implementation to get last cleanup date
-        return nil // Placeholder
+        return UserDefaults.standard.object(forKey: "plaid_last_cleanup") as? Date
     }
 }
 
