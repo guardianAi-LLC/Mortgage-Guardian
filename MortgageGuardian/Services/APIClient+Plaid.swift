@@ -171,6 +171,24 @@ struct PlaidTransaction: Decodable {
     }
 }
 
+struct PlaidDeleteItemRequest: Encodable {
+    let accessToken: String
+
+    enum CodingKeys: String, CodingKey {
+        case accessToken = "access_token"
+    }
+}
+
+struct PlaidDeleteItemResponse: Decodable {
+    let removed: Bool
+    let requestId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case removed
+        case requestId = "request_id"
+    }
+}
+
 // MARK: - APIClient Plaid Methods
 
 extension APIClient {
@@ -227,6 +245,19 @@ extension APIClient {
             method: .POST,
             body: body,
             responseType: PlaidAPIAccountsResponse.self
+        )
+    }
+
+    func deletePlaidItem(
+        accessToken: String
+    ) async throws -> PlaidDeleteItemResponse {
+        let requestBody = PlaidDeleteItemRequest(accessToken: accessToken)
+        let body = try JSONEncoder().encode(requestBody)
+        return try await request(
+            endpoint: "/v1/plaid/item",
+            method: .DELETE,
+            body: body,
+            responseType: PlaidDeleteItemResponse.self
         )
     }
 
