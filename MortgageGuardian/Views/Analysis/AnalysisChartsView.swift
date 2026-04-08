@@ -669,6 +669,8 @@ enum TrendDirection {
 struct ChartExportView: View {
     let viewModel: AnalysisViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var isExporting = false
+    @State private var exportError: String?
 
     var body: some View {
         NavigationView {
@@ -681,27 +683,39 @@ struct ChartExportView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 
-                VStack(spacing: 12) {
-                    ExportOptionButton(
-                        title: "Export as PDF",
-                        subtitle: "High-quality charts in PDF format",
-                        icon: "doc.fill",
-                        action: { exportAsPDF() }
-                    )
+                if isExporting {
+                    ProgressView("Preparing export...")
+                        .padding()
+                } else {
+                    VStack(spacing: 12) {
+                        ExportOptionButton(
+                            title: "Export as PDF",
+                            subtitle: "High-quality charts in PDF format",
+                            icon: "doc.fill",
+                            action: { exportAsPDF() }
+                        )
 
-                    ExportOptionButton(
-                        title: "Export as Images",
-                        subtitle: "Individual chart images",
-                        icon: "photo.fill",
-                        action: { exportAsImages() }
-                    )
+                        ExportOptionButton(
+                            title: "Export as Images",
+                            subtitle: "Individual chart images",
+                            icon: "photo.fill",
+                            action: { exportAsImages() }
+                        )
 
-                    ExportOptionButton(
-                        title: "Export Data",
-                        subtitle: "Raw data in CSV format",
-                        icon: "tablecells.fill",
-                        action: { exportData() }
-                    )
+                        ExportOptionButton(
+                            title: "Export Data",
+                            subtitle: "Raw data in CSV format",
+                            icon: "tablecells.fill",
+                            action: { exportData() }
+                        )
+                    }
+                }
+
+                if let error = exportError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .padding(.horizontal)
                 }
 
                 Spacer()
@@ -719,22 +733,348 @@ struct ChartExportView: View {
         }
     }
 
+    // MARK: - Chart View Builders for Export
+
+    @MainActor
+    private func renderChartImage<V: View>(_ view: V, size: CGSize = CGSize(width: 600, height: 400)) -> UIImage? {
+        let renderer = ImageRenderer(content: view.frame(width: size.width, height: size.height))
+        renderer.scale = 2.0
+        return renderer.uiImage
+    }
+
+    @MainActor
+    private func severityChartView() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Severity Distribution")
+                .font(.headline)
+            Chart(viewModel.chartData.severityDistribution, id: \.name) { dataPoint in
+                SectorMark(
+                    angle: .value("Count", dataPoint.value),
+                    innerRadius: .ratio(0.4),
+                    angularInset: 2
+                )
+                .foregroundStyle(dataPoint.color)
+            }
+            .chartLegend(position: .bottom, alignment: .center)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+    }
+
+    @MainActor
+    private func issueTypesChartView() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Issue Types Breakdown")
+                .font(.headline)
+            Chart(viewModel.chartData.issueTypeDistribution.prefix(5), id: \.name) { dataPoint in
+                BarMark(
+                    x: .value("Count", dataPoint.value)
+                )
+                .foregroundStyle(.blue.gradient)
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+    }
+
+    @MainActor
+    private func monthlyTrendsChartView() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Monthly Trends")
+                .font(.headline)
+            Chart(viewModel.chartData.monthlyTrend, id: \.date) { dataPoint in
+                LineMark(
+                    x: .value("Date", dataPoint.date),
+                    y: .value("Count", dataPoint.count)
+                )
+                .foregroundStyle(.blue.gradient)
+                .interpolationMethod(.catmullRom)
+                AreaMark(
+                    x: .value("Date", dataPoint.date),
+                    y: .value("Count", dataPoint.count)
+                )
+                .foregroundStyle(.blue.gradient.opacity(0.3))
+                .interpolationMethod(.catmullRom)
+            }
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .month)) { _ in
+                    AxisGridLine()
+                    AxisValueLabel(format: .dateTime.month(.abbreviated))
+                }
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+    }
+
+    @MainActor
+    private func financialImpactChartView() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Financial Impact")
+                .font(.headline)
+            Chart(viewModel.chartData.financialImpact, id: \.date) { dataPoint in
+                BarMark(
+                    x: .value("Date", dataPoint.date),
+                    y: .value("Amount", dataPoint.amount)
+                )
+                .foregroundStyle(dataPoint.severity.color.gradient)
+            }
+            .chartYAxis {
+                AxisMarks { _ in
+                    AxisGridLine()
+                    AxisValueLabel(format: .currency(code: "USD"))
+                }
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+    }
+
+    // MARK: - Export Functions
+
     private func exportAsPDF() {
-        // TODO: Implement PDF export
-        print("Exporting as PDF")
-        dismiss()
+        isExporting = true
+        exportError = nil
+
+        Task { @MainActor in
+            defer { isExporting = false }
+
+            let chartSize = CGSize(width: 500, height: 340)
+            let chartViews: [(String, any View)] = [
+                ("Severity Distribution", severityChartView()),
+                ("Issue Types Breakdown", issueTypesChartView()),
+                ("Monthly Trends", monthlyTrendsChartView()),
+                ("Financial Impact", financialImpactChartView())
+            ]
+
+            var chartImages: [(String, UIImage)] = []
+            for (title, view) in chartViews {
+                if let image = renderChartImage(AnyView(view), size: chartSize) {
+                    chartImages.append((title, image))
+                }
+            }
+
+            guard !chartImages.isEmpty else {
+                exportError = "Failed to render charts"
+                return
+            }
+
+            // Compose multi-page PDF
+            let pageSize = CGSize(width: 612, height: 792) // Letter size
+            let margins = UIEdgeInsets(top: 60, left: 56, bottom: 60, right: 56)
+            let contentWidth = pageSize.width - margins.left - margins.right
+
+            let format = UIGraphicsPDFRendererFormat()
+            format.documentInfo = [
+                kCGPDFContextCreator as String: "Mortgage Guardian",
+                kCGPDFContextTitle as String: "Analysis Charts"
+            ]
+
+            let renderer = UIGraphicsPDFRenderer(
+                bounds: CGRect(origin: .zero, size: pageSize),
+                format: format
+            )
+
+            let pdfData = renderer.pdfData { context in
+                // Title page
+                context.beginPage()
+                let titleAttributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.boldSystemFont(ofSize: 24),
+                    .foregroundColor: UIColor.black
+                ]
+                let subtitleAttributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 14),
+                    .foregroundColor: UIColor.gray
+                ]
+
+                let title = NSAttributedString(string: "Mortgage Guardian Analysis Charts", attributes: titleAttributes)
+                title.draw(at: CGPoint(x: margins.left, y: margins.top))
+
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateStyle = .long
+                let subtitle = NSAttributedString(string: "Generated \(dateFormatter.string(from: Date()))", attributes: subtitleAttributes)
+                subtitle.draw(at: CGPoint(x: margins.left, y: margins.top + 36))
+
+                var currentY: CGFloat = margins.top + 80
+
+                // Render charts — 2 per page
+                for (index, (chartTitle, image)) in chartImages.enumerated() {
+                    let imageAspect = image.size.width / image.size.height
+                    let imageWidth = contentWidth
+                    let imageHeight = imageWidth / imageAspect
+
+                    let neededSpace = imageHeight + 30
+                    if currentY + neededSpace > pageSize.height - margins.bottom {
+                        context.beginPage()
+                        currentY = margins.top
+                    }
+
+                    // Chart title label
+                    let labelAttributes: [NSAttributedString.Key: Any] = [
+                        .font: UIFont.boldSystemFont(ofSize: 14),
+                        .foregroundColor: UIColor.darkGray
+                    ]
+                    let label = NSAttributedString(string: chartTitle, attributes: labelAttributes)
+                    label.draw(at: CGPoint(x: margins.left, y: currentY))
+                    currentY += 22
+
+                    // Chart image
+                    let imageRect = CGRect(x: margins.left, y: currentY, width: imageWidth, height: imageHeight)
+                    image.draw(in: imageRect)
+                    currentY += imageHeight + 24
+                }
+            }
+
+            // Write to temp file and share
+            let dateStr = Self.isoDateString()
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("mortgage-guardian-charts-\(dateStr).pdf")
+            do {
+                try pdfData.write(to: tempURL)
+                dismiss()
+                // Small delay to ensure sheet is dismissed before presenting share sheet
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                ShareUtility.presentShareSheet(items: [tempURL])
+            } catch {
+                exportError = "Failed to save PDF: \(error.localizedDescription)"
+            }
+        }
     }
 
     private func exportAsImages() {
-        // TODO: Implement image export
-        print("Exporting as images")
-        dismiss()
+        isExporting = true
+        exportError = nil
+
+        Task { @MainActor in
+            defer { isExporting = false }
+
+            let chartSize = CGSize(width: 600, height: 400)
+            let charts: [(String, any View)] = [
+                ("severity-distribution", severityChartView()),
+                ("issue-types", issueTypesChartView()),
+                ("monthly-trends", monthlyTrendsChartView()),
+                ("financial-impact", financialImpactChartView())
+            ]
+
+            var imageURLs: [URL] = []
+            let dateStr = Self.isoDateString()
+            let tempDir = FileManager.default.temporaryDirectory
+
+            for (name, view) in charts {
+                guard let image = renderChartImage(AnyView(view), size: chartSize),
+                      let pngData = image.pngData() else { continue }
+
+                let fileURL = tempDir.appendingPathComponent("mortgage-guardian-\(name)-\(dateStr).png")
+                do {
+                    try pngData.write(to: fileURL)
+                    imageURLs.append(fileURL)
+                } catch {
+                    continue
+                }
+            }
+
+            guard !imageURLs.isEmpty else {
+                exportError = "Failed to render chart images"
+                return
+            }
+
+            dismiss()
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            ShareUtility.presentShareSheet(items: imageURLs)
+        }
     }
 
     private func exportData() {
-        // TODO: Implement data export
-        print("Exporting data")
-        dismiss()
+        isExporting = true
+        exportError = nil
+
+        Task { @MainActor in
+            defer { isExporting = false }
+
+            var csv = ""
+
+            // Severity Distribution
+            csv += "# Severity Distribution\n"
+            csv += "Severity,Count,Percentage\n"
+            let totalSeverity = viewModel.chartData.severityDistribution.reduce(0.0) { $0 + $1.value }
+            for dp in viewModel.chartData.severityDistribution {
+                let pct = totalSeverity > 0 ? (dp.value / totalSeverity) * 100 : 0
+                csv += "\(csvEscape(dp.name)),\(Int(dp.value)),\(String(format: "%.1f", pct))%\n"
+            }
+
+            csv += "\n"
+
+            // Issue Type Breakdown
+            csv += "# Issue Type Breakdown\n"
+            csv += "Issue Type,Count,Percentage\n"
+            let totalIssueType = viewModel.chartData.issueTypeDistribution.reduce(0.0) { $0 + $1.value }
+            for dp in viewModel.chartData.issueTypeDistribution {
+                let pct = totalIssueType > 0 ? (dp.value / totalIssueType) * 100 : 0
+                csv += "\(csvEscape(dp.name)),\(Int(dp.value)),\(String(format: "%.1f", pct))%\n"
+            }
+
+            csv += "\n"
+
+            // Monthly Trends
+            csv += "# Monthly Trends\n"
+            csv += "Date,IssueCount,FinancialImpact\n"
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withFullDate]
+            for dp in viewModel.chartData.monthlyTrend {
+                csv += "\(isoFormatter.string(from: dp.date)),\(dp.count),\(String(format: "%.2f", dp.amount))\n"
+            }
+
+            csv += "\n"
+
+            // Financial Impact
+            csv += "# Financial Impact\n"
+            csv += "Date,Amount,Severity\n"
+            for dp in viewModel.chartData.financialImpact {
+                csv += "\(isoFormatter.string(from: dp.date)),\(String(format: "%.2f", dp.amount)),\(csvEscape(dp.severity.displayName))\n"
+            }
+
+            // Confidence Distribution
+            csv += "\n"
+            csv += "# Confidence Distribution\n"
+            csv += "Range,Count\n"
+            let results = viewModel.auditResults
+            let bucketDefs: [(String, Double, Double)] = [
+                ("90-100%", 0.9, 1.01),
+                ("80-89%", 0.8, 0.9),
+                ("70-79%", 0.7, 0.8),
+                ("Below 70%", 0.0, 0.7)
+            ]
+            for (label, low, high) in bucketDefs {
+                let count = results.filter { $0.confidence >= low && $0.confidence < high }.count
+                csv += "\(label),\(count)\n"
+            }
+
+            // Write to temp file
+            let dateStr = Self.isoDateString()
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("mortgage-guardian-analysis-\(dateStr).csv")
+            do {
+                try csv.write(to: tempURL, atomically: true, encoding: .utf8)
+                dismiss()
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                ShareUtility.presentShareSheet(items: [tempURL])
+            } catch {
+                exportError = "Failed to save CSV: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func csvEscape(_ field: String) -> String {
+        if field.contains(",") || field.contains("\"") || field.contains("\n") {
+            return "\"\(field.replacingOccurrences(of: "\"", with: "\"\""))\""
+        }
+        return field
+    }
+
+    private static func isoDateString() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
     }
 }
 
