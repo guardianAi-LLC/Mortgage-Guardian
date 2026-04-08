@@ -8,10 +8,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 **Current focus:** v6.0 iOS App Completion
 ## Current Position
 
-Phase: 34 of 40 (Document Upload & Processing Pipeline)
-Plan: 04 of 05 complete (34-01, 34-02, 34-03, 34-05 done; 34-04 remaining)
-Status: Plans 34-02, 34-03, 34-05 complete (parallel execution), ready for Plan 34-04
-Last activity: 2026-04-07 - Plans 34-02/03/05 complete in parallel (Document List Sync, Status Polling, Delete & Errors)
+Phase: 34 of 40 (Document Upload & Processing Pipeline) — COMPLETE
+Plan: 05 of 05 complete (all plans done)
+Status: Phase 34 complete, ready for Phase 35
+Last activity: 2026-04-08 - Plan 34-04 complete (Analysis Trigger & Results Display)
 
 Progress: █░░░░░░░░░ 11%
 
@@ -81,6 +81,7 @@ v6.0 Phase 34-01: DocumentCaptureViewModel wired to upload to Express after Visi
 v6.0 Phase 34-02: Backend document list sync — fetchDocumentsFromBackend() in UserStore, .task on DocumentsView, ExpressDocument→MortgageDocument bridging with serverDocumentId/pipelineStatus. Backend source of truth with local fallback.
 v6.0 Phase 34-03: 5-second periodic polling for in-pipeline documents. Auto-start/stop with view lifecycle. Pipeline status labels (uploaded→ocr→classifying→analyzing→complete) with spinner in document rows.
 v6.0 Phase 34-05: Delete syncs with backend via confirmation dialog. Consistent error handling — alert-based presentation, contextual upload error messages. Analyze button wired to processDocument API.
+v6.0 Phase 34-04: Analysis results display in DocumentDetailView — local AuditResult findings + server-side analysis fetch via getDocumentAnalysis(). ServerFinding parses flexible backend JSON. FindingRowView reusable component. Phase 34 complete.
 
 ### Deferred Issues
 
@@ -109,6 +110,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-07
-Stopped at: Plans 34-01/02/03/05 complete, ready for Plan 34-04
+Last session: 2026-04-08
+Stopped at: Phase 34 complete, ready for Phase 35
 Resume file: None
