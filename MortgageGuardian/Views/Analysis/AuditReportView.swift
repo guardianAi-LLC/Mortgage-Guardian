@@ -14,6 +14,10 @@ struct AuditReportView: View {
     @State private var selectedSeverities: Set<AuditResult.Severity> = Set(AuditResult.Severity.allCases)
     @State private var customDateRange: DateRange?
 
+    @State private var showingDateRangePicker = false
+    @State private var customStartDate = Calendar.current.date(byAdding: .year, value: -1, to: Date())!
+    @State private var customEndDate = Date()
+
     @State private var isGeneratingReport = false
     @State private var showingPreview = false
     @State private var showingShareSheet = false
@@ -60,6 +64,37 @@ struct AuditReportView: View {
             }
             .sheet(isPresented: $showingShareSheet) {
                 ShareSheet(items: shareItems)
+            }
+            .sheet(isPresented: $showingDateRangePicker) {
+                NavigationView {
+                    ScrollView {
+                        DateRangePicker(
+                            startDate: $customStartDate,
+                            endDate: $customEndDate,
+                            onApply: {
+                                customDateRange = DateRange(startDate: customStartDate, endDate: customEndDate)
+                                showingDateRangePicker = false
+                            },
+                            onReset: {
+                                customDateRange = nil
+                                customStartDate = Calendar.current.date(byAdding: .year, value: -1, to: Date())!
+                                customEndDate = Date()
+                                showingDateRangePicker = false
+                            }
+                        )
+                        .padding()
+                    }
+                    .navigationTitle("Date Range")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button("Cancel") {
+                                showingDateRangePicker = false
+                            }
+                        }
+                    }
+                }
+                .presentationDetents([.medium])
             }
         }
     }
@@ -224,14 +259,14 @@ struct AuditReportView: View {
                         .fontWeight(.medium)
 
                     HStack {
-                        Text("All detected issues")
+                        Text(dateRangeDisplayText)
                             .font(.caption)
                             .foregroundColor(.secondary)
 
                         Spacer()
 
-                        Button("Customize") {
-                            // TODO: Implement custom date range picker
+                        Button(customDateRange != nil ? "Edit Range" : "Customize") {
+                            showingDateRangePicker = true
                         }
                         .font(.caption)
                         .foregroundColor(.blue)
@@ -345,11 +380,27 @@ struct AuditReportView: View {
 
     // MARK: - Computed Properties
     private var filteredIssues: [AuditResult] {
-        viewModel.auditResults.filter { selectedSeverities.contains($0.severity) }
+        viewModel.auditResults.filter { result in
+            guard selectedSeverities.contains(result.severity) else { return false }
+            if let range = customDateRange {
+                return result.createdDate >= range.startDate && result.createdDate <= range.endDate
+            }
+            return true
+        }
     }
 
     private var filteredTotalSavings: Double {
         filteredIssues.compactMap { $0.affectedAmount }.reduce(0, +)
+    }
+
+    /// Human-readable description of the active date range filter.
+    private var dateRangeDisplayText: String {
+        guard let range = customDateRange else {
+            return "All detected issues"
+        }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return "\(formatter.string(from: range.startDate)) - \(formatter.string(from: range.endDate))"
     }
 
     // MARK: - Actions
@@ -391,16 +442,22 @@ struct AuditReportView: View {
 
         do {
             try reportData.write(to: tempURL)
-            shareItems = [tempURL]
-            showingShareSheet = true
+            ShareUtility.presentShareSheet(items: [tempURL])
         } catch {
             print("Error sharing report: \(error)")
         }
     }
 
     private func saveReport() {
-        // TODO: Implement save to files functionality
-        print("Saving report to Files app")
+        guard let reportData = generatedReportData else { return }
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("MortgageAuditReport_\(Date().timeIntervalSince1970).pdf")
+        do {
+            try reportData.write(to: tempURL)
+            ShareUtility.saveToFiles(tempURL, from: nil)
+        } catch {
+            print("Error saving report: \(error)")
+        }
     }
 
     private func formatCurrency(_ amount: Double) -> String {
