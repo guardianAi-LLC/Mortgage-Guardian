@@ -1,6 +1,8 @@
 import Foundation
 import Combine
 import os.log
+import Clerk
+import UserNotifications
 
 /// Enhanced Plaid Service with microservices integration
 /// Provides end-to-end banking integration for mortgage auditing
@@ -75,12 +77,14 @@ public final class EnhancedPlaidService: ObservableObject {
     // MARK: - Private Properties
 
     private let logger = Logger(subsystem: "MortgageGuardian", category: "EnhancedPlaidService")
-    private let apiClient = APIClient.shared
-    private let securityService = SecurityService.shared
-    private let notificationService = NotificationService.shared
+    private let secureKeyManager = SecureKeyManager.shared
 
     private var cancellables = Set<AnyCancellable>()
     private var syncTimer: Timer?
+
+    private var currentUserId: String {
+        Clerk.shared.user?.id ?? "mortgage_guardian_user"
+    }
 
     // MARK: - Initialization
 
@@ -96,28 +100,39 @@ public final class EnhancedPlaidService: ObservableObject {
         logger.info("Starting enhanced account linking with validation")
 
         do {
-            let requestBody: [String: Any] = [
-                "public_token": publicToken,
-                "metadata": metadata
-            ]
+            let institutionId = (metadata["institution"] as? [String: Any])?["institution_id"] as? String
+            let institutionName = (metadata["institution"] as? [String: Any])?["name"] as? String ?? "Connected Bank"
 
-            let response = try await apiClient.post(
-                endpoint: "/v1/plaid/enhanced-link",
-                body: requestBody
+            // Exchange public token for access token
+            let exchangeResponse = try await APIClient.shared.exchangePlaidToken(
+                publicToken: publicToken,
+                userId: currentUserId,
+                institutionId: institutionId
             )
 
-            guard let data = response["data"] as? [String: Any],
-                  let success = data["success"] as? Bool,
-                  success else {
-                throw PlaidServiceError.networkError(NSError(domain: "PlaidLinking", code: -1))
-            }
+            // Store access token securely
+            try secureKeyManager.saveAPIKey(exchangeResponse.accessToken, forService: .plaidAccessToken)
 
-            // Parse enhanced link result
+            // Fetch accounts to find loan accounts
+            let accountsResponse = try await APIClient.shared.getPlaidAPIAccounts(
+                accessToken: exchangeResponse.accessToken
+            )
+
+            let loanAccounts = accountsResponse.accounts
+                .filter { $0.type == "loan" || ($0.subtype?.contains("mortgage") == true) }
+                .map { LoanAccount(
+                    accountId: $0.accountId,
+                    name: $0.name,
+                    type: $0.type,
+                    subtype: $0.subtype ?? "",
+                    mask: ""
+                )}
+
             let linkResult = LinkResult(
-                success: success,
-                itemId: data["itemId"] as? String ?? "",
-                institutionName: data["institutionName"] as? String ?? "",
-                loanAccounts: parseLoanAccounts(data["loanAccounts"] as? [[String: Any]] ?? [])
+                success: true,
+                itemId: exchangeResponse.itemId,
+                institutionName: institutionName,
+                loanAccounts: loanAccounts
             )
 
             // Update state
@@ -129,11 +144,10 @@ public final class EnhancedPlaidService: ObservableObject {
                 linkedDate: Date()
             )
 
-            // Store encrypted link data
-            try await securityService.storeSecurely(
-                key: "plaid_link_data",
-                data: linkResult
-            )
+            // Store link data locally
+            if let data = try? JSONEncoder().encode(linkResult) {
+                UserDefaults.standard.set(data, forKey: "plaid_link_data")
+            }
 
             logger.info("Enhanced account linking completed successfully")
             return linkResult
@@ -166,39 +180,48 @@ public final class EnhancedPlaidService: ObservableObject {
         }
 
         do {
-            // Prepare sync request
             let range = dateRange ?? DateRange.last90Days()
-            let requestBody: [String: Any] = [
-                "account_id": accountId,
-                "start_date": ISO8601DateFormatter().string(from: range.startDate),
-                "end_date": ISO8601DateFormatter().string(from: range.endDate)
-            ]
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let startDateStr = dateFormatter.string(from: range.startDate)
+            let endDateStr = dateFormatter.string(from: range.endDate)
 
-            // Update progress
             await updateSyncProgress(.processingTransactions, 0.3, "Processing transactions for audit...")
 
-            // Execute enhanced sync
-            let response = try await apiClient.post(
-                endpoint: "/v1/plaid/enhanced-sync",
-                body: requestBody
+            // Fetch transactions via APIClient
+            let accessToken = try secureKeyManager.getAPIKey(forService: .plaidAccessToken)
+            let response = try await APIClient.shared.getPlaidTransactions(
+                accessToken: accessToken,
+                startDate: startDateStr,
+                endDate: endDateStr
             )
 
             await updateSyncProgress(.crossReferencing, 0.6, "Cross-referencing with audit data...")
 
-            // Parse enhanced sync result
-            guard let data = response["data"] as? [String: Any] else {
-                throw PlaidServiceError.networkError(NSError(domain: "SyncParsing", code: -1))
+            // Filter for mortgage-related transactions
+            let mortgageKeywords = ["mortgage", "loan payment", "escrow", "principal", "interest payment"]
+            let mortgageTransactions = response.transactions.filter { txn in
+                let nameLC = txn.name.lowercased()
+                let merchantLC = txn.merchantName?.lowercased() ?? ""
+                let categories = txn.category ?? []
+                return mortgageKeywords.contains(where: { nameLC.contains($0) || merchantLC.contains($0) })
+                    || categories.contains(where: { $0.lowercased().contains("loan") || $0.lowercased().contains("payment") })
             }
 
-            let enhancedResult = try parseEnhancedSyncResult(data)
+            let enhancedResult = EnhancedSyncResult(
+                syncedTransactions: response.transactions.count,
+                mortgagePayments: mortgageTransactions.count,
+                auditMatches: 0,
+                crossReferenceResults: CrossReferenceResults(matches: [], discrepancies: [], matchRate: 0.0),
+                timestamp: Date()
+            )
 
             await updateSyncProgress(.integrating, 0.9, "Integrating with local audit data...")
 
-            // Integrate with local audit engine and store locally
-            try await integrateWithLocalAudit(enhancedResult)
-
-            // Store sync result locally for offline access
-            try await storeSyncResultLocally(enhancedResult)
+            // Log mortgage transactions for local reference
+            for txn in mortgageTransactions {
+                logger.debug("Mortgage transaction: \(txn.name) $\(txn.amount) on \(txn.date)")
+            }
 
             await updateSyncProgress(.completed, 1.0, "Sync completed successfully")
 
@@ -210,7 +233,7 @@ public final class EnhancedPlaidService: ObservableObject {
                 self.syncProgress = nil
             }
 
-            // Send comprehensive notification with discrepancy alerts
+            // Send notification
             await sendEnhancedNotification(for: enhancedResult)
 
             logger.info("Enhanced transaction sync completed successfully")
@@ -222,7 +245,6 @@ public final class EnhancedPlaidService: ObservableObject {
                 self.syncProgress = nil
             }
 
-            // Store error for retry mechanism
             await storeLastSyncError(error)
 
             logger.error("Enhanced transaction sync failed: \(error.localizedDescription)")
@@ -238,21 +260,13 @@ public final class EnhancedPlaidService: ObservableObject {
 
         logger.info("Getting cross-reference analysis for audit: \(auditId)")
 
-        do {
-            let response = try await apiClient.get(
-                endpoint: "/v1/plaid/cross-reference/\(auditId)"
-            )
-
-            guard let data = response["data"] as? [String: Any] else {
-                throw PlaidServiceError.crossReferenceFailure("Invalid response format")
-            }
-
-            return try parseCrossReferenceResults(data)
-
-        } catch {
-            logger.error("Cross-reference analysis failed: \(error.localizedDescription)")
-            throw PlaidServiceError.crossReferenceFailure(error.localizedDescription)
+        // Cross-referencing is handled server-side during webhook processing.
+        // Return locally stored results from the last sync if available.
+        if let lastResult = lastSyncResult {
+            return lastResult.crossReferenceResults
         }
+
+        return CrossReferenceResults(matches: [], discrepancies: [], matchRate: 0.0)
     }
 
     /// Trigger audit workflow with banking integration
@@ -261,27 +275,12 @@ public final class EnhancedPlaidService: ObservableObject {
             throw PlaidServiceError.notLinked
         }
 
-        logger.info("Triggering audit workflow with banking integration")
+        logger.info("Triggering audit workflow with banking integration for document: \(documentId)")
 
         do {
-            let requestBody: [String: Any] = [
-                "documentId": documentId,
-                "userId": getCurrentUserId(),
-                "includeBankingCrossReference": true,
-                "enhancedPlaidIntegration": true
-            ]
-
-            let response = try await apiClient.post(
-                endpoint: "/v1/audit/start",
-                body: requestBody
-            )
-
-            guard let executionId = response["executionId"] as? String else {
-                throw PlaidServiceError.auditIntegrationFailure("No execution ID returned")
-            }
-
-            logger.info("Audit workflow started with execution ID: \(executionId)")
-            return executionId
+            try await APIClient.shared.processDocument(documentId: documentId)
+            logger.info("Audit workflow started for document: \(documentId)")
+            return documentId
 
         } catch {
             logger.error("Audit workflow trigger failed: \(error.localizedDescription)")
@@ -294,11 +293,9 @@ public final class EnhancedPlaidService: ObservableObject {
         logger.info("Unlinking Plaid account")
 
         do {
-            // Call backend to unlink
-            _ = try await apiClient.post(
-                endpoint: "/v1/plaid/unlink",
-                body: [:]
-            )
+            // Delete Plaid item via backend
+            let accessToken = try secureKeyManager.getAPIKey(forService: .plaidAccessToken)
+            _ = try await APIClient.shared.deletePlaidItem(accessToken: accessToken)
 
             // Clear local state
             await MainActor.run {
@@ -308,8 +305,9 @@ public final class EnhancedPlaidService: ObservableObject {
                 self.lastSyncResult = nil
             }
 
-            // Clear stored data
-            try await securityService.deleteSecurely(key: "plaid_link_data")
+            // Clear stored tokens and data
+            secureKeyManager.deleteAPIKey(forService: .plaidAccessToken)
+            UserDefaults.standard.removeObject(forKey: "plaid_link_data")
 
             logger.info("Account unlinked successfully")
 
@@ -345,27 +343,15 @@ public final class EnhancedPlaidService: ObservableObject {
     }
 
     private func loadStoredLinkStatus() {
-        Task {
-            do {
-                let linkData: LinkResult? = try await securityService.retrieveSecurely(
-                    key: "plaid_link_data",
-                    type: LinkResult.self
-                )
-
-                if let linkData = linkData {
-                    await MainActor.run {
-                        self.isLinked = true
-                        self.linkedAccountInfo = LinkedAccountInfo(
-                            institutionName: linkData.institutionName,
-                            itemId: linkData.itemId,
-                            loanAccountCount: linkData.loanAccounts.count,
-                            linkedDate: Date() // Would store actual date in production
-                        )
-                    }
-                }
-            } catch {
-                logger.warning("Could not load stored link status: \(error.localizedDescription)")
-            }
+        if let data = UserDefaults.standard.data(forKey: "plaid_link_data"),
+           let linkData = try? JSONDecoder().decode(LinkResult.self, from: data) {
+            self.isLinked = true
+            self.linkedAccountInfo = LinkedAccountInfo(
+                institutionName: linkData.institutionName,
+                itemId: linkData.itemId,
+                loanAccountCount: linkData.loanAccounts.count,
+                linkedDate: Date()
+            )
         }
     }
 
@@ -379,128 +365,40 @@ public final class EnhancedPlaidService: ObservableObject {
         }
     }
 
-    private func parseEnhancedSyncResult(_ data: [String: Any]) throws -> EnhancedSyncResult {
-        guard let syncedTransactions = data["syncedTransactions"] as? Int,
-              let mortgagePayments = data["mortgagePayments"] as? Int,
-              let crossRefData = data["auditCrossReference"] as? [String: Any] else {
-            throw PlaidServiceError.networkError(NSError(domain: "ParseError", code: -1))
-        }
-
-        let crossReference = try parseCrossReferenceResults(crossRefData)
-
-        return EnhancedSyncResult(
-            syncedTransactions: syncedTransactions,
-            mortgagePayments: mortgagePayments,
-            auditMatches: crossReference.matches.count,
-            crossReferenceResults: crossReference,
-            timestamp: Date()
-        )
-    }
-
-    private func parseCrossReferenceResults(_ data: [String: Any]) throws -> CrossReferenceResults {
-        let matches = (data["matches"] as? [[String: Any]] ?? []).compactMap { matchData in
-            guard let paymentId = matchData["paymentId"] as? String,
-                  let auditId = matchData["auditId"] as? String else {
-                return nil
-            }
-
-            return PaymentAuditMatch(
-                paymentId: paymentId,
-                auditId: auditId,
-                matchConfidence: matchData["confidence"] as? Double ?? 0.0,
-                matchDate: Date()
-            )
-        }
-
-        let discrepancies = (data["discrepancies"] as? [[String: Any]] ?? []).compactMap { discData in
-            guard let paymentId = discData["paymentId"] as? String,
-                  let type = discData["type"] as? String,
-                  let description = discData["description"] as? String else {
-                return nil
-            }
-
-            return PaymentDiscrepancy(
-                paymentId: paymentId,
-                discrepancyType: type,
-                description: description,
-                suggestedAction: discData["suggestedAction"] as? String ?? ""
-            )
-        }
-
-        let matchRate = data["matchRate"] as? Double ?? 0.0
-
-        return CrossReferenceResults(
-            matches: matches,
-            discrepancies: discrepancies,
-            matchRate: matchRate
-        )
-    }
-
-    private func parseLoanAccounts(_ accountsData: [[String: Any]]) -> [LoanAccount] {
-        return accountsData.compactMap { accountData in
-            guard let accountId = accountData["accountId"] as? String,
-                  let name = accountData["name"] as? String else {
-                return nil
-            }
-
-            return LoanAccount(
-                accountId: accountId,
-                name: name,
-                type: accountData["type"] as? String ?? "",
-                subtype: accountData["subtype"] as? String ?? "",
-                mask: accountData["mask"] as? String ?? ""
-            )
-        }
-    }
-
-    private func integrateWithLocalAudit(_ syncResult: EnhancedSyncResult) async throws {
-        // Integration with local audit engine would go here
-        // This would update local SwiftData with cross-reference results
-        logger.info("Integrating sync results with local audit data")
-
-        // Store mortgage payments locally for audit cross-reference
-        let mortgageTransactions = syncResult.crossReferenceResults.matches
-        for match in mortgageTransactions {
-            // Would integrate with SwiftData here in production
-            logger.debug("Processing audit match: \(match.paymentId)")
-        }
-    }
-
-    private func storeSyncResultLocally(_ syncResult: EnhancedSyncResult) async throws {
-        // Store sync result for offline access
-        do {
-            let data = try JSONEncoder().encode(syncResult)
-            try await securityService.storeSecurely(
-                key: "last_sync_result",
-                data: data
-            )
-            logger.info("Stored sync result locally for offline access")
-        } catch {
-            logger.error("Failed to store sync result locally: \(error.localizedDescription)")
-            throw error
-        }
-    }
-
     private func sendEnhancedNotification(for syncResult: EnhancedSyncResult) async {
         let discrepancyCount = syncResult.crossReferenceResults.discrepancies.count
 
+        let title: String
+        let body: String
+
         if discrepancyCount > 0 {
-            // Alert user to discrepancies found
-            await notificationService.sendLocalNotification(
-                title: "Audit Discrepancies Found",
-                body: "Found \(discrepancyCount) potential issues in your mortgage payments. Review required."
-            )
+            title = "Audit Discrepancies Found"
+            body = "Found \(discrepancyCount) potential issues in your mortgage payments. Review required."
         } else {
-            // Normal sync completion
-            await notificationService.sendLocalNotification(
-                title: "Bank Sync Complete",
-                body: "Synced \(syncResult.syncedTransactions) transactions with \(syncResult.auditMatches) audit matches"
-            )
+            title = "Bank Sync Complete"
+            body = "Synced \(syncResult.syncedTransactions) transactions with \(syncResult.auditMatches) audit matches"
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        )
+
+        do {
+            try await UNUserNotificationCenter.current().add(request)
+        } catch {
+            logger.warning("Failed to send notification: \(error.localizedDescription)")
         }
     }
 
     private func storeLastSyncError(_ error: Error) async {
-        let errorData = [
+        let errorData: [String: Any] = [
             "timestamp": ISO8601DateFormatter().string(from: Date()),
             "error": error.localizedDescription,
             "retryable": true
@@ -508,11 +406,6 @@ public final class EnhancedPlaidService: ObservableObject {
 
         UserDefaults.standard.set(errorData, forKey: "last_sync_error")
         logger.error("Stored sync error for retry: \(error.localizedDescription)")
-    }
-
-    private func getCurrentUserId() -> String {
-        // Get current user ID from authentication service
-        return UserDefaults.standard.string(forKey: "current_user_id") ?? ""
     }
 }
 
@@ -571,16 +464,5 @@ public struct DateRange {
         let endDate = Date()
         let startDate = Calendar.current.date(byAdding: .day, value: -90, to: endDate) ?? endDate
         return DateRange(startDate: startDate, endDate: endDate)
-    }
-}
-
-// MARK: - Notification Service Integration
-
-private class NotificationService {
-    static let shared = NotificationService()
-
-    func sendLocalNotification(title: String, body: String) async {
-        // Implementation would use UNUserNotificationCenter
-        print("Notification: \(title) - \(body)")
     }
 }
