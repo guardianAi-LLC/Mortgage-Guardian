@@ -277,6 +277,7 @@ Plans:
 Plans:
 - [x] 35-01: Share/Export Utility & Date Range Picker (ShareUtility helper, DateRangePicker component, AuditReportView custom date range) — 2026-04-08
 - [x] 35-02: Chart Export — PDF, Images, CSV (exportAsPDF, exportAsImages, exportData in ChartExportView) — 2026-04-08
+- [x] 35-03: Evidence Viewer Data Wiring (SupportingDocument model, PDFKit viewer, share/export/print actions) — 2026-04-08
 
 #### Phase 36: Plaid Bank Integration Rewiring
 
@@ -433,7 +434,7 @@ Plans:
 | 32. Express Backend API Client Migration | v6.0 | 4/4 | Complete | 2026-04-07 |
 | 33. Authentication Flow Completion | v6.0 | 3/3 | Complete | 2026-04-07 |
 | 34. Document Upload & Processing Pipeline | v6.0 | 5/5 | Complete | 2026-04-08 |
-| 35. Analysis & Findings UI Completion | v6.0 | 2/? | In progress | - |
+| 35. Analysis & Findings UI Completion | v6.0 | 3/? | In progress | - |
 | 36. Plaid Bank Integration Rewiring | v6.0 | 0/? | Not started | - |
 | 37. Letter Generation & Export Features | v6.0 | 0/? | Not started | - |
 | 38. Settings, Account Management & Persistence | v6.0 | 0/? | Not started | - |

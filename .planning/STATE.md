@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 35 of 40 (Analysis & Findings UI Completion) — IN PROGRESS
-Plan: 02 complete
-Status: Plan 35-02 complete, ready for 35-03 or next phase planning
-Last activity: 2026-04-08 - Plan 35-02 complete (Chart Export — PDF, Images, CSV)
+Plan: 03 complete
+Status: Plan 35-03 complete, ready for 35-04
+Last activity: 2026-04-08 - Plan 35-03 complete (Evidence Viewer wired to real data)
 
-Progress: ██░░░░░░░░ 22%
+Progress: ███░░░░░░░ 33%
 
 ## Performance Metrics
 
@@ -84,6 +84,7 @@ v6.0 Phase 34-05: Delete syncs with backend via confirmation dialog. Consistent 
 v6.0 Phase 34-04: Analysis results display in DocumentDetailView — local AuditResult findings + server-side analysis fetch via getDocumentAnalysis(). ServerFinding parses flexible backend JSON. FindingRowView reusable component. Phase 34 complete.
 v6.0 Phase 35-01: ShareUtility helper (share/save/print with @MainActor, windowScene VC discovery, SwiftUI modifier). DateRangePicker component with presets and validation. AuditReportView custom date range wired, saveReport uses ShareUtility.
 v6.0 Phase 35-02: Chart export — PDF (UIGraphicsPDFRenderer multi-page), images (ImageRenderer 2x PNGs), CSV (sectioned with severity/issue types/trends/financial/confidence). All use ShareUtility for presentation.
+v6.0 Phase 35-03: SupportingDocument+HighlightRegion added to AuditResult (default []). DocumentEvidenceViewer rewritten — PDFKit for local PDFs, server placeholder, normalized highlight overlay. 4 actions: share/exportReport/print/shareAll.
 
 ### Deferred Issues
 
@@ -113,5 +114,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-08
-Stopped at: Plan 35-02 complete, ready for 35-03 or next phase planning
+Stopped at: Plan 35-03 complete, ready for 35-04
 Resume file: None
