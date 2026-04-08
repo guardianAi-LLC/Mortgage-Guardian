@@ -14,6 +14,7 @@ struct AuditResult: Identifiable, Codable {
     let confidence: Double
     let evidenceText: String?
     let calculationDetails: CalculationDetails?
+    var supportingDocuments: [SupportingDocument] = []
     let createdDate: Date
 
     enum IssueType: String, CaseIterable, Codable {
@@ -210,6 +211,45 @@ struct AuditResult: Identifiable, Codable {
         }
     }
 
+    struct SupportingDocument: Identifiable, Codable {
+        let id: UUID
+        let documentId: String?
+        let documentName: String
+        let documentType: String // "PDF", "Image", "Text"
+        let fileSize: String
+        let pageReference: String?
+        let highlightRegion: HighlightRegion?
+        let localFileURL: URL?
+
+        init(
+            id: UUID = UUID(),
+            documentId: String? = nil,
+            documentName: String,
+            documentType: String,
+            fileSize: String = "",
+            pageReference: String? = nil,
+            highlightRegion: HighlightRegion? = nil,
+            localFileURL: URL? = nil
+        ) {
+            self.id = id
+            self.documentId = documentId
+            self.documentName = documentName
+            self.documentType = documentType
+            self.fileSize = fileSize
+            self.pageReference = pageReference
+            self.highlightRegion = highlightRegion
+            self.localFileURL = localFileURL
+        }
+    }
+
+    struct HighlightRegion: Codable {
+        let x: Double
+        let y: Double
+        let width: Double
+        let height: Double
+        let label: String?
+    }
+
     struct CalculationDetails: Codable {
         let expectedValue: Double?
         let actualValue: Double?
@@ -241,6 +281,21 @@ extension AuditResult {
                 assumptions: ["Grace period of 15 days", "Payment sent 2 days before due date"],
                 warningFlags: ["Payment application delay", "Potential RESPA violation"]
             ),
+            supportingDocuments: [
+                SupportingDocument(
+                    documentName: "Mortgage Statement - January 2025.pdf",
+                    documentType: "PDF",
+                    fileSize: "2.1 MB",
+                    pageReference: "Page 1",
+                    highlightRegion: HighlightRegion(x: 0.25, y: 0.4, width: 0.2, height: 0.04, label: "Late Fee")
+                ),
+                SupportingDocument(
+                    documentName: "Bank Statement - December 2024.pdf",
+                    documentType: "PDF",
+                    fileSize: "1.8 MB",
+                    pageReference: "Page 2"
+                )
+            ],
             createdDate: Date()
         )
     }

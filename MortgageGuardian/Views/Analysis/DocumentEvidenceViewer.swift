@@ -7,22 +7,28 @@ struct DocumentEvidenceViewer: View {
     let issue: AuditResult
     @Environment(\.dismiss) private var dismiss
 
-    @State private var selectedDocument: MockDocument?
-    @State private var highlightedText: String?
+    @State private var selectedDocument: AuditResult.SupportingDocument?
     @State private var showingAnnotations = true
     @State private var zoomLevel: Double = 1.0
+    @State private var isExporting = false
 
     var body: some View {
         NavigationView {
-            HStack(spacing: 0) {
-                // Document List Sidebar
-                documentListSidebar
-
-                // Document Viewer
-                if let selectedDocument = selectedDocument {
-                    documentViewerSection(for: selectedDocument)
+            Group {
+                if issue.supportingDocuments.isEmpty {
+                    emptyEvidenceView
                 } else {
-                    emptyDocumentView
+                    HStack(spacing: 0) {
+                        // Document List Sidebar
+                        documentListSidebar
+
+                        // Document Viewer
+                        if let selectedDocument = selectedDocument {
+                            documentViewerSection(for: selectedDocument)
+                        } else {
+                            emptyDocumentView
+                        }
+                    }
                 }
             }
             .navigationTitle("Evidence Documents")
@@ -32,8 +38,31 @@ struct DocumentEvidenceViewer: View {
             }
         }
         .onAppear {
-            selectedDocument = supportingDocuments.first
+            selectedDocument = issue.supportingDocuments.first
         }
+    }
+
+    // MARK: - Empty Evidence State
+    @ViewBuilder
+    private var emptyEvidenceView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "doc.text.magnifyingglass")
+                .font(.system(size: 64))
+                .foregroundColor(.secondary)
+
+            VStack(spacing: 8) {
+                Text("No Evidence Documents")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+
+                Text("No evidence documents are attached to this issue")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground))
     }
 
     // MARK: - Document List Sidebar
@@ -48,7 +77,7 @@ struct DocumentEvidenceViewer: View {
 
                 Spacer()
 
-                Text("\(supportingDocuments.count)")
+                Text("\(issue.supportingDocuments.count)")
                     .font(.caption)
                     .fontWeight(.medium)
                     .padding(.horizontal, 6)
@@ -63,11 +92,11 @@ struct DocumentEvidenceViewer: View {
             // Document List
             ScrollView {
                 LazyVStack(spacing: 8) {
-                    ForEach(supportingDocuments, id: \.name) { document in
+                    ForEach(issue.supportingDocuments) { document in
                         DocumentListItem(
                             document: document,
-                            isSelected: selectedDocument?.name == document.name,
-                            hasEvidence: documentHasEvidence(document)
+                            isSelected: selectedDocument?.id == document.id,
+                            hasEvidence: document.highlightRegion != nil
                         ) {
                             selectedDocument = document
                         }
@@ -82,27 +111,81 @@ struct DocumentEvidenceViewer: View {
 
     // MARK: - Document Viewer Section
     @ViewBuilder
-    private func documentViewerSection(for document: MockDocument) -> some View {
+    private func documentViewerSection(for document: AuditResult.SupportingDocument) -> some View {
         VStack(spacing: 0) {
             // Viewer Controls
             documentControlsBar(for: document)
 
             // Document Content
             ZStack {
-                if document.type == "PDF" {
-                    PDFDocumentView(document: document, zoomLevel: $zoomLevel)
-                } else if document.type == "Image" {
-                    ImageDocumentView(document: document, zoomLevel: $zoomLevel)
+                if document.documentType == "PDF" {
+                    if let url = document.localFileURL,
+                       let pdfDocument = PDFDocument(url: url) {
+                        PDFKitView(document: pdfDocument)
+                    } else {
+                        serverDocumentPlaceholder(for: document)
+                    }
+                } else if document.documentType == "Image" {
+                    if let url = document.localFileURL,
+                       let imageData = try? Data(contentsOf: url),
+                       let uiImage = UIImage(data: imageData) {
+                        ScrollView([.horizontal, .vertical]) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFit()
+                                .scaleEffect(zoomLevel)
+                                .padding()
+                        }
+                        .background(Color(.systemGray5))
+                    } else {
+                        serverDocumentPlaceholder(for: document)
+                    }
                 } else {
-                    TextDocumentView(document: document)
+                    serverDocumentPlaceholder(for: document)
                 }
 
                 // Evidence Highlights Overlay
-                if showingAnnotations {
-                    EvidenceHighlightOverlay(issue: issue, document: document)
+                if showingAnnotations, let region = document.highlightRegion {
+                    EvidenceHighlightOverlay(region: region)
                 }
             }
         }
+    }
+
+    // MARK: - Server Document Placeholder
+    @ViewBuilder
+    private func serverDocumentPlaceholder(for document: AuditResult.SupportingDocument) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "cloud.fill")
+                .font(.system(size: 48))
+                .foregroundColor(.blue.opacity(0.6))
+
+            Text(document.documentName)
+                .font(.headline)
+
+            if let page = document.pageReference {
+                Text("Reference: \(page)")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+
+            Text("Document available on server")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            if let label = document.highlightRegion?.label {
+                HStack(spacing: 4) {
+                    Image(systemName: "highlighter")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                    Text("Evidence: \(label)")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemGray5))
     }
 
     // MARK: - Empty Document View
@@ -130,7 +213,7 @@ struct DocumentEvidenceViewer: View {
 
     // MARK: - Document Controls Bar
     @ViewBuilder
-    private func documentControlsBar(for document: MockDocument) -> some View {
+    private func documentControlsBar(for document: AuditResult.SupportingDocument) -> some View {
         HStack {
             // Document Info
             HStack(spacing: 8) {
@@ -138,14 +221,24 @@ struct DocumentEvidenceViewer: View {
                     .foregroundColor(.blue)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(document.name)
+                    Text(document.documentName)
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .lineLimit(1)
 
-                    Text("\(document.type) • \(document.size)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 4) {
+                        Text(document.documentType)
+                        if !document.fileSize.isEmpty {
+                            Text("•")
+                            Text(document.fileSize)
+                        }
+                        if let page = document.pageReference {
+                            Text("•")
+                            Text(page)
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundColor(.secondary)
                 }
             }
 
@@ -181,7 +274,7 @@ struct DocumentEvidenceViewer: View {
                 Button {
                     showingAnnotations.toggle()
                 } label: {
-                    Image(systemName: showingAnnotations ? "highlighter" : "highlighter")
+                    Image(systemName: "highlighter")
                         .foregroundColor(showingAnnotations ? .orange : .secondary)
                 }
 
@@ -222,59 +315,195 @@ struct DocumentEvidenceViewer: View {
             } label: {
                 Image(systemName: "ellipsis.circle")
             }
+            .disabled(issue.supportingDocuments.isEmpty)
         }
     }
 
-    // MARK: - Computed Properties
-    private var supportingDocuments: [MockDocument] {
-        // Mock documents - in real app would come from issue.supportingDocuments
-        [
-            MockDocument(name: "Mortgage Statement - January 2025.pdf", type: "PDF", size: "2.1 MB"),
-            MockDocument(name: "Bank Statement - December 2024.pdf", type: "PDF", size: "1.8 MB"),
-            MockDocument(name: "Payment Confirmation.jpg", type: "Image", size: "0.5 MB"),
-            MockDocument(name: "Escrow Analysis 2024.pdf", type: "PDF", size: "1.2 MB")
-        ]
-    }
-
     // MARK: - Helper Functions
-    private func documentIcon(for document: MockDocument) -> String {
-        switch document.type {
+    private func documentIcon(for document: AuditResult.SupportingDocument) -> String {
+        switch document.documentType {
         case "PDF": return "doc.fill"
         case "Image": return "photo.fill"
         default: return "doc"
         }
     }
 
-    private func documentHasEvidence(_ document: MockDocument) -> Bool {
-        // Mock implementation - in real app would check for highlights/annotations
-        return document.name.contains("Statement")
-    }
+    // MARK: - Share/Export/Print Actions
 
-    private func shareDocument(_ document: MockDocument) {
-        // TODO: Implement document sharing
-        print("Sharing document: \(document.name)")
+    private func shareDocument(_ document: AuditResult.SupportingDocument) {
+        if let url = document.localFileURL {
+            ShareUtility.presentShareSheet(items: [url])
+        } else {
+            // Share document info as text when file isn't available locally
+            let info = "Evidence: \(document.documentName)\nType: \(document.documentType)\(document.pageReference.map { "\nRef: \($0)" } ?? "")"
+            ShareUtility.presentShareSheet(items: [info])
+        }
     }
 
     private func exportEvidenceReport() {
-        // TODO: Implement evidence report export
-        print("Exporting evidence report")
+        isExporting = true
+        Task { @MainActor in
+            defer { isExporting = false }
+
+            let pageSize = CGSize(width: 612, height: 792)
+            let margins = UIEdgeInsets(top: 60, left: 56, bottom: 60, right: 56)
+            let contentWidth = pageSize.width - margins.left - margins.right
+
+            let format = UIGraphicsPDFRendererFormat()
+            format.documentInfo = [
+                kCGPDFContextCreator as String: "Mortgage Guardian",
+                kCGPDFContextTitle as String: "Evidence Report — \(issue.issueType.displayName)"
+            ]
+
+            let renderer = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: pageSize), format: format)
+
+            let pdfData = renderer.pdfData { context in
+                context.beginPage()
+                var y: CGFloat = margins.top
+
+                // Title
+                let titleAttr: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.boldSystemFont(ofSize: 20),
+                    .foregroundColor: UIColor.black
+                ]
+                let title = NSAttributedString(string: "Evidence Report — \(issue.issueType.displayName)", attributes: titleAttr)
+                title.draw(at: CGPoint(x: margins.left, y: y))
+                y += 30
+
+                // Issue info
+                let infoAttr: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 12),
+                    .foregroundColor: UIColor.darkGray
+                ]
+                let severityAttr: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.boldSystemFont(ofSize: 12),
+                    .foregroundColor: UIColor.darkGray
+                ]
+
+                NSAttributedString(string: "Severity: \(issue.severity.displayName)  |  Confidence: \(Int(issue.confidence * 100))%", attributes: severityAttr)
+                    .draw(at: CGPoint(x: margins.left, y: y))
+                y += 20
+
+                NSAttributedString(string: issue.title, attributes: [.font: UIFont.boldSystemFont(ofSize: 14), .foregroundColor: UIColor.black])
+                    .draw(at: CGPoint(x: margins.left, y: y))
+                y += 20
+
+                let descRect = CGRect(x: margins.left, y: y, width: contentWidth, height: 60)
+                NSAttributedString(string: issue.detailedExplanation, attributes: infoAttr)
+                    .draw(in: descRect)
+                y += 70
+
+                // Separator
+                let separatorPath = UIBezierPath()
+                separatorPath.move(to: CGPoint(x: margins.left, y: y))
+                separatorPath.addLine(to: CGPoint(x: margins.left + contentWidth, y: y))
+                UIColor.lightGray.setStroke()
+                separatorPath.stroke()
+                y += 16
+
+                // Documents list
+                NSAttributedString(string: "Supporting Documents (\(issue.supportingDocuments.count))", attributes: [.font: UIFont.boldSystemFont(ofSize: 14), .foregroundColor: UIColor.black])
+                    .draw(at: CGPoint(x: margins.left, y: y))
+                y += 24
+
+                for (index, doc) in issue.supportingDocuments.enumerated() {
+                    if y > pageSize.height - margins.bottom - 80 {
+                        context.beginPage()
+                        y = margins.top
+                    }
+
+                    let docTitle = "\(index + 1). \(doc.documentName)"
+                    NSAttributedString(string: docTitle, attributes: [.font: UIFont.boldSystemFont(ofSize: 12), .foregroundColor: UIColor.black])
+                        .draw(at: CGPoint(x: margins.left, y: y))
+                    y += 18
+
+                    var details = "Type: \(doc.documentType)"
+                    if !doc.fileSize.isEmpty { details += "  |  Size: \(doc.fileSize)" }
+                    if let page = doc.pageReference { details += "  |  \(page)" }
+                    NSAttributedString(string: details, attributes: infoAttr)
+                        .draw(at: CGPoint(x: margins.left + 16, y: y))
+                    y += 16
+
+                    if let label = doc.highlightRegion?.label {
+                        NSAttributedString(string: "Evidence highlight: \(label)", attributes: [.font: UIFont.italicSystemFont(ofSize: 11), .foregroundColor: UIColor.orange])
+                            .draw(at: CGPoint(x: margins.left + 16, y: y))
+                        y += 16
+                    }
+
+                    y += 8
+                }
+            }
+
+            let dateStr = {
+                let f = DateFormatter()
+                f.dateFormat = "yyyy-MM-dd"
+                return f.string(from: Date())
+            }()
+            let tempURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("evidence-report-\(dateStr).pdf")
+            do {
+                try pdfData.write(to: tempURL)
+                ShareUtility.presentShareSheet(items: [tempURL])
+            } catch {
+                print("Failed to save evidence report: \(error)")
+            }
+        }
     }
 
     private func printDocuments() {
-        // TODO: Implement printing
-        print("Printing documents")
+        guard let document = selectedDocument else { return }
+
+        if let url = document.localFileURL, let data = try? Data(contentsOf: url) {
+            if document.documentType == "Image",
+               let image = UIImage(data: data),
+               let pdfData = imageToPDFData(image) {
+                ShareUtility.printData(pdfData, jobName: document.documentName)
+            } else {
+                ShareUtility.printData(data, jobName: document.documentName)
+            }
+        }
     }
 
     private func shareAllDocuments() {
-        // TODO: Implement bulk sharing
-        print("Sharing all documents")
+        var items: [Any] = []
+        for doc in issue.supportingDocuments {
+            if let url = doc.localFileURL {
+                items.append(url)
+            }
+        }
+        if items.isEmpty {
+            // Fall back to sharing document names as text
+            let text = issue.supportingDocuments.map { "• \($0.documentName)\($0.pageReference.map { " (\($0))" } ?? "")" }.joined(separator: "\n")
+            items.append("Evidence Documents for \(issue.issueType.displayName):\n\(text)")
+        }
+        ShareUtility.presentShareSheet(items: items)
+    }
+
+    private func imageToPDFData(_ image: UIImage) -> Data? {
+        let pageSize = CGSize(width: 612, height: 792)
+        let renderer = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: pageSize))
+        return renderer.pdfData { context in
+            context.beginPage()
+            let imageAspect = image.size.width / image.size.height
+            let maxWidth = pageSize.width - 72
+            let maxHeight = pageSize.height - 72
+            var drawWidth = maxWidth
+            var drawHeight = drawWidth / imageAspect
+            if drawHeight > maxHeight {
+                drawHeight = maxHeight
+                drawWidth = drawHeight * imageAspect
+            }
+            let x = (pageSize.width - drawWidth) / 2
+            let y = (pageSize.height - drawHeight) / 2
+            image.draw(in: CGRect(x: x, y: y, width: drawWidth, height: drawHeight))
+        }
     }
 }
 
 // MARK: - Supporting Views
 
 struct DocumentListItem: View {
-    let document: MockDocument
+    let document: AuditResult.SupportingDocument
     let isSelected: Bool
     let hasEvidence: Bool
     let action: () -> Void
@@ -302,14 +531,14 @@ struct DocumentListItem: View {
 
                 // Document Info
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(document.name)
+                    Text(document.documentName)
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(isSelected ? .white : .primary)
                         .lineLimit(2)
 
                     HStack {
-                        Text(document.type)
+                        Text(document.documentType)
                             .font(.caption)
                             .fontWeight(.medium)
                             .padding(.horizontal, 6)
@@ -320,8 +549,16 @@ struct DocumentListItem: View {
                             )
                             .foregroundColor(isSelected ? .white : .blue)
 
-                        Text(document.size)
-                            .font(.caption)
+                        if !document.fileSize.isEmpty {
+                            Text(document.fileSize)
+                                .font(.caption)
+                                .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
+                        }
+                    }
+
+                    if let page = document.pageReference {
+                        Text(page)
+                            .font(.caption2)
                             .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
                     }
 
@@ -350,7 +587,7 @@ struct DocumentListItem: View {
     }
 
     private var documentIcon: String {
-        switch document.type {
+        switch document.documentType {
         case "PDF": return "doc.fill"
         case "Image": return "photo.fill"
         default: return "doc"
@@ -358,138 +595,55 @@ struct DocumentListItem: View {
     }
 }
 
-struct PDFDocumentView: View {
-    let document: MockDocument
-    @Binding var zoomLevel: Double
+// MARK: - PDFKit Viewer
+struct PDFKitView: UIViewRepresentable {
+    let document: PDFDocument
 
-    var body: some View {
-        // Mock PDF viewer - in real app would use PDFKit
-        ScrollView([.horizontal, .vertical]) {
-            VStack(spacing: 20) {
-                ForEach(0..<3, id: \.self) { pageIndex in
-                    MockPDFPage(pageNumber: pageIndex + 1, document: document)
-                        .scaleEffect(zoomLevel)
-                }
-            }
-            .padding()
-        }
-        .background(Color(.systemGray5))
+    func makeUIView(context: Context) -> PDFView {
+        let pdfView = PDFView()
+        pdfView.autoScales = true
+        pdfView.displayMode = .singlePageContinuous
+        pdfView.document = document
+        return pdfView
     }
+
+    func updateUIView(_ uiView: PDFView, context: Context) {}
 }
 
-struct ImageDocumentView: View {
-    let document: MockDocument
-    @Binding var zoomLevel: Double
-
-    var body: some View {
-        ScrollView([.horizontal, .vertical]) {
-            Image(systemName: "doc.text.image")
-                .font(.system(size: 200))
-                .foregroundColor(.secondary)
-                .scaleEffect(zoomLevel)
-                .padding()
-        }
-        .background(Color(.systemGray5))
-    }
-}
-
-struct TextDocumentView: View {
-    let document: MockDocument
-
-    var body: some View {
-        ScrollView {
-            Text("Mock document content for \(document.name)")
-                .font(.system(.body, design: .monospaced))
-                .padding()
-        }
-        .background(Color(.systemBackground))
-    }
-}
-
-struct MockPDFPage: View {
-    let pageNumber: Int
-    let document: MockDocument
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Page Header
-            HStack {
-                Text("MORTGAGE STATEMENT")
-                    .font(.title2)
-                    .fontWeight(.bold)
-
-                Spacer()
-
-                Text("Page \(pageNumber)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            // Mock Content with Highlighted Text
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Account Number: 1234567890")
-                Text("Statement Period: December 1, 2024 - December 31, 2024")
-
-                if pageNumber == 1 {
-                    // Highlighted evidence text
-                    HStack {
-                        Text("Late Fee Charged:")
-                        Text("$25.00")
-                            .fontWeight(.bold)
-                            .padding(.horizontal, 4)
-                            .background(Color.yellow.opacity(0.3))
-                            .overlay(
-                                Rectangle()
-                                    .stroke(Color.orange, lineWidth: 2)
-                            )
-                    }
-                }
-
-                Text("Principal Balance: $245,678.90")
-                Text("Interest Rate: 3.25%")
-                Text("Next Payment Due: January 1, 2025")
-            }
-            .font(.subheadline)
-
-            Spacer()
-        }
-        .padding()
-        .frame(width: 400, height: 500)
-        .background(Color.white)
-        .overlay(
-            Rectangle()
-                .stroke(Color.gray, lineWidth: 1)
-        )
-    }
-}
-
+// MARK: - Evidence Highlight Overlay
 struct EvidenceHighlightOverlay: View {
-    let issue: AuditResult
-    let document: MockDocument
+    let region: AuditResult.HighlightRegion
 
     var body: some View {
-        // Mock evidence highlights - in real app would show actual highlighted regions
-        if document.name.contains("Statement") {
-            VStack {
-                Spacer()
-                    .frame(height: 200)
+        GeometryReader { geometry in
+            let rect = CGRect(
+                x: geometry.size.width * region.x,
+                y: geometry.size.height * region.y,
+                width: geometry.size.width * region.width,
+                height: geometry.size.height * region.height
+            )
 
-                HStack {
-                    Spacer()
-                        .frame(width: 100)
+            ZStack(alignment: .topLeading) {
+                Rectangle()
+                    .fill(Color.orange.opacity(0.3))
+                    .frame(width: rect.width, height: rect.height)
+                    .overlay(
+                        Rectangle()
+                            .stroke(Color.orange, lineWidth: 2)
+                    )
+                    .position(x: rect.midX, y: rect.midY)
 
-                    Rectangle()
-                        .fill(Color.orange.opacity(0.3))
-                        .frame(width: 80, height: 20)
-                        .overlay(
-                            Rectangle()
-                                .stroke(Color.orange, lineWidth: 2)
-                        )
-
-                    Spacer()
+                if let label = region.label {
+                    Text(label)
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.orange)
+                        .cornerRadius(4)
+                        .position(x: rect.midX, y: rect.minY - 12)
                 }
-
-                Spacer()
             }
         }
     }
