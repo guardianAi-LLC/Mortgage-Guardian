@@ -8,10 +8,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 **Current focus:** v6.0 iOS App Completion
 ## Current Position
 
-Phase: 34 of 40 (Document Upload & Processing Pipeline) — COMPLETE
-Plan: 05 of 05 complete (all plans done)
-Status: Phase 34 complete, ready for Phase 35
-Last activity: 2026-04-08 - Plan 34-04 complete (Analysis Trigger & Results Display)
+Phase: 35 of 40 (Analysis & Findings UI Completion) — IN PROGRESS
+Plan: 01 complete
+Status: Plan 35-01 complete, ready for 35-02
+Last activity: 2026-04-08 - Plan 35-01 complete (Share/Export Utility & Date Range Picker)
 
 Progress: █░░░░░░░░░ 11%
 
@@ -82,6 +82,7 @@ v6.0 Phase 34-02: Backend document list sync — fetchDocumentsFromBackend() in 
 v6.0 Phase 34-03: 5-second periodic polling for in-pipeline documents. Auto-start/stop with view lifecycle. Pipeline status labels (uploaded→ocr→classifying→analyzing→complete) with spinner in document rows.
 v6.0 Phase 34-05: Delete syncs with backend via confirmation dialog. Consistent error handling — alert-based presentation, contextual upload error messages. Analyze button wired to processDocument API.
 v6.0 Phase 34-04: Analysis results display in DocumentDetailView — local AuditResult findings + server-side analysis fetch via getDocumentAnalysis(). ServerFinding parses flexible backend JSON. FindingRowView reusable component. Phase 34 complete.
+v6.0 Phase 35-01: ShareUtility helper (share/save/print with @MainActor, windowScene VC discovery, SwiftUI modifier). DateRangePicker component with presets and validation. AuditReportView custom date range wired, saveReport uses ShareUtility.
 
 ### Deferred Issues
 
@@ -111,5 +112,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-08
-Stopped at: Phase 34 complete, ready for Phase 35
+Stopped at: Plan 35-01 complete, ready for 35-02
 Resume file: None

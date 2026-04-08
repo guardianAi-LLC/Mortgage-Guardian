@@ -275,7 +275,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 35-01: TBD
+- [x] 35-01: Share/Export Utility & Date Range Picker (ShareUtility helper, DateRangePicker component, AuditReportView custom date range) — 2026-04-08
 
 #### Phase 36: Plaid Bank Integration Rewiring
 
