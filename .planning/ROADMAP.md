@@ -288,7 +288,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 36-01: TBD
+- [x] 36-01: PlaidLinkService rewiring (raw URLRequest → APIClient+Plaid typed methods, deletePlaidItem) — 2026-04-08
 
 #### Phase 37: Letter Generation & Export Features
 

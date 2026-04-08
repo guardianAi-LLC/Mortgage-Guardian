@@ -8,10 +8,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 **Current focus:** v6.0 iOS App Completion
 ## Current Position
 
-Phase: 35 of 40 (Analysis & Findings UI Completion) — IN PROGRESS
-Plan: 03 complete
-Status: Plan 35-03 complete, ready for 35-04
-Last activity: 2026-04-08 - Plan 35-03 complete (Evidence Viewer wired to real data)
+Phase: 36 of 40 (Plaid Bank Integration Rewiring) — IN PROGRESS
+Plan: 01 complete
+Status: Plan 36-01 complete, ready for next plan or phase
+Last activity: 2026-04-08 - Plan 36-01 complete (PlaidLinkService rewired to APIClient)
 
 Progress: ███░░░░░░░ 33%
 
@@ -85,6 +85,7 @@ v6.0 Phase 34-04: Analysis results display in DocumentDetailView — local Audit
 v6.0 Phase 35-01: ShareUtility helper (share/save/print with @MainActor, windowScene VC discovery, SwiftUI modifier). DateRangePicker component with presets and validation. AuditReportView custom date range wired, saveReport uses ShareUtility.
 v6.0 Phase 35-02: Chart export — PDF (UIGraphicsPDFRenderer multi-page), images (ImageRenderer 2x PNGs), CSV (sectioned with severity/issue types/trends/financial/confidence). All use ShareUtility for presentation.
 v6.0 Phase 35-03: SupportingDocument+HighlightRegion added to AuditResult (default []). DocumentEvidenceViewer rewritten — PDFKit for local PDFs, server placeholder, normalized highlight overlay. 4 actions: share/exportReport/print/shareAll.
+v6.0 Phase 36-01: PlaidLinkService rewired from raw URLRequest to APIClient+Plaid typed methods. deletePlaidItem added. plaidAccessToken keychain storage. Removed 228 lines of raw networking/duplicate code.
 
 ### Deferred Issues
 
@@ -114,5 +115,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-08
-Stopped at: Plan 35-03 complete, ready for 35-04
+Stopped at: Plan 36-01 complete, ready for next plan or phase
 Resume file: None
