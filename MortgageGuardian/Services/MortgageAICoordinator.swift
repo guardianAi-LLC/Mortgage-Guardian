@@ -51,10 +51,8 @@ class MortgageAICoordinator: ObservableObject {
             // Get latest market data
             await marketDataService.refreshMarketData()
             
-            // TODO: Implement model training
-            // let trainer = MLModelTrainer(...)
-            // try await trainer.trainPropertyValueModel()
-            print("Model training not yet implemented")
+            // Stub: ML training not yet integrated
+            print("Model training skipped — ML training not yet integrated")
             
             // Reload models
             loadModels()

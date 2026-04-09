@@ -10,18 +10,19 @@ struct MainTabView: View {
                     Label("Calculator", systemImage: "calculator")
                 }
                 .tag(Tab.calculator)
-            
-            Text("Saved Scenarios")  // TODO: Implement ScenariosView
+
+            Text("Saved Scenarios")
                 .tabItem {
                     Label("Scenarios", systemImage: "list.bullet")
                 }
                 .tag(Tab.scenarios)
-            
-            Text("Settings")  // TODO: Implement SettingsView
+
+            Text("Settings")
                 .tabItem {
                     Label("Settings", systemImage: "gear")
                 }
                 .tag(Tab.settings)
         }
+        .environment(appState)
     }
 }

@@ -60,9 +60,8 @@ class AIManager {
     }
     
     private func updateMarketData() async {
-        // TODO: Implement real-time market data updates
-        // This will fetch current market conditions, interest rates, and economic indicators
-        // to improve AI predictions
+        // Stub: real-time market data updates not yet integrated
+        print("Market data update skipped — real-time market data not yet integrated")
     }
 }
 
