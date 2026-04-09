@@ -655,6 +655,7 @@ struct SecuritySettingsView: View {
 struct AccountManagementView: View {
     @EnvironmentObject var userStore: UserStore
     @Environment(\.dismiss) private var dismiss
+    @State private var showingPlaidLink = false
 
     var body: some View {
         NavigationView {
@@ -700,7 +701,7 @@ struct AccountManagementView: View {
                                 .multilineTextAlignment(.center)
 
                             Button("Connect Bank Account") {
-                                connectPlaidAccount()
+                                showingPlaidLink = true
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -735,24 +736,13 @@ struct AccountManagementView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showingPlaidLink) {
+                RealPlaidConnectionView()
+                    .onDisappear {
+                        userStore.refreshData()
+                    }
+            }
         }
-    }
-
-    private func connectPlaidAccount() {
-        // TODO: Implement Plaid connection flow
-        // For demo purposes, add a sample account
-        let sampleAccount = PlaidAccount(
-            accountId: "account_sample",
-            accountName: "Sample Checking",
-            accountType: "depository",
-            accountSubtype: "checking",
-            institutionName: "Sample Bank",
-            mask: "0000",
-            isConnected: true,
-            lastSyncDate: Date(),
-            accessToken: "sample_token"
-        )
-        userStore.connectPlaidAccount(sampleAccount)
     }
 
     private func formatDate(_ date: Date?) -> String {
