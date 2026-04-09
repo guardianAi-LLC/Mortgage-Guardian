@@ -110,6 +110,7 @@ struct IssueDetailView: View {
                     Image(systemName: issue.issueType.icon)
                         .font(.system(size: 24, weight: .medium))
                         .foregroundColor(issue.severity.color)
+                        .accessibilityHidden(true)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -436,6 +437,7 @@ struct IssueDetailView: View {
             } label: {
                 HStack {
                     Image(systemName: "doc.text")
+                        .accessibilityHidden(true)
                     Text("Generate Letter")
                 }
                 .frame(maxWidth: .infinity)
@@ -452,6 +454,7 @@ struct IssueDetailView: View {
                 } label: {
                     HStack {
                         Image(systemName: "square.and.arrow.up")
+                            .accessibilityHidden(true)
                         Text("Share")
                     }
                     .frame(maxWidth: .infinity)
@@ -466,6 +469,7 @@ struct IssueDetailView: View {
                 } label: {
                     HStack {
                         Image(systemName: "checkmark.circle")
+                            .accessibilityHidden(true)
                         Text("Mark Resolved")
                     }
                     .frame(maxWidth: .infinity)
@@ -508,6 +512,7 @@ struct IssueDetailView: View {
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
+                    .accessibilityLabel("More options")
             }
         }
     }
@@ -671,6 +676,7 @@ struct MetricView: View {
             Image(systemName: icon)
                 .font(.caption)
                 .foregroundColor(color)
+                .accessibilityHidden(true)
 
             Text(value)
                 .font(.caption)
@@ -681,6 +687,7 @@ struct MetricView: View {
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -694,6 +701,7 @@ struct TabButton: View {
             HStack(spacing: 6) {
                 Image(systemName: tab.icon)
                     .font(.caption)
+                    .accessibilityHidden(true)
 
                 Text(tab.rawValue)
                     .font(.caption)
@@ -724,6 +732,7 @@ struct ExpandableSection<Content: View>: View {
                     Image(systemName: icon)
                         .font(.subheadline)
                         .foregroundColor(.blue)
+                        .accessibilityHidden(true)
 
                     Text(title)
                         .font(.headline)
@@ -734,6 +743,7 @@ struct ExpandableSection<Content: View>: View {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .accessibilityHidden(true)
                 }
                 .padding()
                 .background(Color(.systemGray6))

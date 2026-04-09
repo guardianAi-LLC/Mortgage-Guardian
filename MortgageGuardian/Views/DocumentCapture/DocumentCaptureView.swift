@@ -189,6 +189,7 @@ struct DocumentCaptureView: View {
                 Image(systemName: "doc.text.viewfinder")
                     .foregroundColor(.blue)
                     .font(.title2)
+                    .accessibilityHidden(true)
 
                 Text("Document Capture Tips")
                     .font(.headline)
@@ -219,6 +220,7 @@ struct DocumentCaptureView: View {
                 .foregroundColor(.secondary)
                 .font(.body)
                 .frame(width: 20)
+                .accessibilityHidden(true)
 
             Text(text)
                 .font(.body)
@@ -290,6 +292,7 @@ struct DocumentCaptureView: View {
                 Image(systemName: icon)
                     .foregroundColor(color)
                     .font(.title2)
+                    .accessibilityHidden(true)
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -308,6 +311,7 @@ struct DocumentCaptureView: View {
             Image(systemName: "chevron.right")
                 .foregroundColor(.secondary)
                 .font(.body)
+                .accessibilityHidden(true)
         }
         .padding(20)
         .background(
@@ -467,6 +471,7 @@ struct DocumentCaptureView: View {
                         Image(systemName: "eye")
                             .font(.body)
                             .foregroundColor(.blue)
+                            .accessibilityLabel("Preview document")
                     }
 
                     Button {
@@ -475,6 +480,7 @@ struct DocumentCaptureView: View {
                         Image(systemName: "trash")
                             .font(.body)
                             .foregroundColor(.red)
+                            .accessibilityLabel("Delete document")
                     }
                 }
             }
@@ -600,6 +606,7 @@ struct DocumentCaptureView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 60))
                 .foregroundColor(.red)
+                .accessibilityLabel("Error")
 
             Text("Processing Failed")
                 .font(.title2)

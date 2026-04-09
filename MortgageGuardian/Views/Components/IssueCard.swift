@@ -151,6 +151,7 @@ struct EnhancedIssueCard: View {
                 Image(systemName: "tag.fill")
                     .font(.caption2)
                     .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
 
                 Text(issue.issueType.displayName)
                     .font(.caption2)
@@ -162,6 +163,7 @@ struct EnhancedIssueCard: View {
                 Image(systemName: "calendar")
                     .font(.caption2)
                     .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
 
                 Text(formatDate(issue.createdDate))
                     .font(.caption2)
@@ -196,6 +198,7 @@ struct EnhancedIssueCard: View {
                 Image(systemName: "gauge.medium")
                     .font(.caption2)
                     .foregroundColor(confidenceColor)
+                    .accessibilityHidden(true)
 
                 Text("Confidence: \(Int(issue.confidence * 100))%")
                     .font(.caption2)
@@ -214,6 +217,7 @@ struct EnhancedIssueCard: View {
                 Image(systemName: detectionMethodIcon)
                     .font(.caption2)
                     .foregroundColor(.blue)
+                    .accessibilityHidden(true)
 
                 Text(issue.detectionMethod.displayName)
                     .font(.caption2)
@@ -322,6 +326,7 @@ struct CompactIssueCard: View {
                     .font(.title3)
                     .foregroundColor(issue.severity.color)
                     .frame(width: 24, height: 24)
+                    .accessibilityHidden(true)
 
                 // Content
                 VStack(alignment: .leading, spacing: 2) {
@@ -348,6 +353,7 @@ struct CompactIssueCard: View {
                 Image(systemName: "chevron.right")
                     .font(.caption2)
                     .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -379,6 +385,7 @@ struct WidgetIssueCard: View {
                 Image(systemName: issue.issueType.icon)
                     .font(.caption)
                     .foregroundColor(issue.severity.color)
+                    .accessibilityHidden(true)
 
                 Spacer()
 
