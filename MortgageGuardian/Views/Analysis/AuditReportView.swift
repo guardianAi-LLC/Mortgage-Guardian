@@ -119,6 +119,7 @@ struct AuditReportView: View {
             Image(systemName: "doc.text.fill")
                 .font(.system(size: 48))
                 .foregroundColor(.blue)
+                .accessibilityHidden(true)
 
             Text("Mortgage Audit Report")
                 .font(.title)
@@ -314,6 +315,7 @@ struct AuditReportView: View {
             } label: {
                 HStack {
                     Image(systemName: "doc.badge.plus")
+                        .accessibilityHidden(true)
                     Text("Generate Report")
                 }
                 .frame(maxWidth: .infinity)
@@ -482,6 +484,7 @@ struct AuditReportView: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
+                        .accessibilityLabel("More options")
                 }
             }
         }
@@ -665,6 +668,7 @@ struct SectionHeader: View {
             Image(systemName: icon)
                 .font(.headline)
                 .foregroundColor(.blue)
+                .accessibilityHidden(true)
 
             Text(title)
                 .font(.headline)
@@ -730,6 +734,7 @@ struct SeverityToggle: View {
             HStack(spacing: 8) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .foregroundColor(isSelected ? severity.color : .secondary)
+                    .accessibilityHidden(true)
 
                 Text(severity.displayName)
                     .font(.caption)

@@ -73,6 +73,7 @@ struct IssueLetterGeneratorView: View {
                         Circle()
                             .fill(issue.severity.color.opacity(0.1))
                     )
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(issue.title)
@@ -282,6 +283,7 @@ struct IssueLetterGeneratorView: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
+                        .accessibilityLabel("More options")
                 }
             }
         }
@@ -571,6 +573,7 @@ struct LetterTypeCard: View {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .foregroundColor(isSelected ? .blue : .secondary)
                     .font(.title2)
+                    .accessibilityLabel(isSelected ? "Selected" : "Not selected")
             }
             .padding()
             .background(
@@ -609,6 +612,7 @@ struct TemplateRow: View {
 
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .foregroundColor(isSelected ? .blue : .secondary)
+                    .accessibilityLabel(isSelected ? "Selected" : "Not selected")
             }
             .padding(.vertical, 8)
         }
@@ -744,6 +748,7 @@ struct LetterPreviewView: View {
                         }
                     } label: {
                         Image(systemName: "square.and.arrow.up")
+                            .accessibilityLabel("Share letter")
                     }
                 }
             }

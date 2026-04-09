@@ -106,6 +106,7 @@ struct EnhancedAnalysisView: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
 
                 TextField("Search issues, descriptions, actions...", text: $viewModel.searchText)
                     .textFieldStyle(PlainTextFieldStyle())
@@ -163,6 +164,7 @@ struct EnhancedAnalysisView: View {
                     } label: {
                         Image(systemName: "line.3.horizontal.decrease.circle")
                             .foregroundColor(.blue)
+                            .accessibilityLabel("Advanced filters")
                     }
 
                     Button {
@@ -170,6 +172,7 @@ struct EnhancedAnalysisView: View {
                     } label: {
                         Image(systemName: viewModel.bulkActionMode ? "checkmark.circle.fill" : "checkmark.circle")
                             .foregroundColor(viewModel.bulkActionMode ? .blue : .secondary)
+                            .accessibilityLabel(viewModel.bulkActionMode ? "Exit bulk selection" : "Bulk selection")
                     }
                 }
                 .padding(.trailing)
@@ -427,6 +430,7 @@ struct EnhancedAnalysisView: View {
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
+                    .accessibilityLabel("More options")
             }
         }
 
@@ -520,6 +524,7 @@ struct ActiveFilterChip: View {
                 Image(systemName: "xmark")
                     .font(.caption2)
                     .fontWeight(.bold)
+                    .accessibilityLabel("Remove filter")
             }
         }
         .padding(.horizontal, 8)
@@ -591,6 +596,7 @@ struct EnhancedSummarySection: View {
                         Image(systemName: "chart.pie")
                             .font(.caption)
                             .foregroundColor(.blue)
+                            .accessibilityLabel("View charts")
                     }
 
                     Button {
@@ -599,6 +605,7 @@ struct EnhancedSummarySection: View {
                         Image(systemName: "doc.text")
                             .font(.caption)
                             .foregroundColor(.blue)
+                            .accessibilityLabel("Generate report")
                     }
                 }
             }
@@ -635,6 +642,7 @@ struct SeverityMetricView: View {
                 Circle()
                     .fill(severity.color)
                     .frame(width: 8, height: 8)
+                    .accessibilityHidden(true)
 
                 Text("\(count)")
                     .font(.headline)
@@ -650,6 +658,8 @@ struct SeverityMetricView: View {
                 ProgressView(value: percentage)
                     .progressViewStyle(LinearProgressViewStyle(tint: severity.color))
                     .frame(width: 40)
+                    .accessibilityLabel("\(severity.displayName) progress")
+                    .accessibilityValue("\(count) of \(total)")
             }
         }
     }
@@ -665,6 +675,7 @@ struct SeverityGroupHeader: View {
             Circle()
                 .fill(severity.color)
                 .frame(width: 8, height: 8)
+                .accessibilityHidden(true)
 
             Text(severity.displayName.uppercased())
                 .font(.caption)

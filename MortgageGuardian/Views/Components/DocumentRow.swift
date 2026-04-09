@@ -22,6 +22,7 @@ struct DocumentRow: View {
                     Image(systemName: document.documentType.icon)
                         .foregroundColor(.blue)
                         .font(.system(size: 16, weight: .medium))
+                        .accessibilityHidden(true)
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -59,6 +60,7 @@ struct DocumentRow: View {
                             Image(systemName: "chevron.right")
                                 .foregroundColor(.secondary)
                                 .font(.caption)
+                                .accessibilityHidden(true)
                         }
                     }
                 }
@@ -76,15 +78,18 @@ struct DocumentRow: View {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(.green)
                     .font(.caption)
+                    .accessibilityLabel("No issues found")
             } else {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundColor(.orange)
                     .font(.caption)
+                    .accessibilityLabel("Issues found")
             }
         } else {
             Image(systemName: "clock.fill")
                 .foregroundColor(.gray)
                 .font(.caption)
+                .accessibilityLabel("Pending analysis")
         }
     }
 

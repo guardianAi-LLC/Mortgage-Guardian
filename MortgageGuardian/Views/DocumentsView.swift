@@ -55,6 +55,7 @@ struct DocumentsView: View {
                         showingDocumentPicker = true
                     } label: {
                         Image(systemName: "plus")
+                            .accessibilityLabel("Add document")
                     }
                 }
             }
@@ -109,6 +110,7 @@ struct DocumentsView: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
 
                 TextField("Search documents...", text: $searchText)
                     .textFieldStyle(PlainTextFieldStyle())
@@ -155,6 +157,7 @@ struct DocumentsView: View {
                 } label: {
                     Image(systemName: "slider.horizontal.3")
                         .foregroundColor(.blue)
+                        .accessibilityLabel("Filter options")
                 }
             }
         }
@@ -250,6 +253,7 @@ struct DocumentsView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(.green)
                     .font(.caption)
+                    .accessibilityHidden(true)
                 Text("Analysis complete")
                     .font(.caption)
                     .foregroundColor(.green)
@@ -412,6 +416,8 @@ struct DocumentsSummaryView: View {
             if totalDocuments > 0 {
                 ProgressView(value: Double(analyzedDocuments), total: Double(totalDocuments))
                     .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+                    .accessibilityLabel("Analysis progress")
+                    .accessibilityValue("\(analyzedDocuments) of \(totalDocuments) documents analyzed")
             }
         }
         .padding()
@@ -432,6 +438,7 @@ struct DocumentTypeSectionHeader: View {
             Image(systemName: documentType.icon)
                 .foregroundColor(.blue)
                 .font(.subheadline)
+                .accessibilityHidden(true)
 
             Text(documentType.displayName)
                 .font(.subheadline)

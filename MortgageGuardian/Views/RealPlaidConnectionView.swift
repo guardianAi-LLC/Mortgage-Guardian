@@ -20,6 +20,7 @@ struct RealPlaidConnectionView: View {
                         Image(systemName: "building.columns.fill")
                             .font(.system(size: 60))
                             .foregroundColor(.green)
+                            .accessibilityLabel("Bank connection")
 
                         Text("Connect Your Bank")
                             .font(.title2)
@@ -75,6 +76,7 @@ struct RealPlaidConnectionView: View {
                         HStack {
                             Image(systemName: "shield.checkerboard")
                                 .foregroundColor(.blue)
+                                .accessibilityHidden(true)
                             Text("Powered by Plaid")
                                 .font(.headline)
                                 .fontWeight(.semibold)
@@ -222,6 +224,7 @@ struct ConnectedAccountsView: View {
                             Image(systemName: "building.columns")
                                 .font(.system(size: 40))
                                 .foregroundColor(.gray)
+                                .accessibilityHidden(true)
 
                             VStack(spacing: 8) {
                                 Text("No Banks Connected")
@@ -349,6 +352,7 @@ struct AccountRow: View {
             Image(systemName: account.icon)
                 .foregroundColor(.green)
                 .frame(width: 24)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(account.displayName)
@@ -378,6 +382,7 @@ struct AccountRow: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.caption2)
                         .foregroundColor(.green)
+                        .accessibilityHidden(true)
 
                     Text("Connected")
                         .font(.caption2)
@@ -400,6 +405,7 @@ struct BenefitRow: View {
                 .font(.title3)
                 .foregroundColor(.green)
                 .frame(width: 24)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -426,6 +432,7 @@ struct SecurityFeature: View {
                 .font(.system(size: 14))
                 .foregroundColor(.blue)
                 .frame(width: 20)
+                .accessibilityHidden(true)
 
             Text(text)
                 .font(.caption)

@@ -16,6 +16,7 @@ struct PlaidConnectionView: View {
                         Image(systemName: "building.columns.fill")
                             .font(.system(size: 60))
                             .foregroundColor(.green)
+                            .accessibilityLabel("Bank connection")
 
                         Text("Connect Your Bank")
                             .font(.title2)
@@ -219,6 +220,7 @@ struct BenefitRow: View {
                 .font(.title3)
                 .foregroundColor(.green)
                 .frame(width: 24)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -245,6 +247,7 @@ struct SecurityFeature: View {
                 .font(.system(size: 14))
                 .foregroundColor(.green)
                 .frame(width: 20)
+                .accessibilityHidden(true)
 
             Text(text)
                 .font(.caption)
@@ -268,6 +271,7 @@ struct ConnectedAccountsView: View {
                             Image(systemName: "building.columns")
                                 .font(.system(size: 40))
                                 .foregroundColor(.gray)
+                                .accessibilityHidden(true)
 
                             VStack(spacing: 8) {
                                 Text("No Banks Connected")
@@ -360,6 +364,7 @@ struct AccountRow: View {
             Image(systemName: "building.columns.fill")
                 .foregroundColor(.green)
                 .frame(width: 24)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(account.name)
@@ -381,6 +386,7 @@ struct AccountRow: View {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.caption)
                     .foregroundColor(.green)
+                    .accessibilityHidden(true)
             }
         }
         .padding(.vertical, 4)
