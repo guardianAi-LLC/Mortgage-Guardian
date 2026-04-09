@@ -28,6 +28,7 @@
 
 		DOCMGR_BUILD001 /* DocumentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DOCMGR001 /* DocumentManager.swift */; };
 		MTGACCTMGMT_BUILD001 /* MortgageAccountManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MTGACCTMGMT001 /* MortgageAccountManagementView.swift */; };
+		HELPFAQ_BUILD001 /* HelpFAQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = HELPFAQ001 /* HelpFAQView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -50,6 +51,7 @@
 		APIRPT001 /* APIClient+Reports.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClient+Reports.swift"; sourceTree = "<group>"; };
 		ANYCODABLE001 /* AnyCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnyCodable.swift; sourceTree = "<group>"; };
 		MTGACCTMGMT001 /* MortgageAccountManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MortgageAccountManagementView.swift; sourceTree = "<group>"; };
+		HELPFAQ001 /* HelpFAQView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpFAQView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -141,6 +143,7 @@
 			isa = PBXGroup;
 			children = (
 				MTGACCTMGMT001 /* MortgageAccountManagementView.swift */,
+				HELPFAQ001 /* HelpFAQView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -248,6 +251,7 @@
 				APIRPT_BUILD001 /* APIClient+Reports.swift in Sources */,
 				ANYCODABLE_BUILD001 /* AnyCodable.swift in Sources */,
 				MTGACCTMGMT_BUILD001 /* MortgageAccountManagementView.swift in Sources */,
+				HELPFAQ_BUILD001 /* HelpFAQView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

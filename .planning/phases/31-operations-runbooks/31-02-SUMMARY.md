@@ -60,7 +60,7 @@ completed: 2026-04-07
 2. **Task 2: Add operations documentation index to README** - `a40e47c` (feat)
 3. **Task 3: Close v5.0 milestone** - `6d075ba` (chore)
 
-**Plan metadata:** see final commit (docs: complete plan)
+**Plan metadata:** `2b75bbb` (docs: complete plan)
 
 ## Files Created/Modified
 - `TROUBLESHOOTING.md` - Common issues and solutions guide
