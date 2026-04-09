@@ -6,6 +6,7 @@ struct SettingsView: View {
     @State private var showingSecuritySettings = false
     @State private var showingAccountManagement = false
     @State private var showingAppInfo = false
+    @State private var showingHelp = false
 
     var body: some View {
         NavigationView {
@@ -193,7 +194,7 @@ struct SettingsView: View {
                         subtitle: "Get help using the app",
                         color: .blue
                     ) {
-                        // TODO: Navigate to help
+                        showingHelp = true
                     }
 
                     SettingsRow(
@@ -239,6 +240,9 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showingAppInfo) {
                 AppInfoView()
+            }
+            .sheet(isPresented: $showingHelp) {
+                HelpFAQView()
             }
         }
     }

@@ -26,6 +26,7 @@
 		API_BUILD001 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = API001 /* APIClient.swift */; };
 
 		DOCMGR_BUILD001 /* DocumentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DOCMGR001 /* DocumentManager.swift */; };
+		HELPFAQ_BUILD001 /* HelpFAQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = HELPFAQ001 /* HelpFAQView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +47,7 @@
 		APIDOC001 /* APIClient+Documents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClient+Documents.swift"; sourceTree = "<group>"; };
 		APIPLAID001 /* APIClient+Plaid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClient+Plaid.swift"; sourceTree = "<group>"; };
 		ANYCODABLE001 /* AnyCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnyCodable.swift; sourceTree = "<group>"; };
+		HELPFAQ001 /* HelpFAQView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpFAQView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,9 +129,17 @@
 			isa = PBXGroup;
 			children = (
 				C43EABF7802DC41281DE5BBA /* RealPlaidConnectionView.swift */,
-
+				SETTINGS_GRP001 /* Settings */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		SETTINGS_GRP001 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				HELPFAQ001 /* HelpFAQView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		B24B66EE093BE06D6040258B /* Configuration */ = {
@@ -233,6 +243,7 @@
 				APIDOC_BUILD001 /* APIClient+Documents.swift in Sources */,
 				APIPLAID_BUILD001 /* APIClient+Plaid.swift in Sources */,
 				ANYCODABLE_BUILD001 /* AnyCodable.swift in Sources */,
+				HELPFAQ_BUILD001 /* HelpFAQView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
