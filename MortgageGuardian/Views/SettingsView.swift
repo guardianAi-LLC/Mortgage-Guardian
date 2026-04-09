@@ -5,6 +5,7 @@ struct SettingsView: View {
     @State private var showingProfileEditor = false
     @State private var showingSecuritySettings = false
     @State private var showingAccountManagement = false
+    @State private var showingMortgageAccounts = false
     @State private var showingAppInfo = false
 
     var body: some View {
@@ -74,7 +75,7 @@ struct SettingsView: View {
                         subtitle: "\(userStore.user.mortgageAccounts.count) account(s)",
                         color: .orange
                     ) {
-                        // TODO: Navigate to mortgage account management
+                        showingMortgageAccounts = true
                     }
                 }
 
@@ -236,6 +237,9 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showingAccountManagement) {
                 AccountManagementView()
+            }
+            .sheet(isPresented: $showingMortgageAccounts) {
+                MortgageAccountManagementView()
             }
             .sheet(isPresented: $showingAppInfo) {
                 AppInfoView()
@@ -493,10 +497,10 @@ struct SecuritySettingsView: View {
                     SettingsRow(
                         icon: "key.fill",
                         title: "Change Passcode",
-                        subtitle: "Update your app passcode",
+                        subtitle: "Managed by iOS Settings",
                         color: .purple
                     ) {
-                        // TODO: Implement passcode change
+                        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
                     }
 
                     SettingsRow(
