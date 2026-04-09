@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 
 struct SettingsView: View {
     @EnvironmentObject var userStore: UserStore
@@ -254,13 +255,15 @@ struct SettingsView: View {
     }
 
     private func contactSupport() {
-        // TODO: Implement support contact
-        print("Contacting support")
+        if let url = URL(string: "mailto:support@mortgageguardian.com?subject=Mortgage%20Guardian%20Support") {
+            UIApplication.shared.open(url)
+        }
     }
 
     private func rateApp() {
-        // TODO: Implement app rating
-        print("Rating app")
+        if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+            SKStoreReviewController.requestReview(in: scene)
+        }
     }
 }
 
@@ -647,6 +650,14 @@ struct AccountManagementView: View {
 struct AppInfoView: View {
     @Environment(\.dismiss) private var dismiss
 
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+    }
+
+    private var buildNumber: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+    }
+
     var body: some View {
         NavigationView {
             List {
@@ -654,22 +665,22 @@ struct AppInfoView: View {
                     HStack {
                         Text("Version")
                         Spacer()
-                        Text("1.0.0")
+                        Text(appVersion)
                             .foregroundColor(.secondary)
                     }
 
                     HStack {
                         Text("Build")
                         Spacer()
-                        Text("1001")
+                        Text(buildNumber)
                             .foregroundColor(.secondary)
                     }
                 }
 
                 Section("Legal") {
-                    Link("Privacy Policy", destination: URL(string: "https://example.com/privacy")!)
-                    Link("Terms of Service", destination: URL(string: "https://example.com/terms")!)
-                    Link("Open Source Licenses", destination: URL(string: "https://example.com/licenses")!)
+                    Link("Privacy Policy", destination: URL(string: "https://mortgageguardian.com/privacy")!)
+                    Link("Terms of Service", destination: URL(string: "https://mortgageguardian.com/terms")!)
+                    Link("Open Source Licenses", destination: URL(string: "https://mortgageguardian.com/licenses")!)
                 }
 
                 Section("Company") {
