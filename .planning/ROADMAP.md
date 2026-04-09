@@ -326,7 +326,11 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 39-01: TBD
+- [x] 39-01: Project Cleanup & Build Consistency (remove duplicates, fix deployment target) — 2026-04-09
+- [x] 39-02: TODO Resolution & Action Wiring (DashboardView, AnalysisView, IssueDetailView) — 2026-04-09
+- [x] 39-03: Accessibility Labels (112 labels across 20 files) — 2026-04-09
+- [x] 39-04: Error/Loading State Polish (error display, service stubs, calculator saving) — 2026-04-09
+- [x] 39-05: App Store Metadata & Visual Polish (metadata doc, consistency audit) — 2026-04-09
 
 #### Phase 40: End-to-End Testing & TestFlight Prep
 
@@ -337,7 +341,9 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 40-01: TBD
+- [ ] 40-01: Test Suite Verification & Fixes
+- [ ] 40-02: E2E Flow Tests & CI Enablement
+- [ ] 40-03: TestFlight Archive & Submission Prep
 
 ---
 
@@ -445,7 +451,7 @@ Plans:
 | 36. Plaid Bank Integration Rewiring | v6.0 | 0/? | Not started | - |
 | 37. Letter Generation & Export Features | v6.0 | 0/? | Not started | - |
 | 38. Settings, Account Management & Persistence | v6.0 | 4/4 | Complete | 2026-04-09 |
-| 39. UI/UX Polish & App Store Assets | v6.0 | 0/? | Not started | - |
+| 39. UI/UX Polish & App Store Assets | v6.0 | 5/5 | Complete | 2026-04-09 |
 | 40. End-to-End Testing & TestFlight Prep | v6.0 | 0/? | Not started | - |
 
 **Total Plans:** 32 plans across 9 phases (v2.0) — ALL COMPLETE | 42 plans across 8 phases (v3.0) — ALL COMPLETE | 20 plans across 4 phases (v4.0) — ALL COMPLETE | 24 plans across 10 phases (v5.0) — ALL COMPLETE | v6.0 in progress

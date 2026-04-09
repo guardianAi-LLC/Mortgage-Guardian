@@ -8,10 +8,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 **Current focus:** v6.0 iOS App Completion
 ## Current Position
 
-Phase: 38 of 40 (Settings, Account Management & Persistence)
-Plan: 04 of 04 complete
-Status: Phase 38 complete, ready for Phase 39
-Last activity: 2026-04-09 - Settings TODOs resolved, Plaid connection wired, AppState persistence, account deletion
+Phase: 39 of 40 (UI/UX Polish & App Store Assets)
+Plan: 05 of 05 complete
+Status: Phase 39 complete, ready for Phase 40
+Last activity: 2026-04-09 - Duplicate cleanup, TODO wiring, accessibility labels, error states, App Store metadata
 
 Progress: ███████████████ 100%
 
@@ -95,6 +95,11 @@ v6.0 Phase 38-01: AccountManagementView wired to RealPlaidConnectionView (replac
 v6.0 Phase 38-02: Document retention picker (6 presets), data export via ShareUtility (JSON), account deletion with confirmation + data purge + sign out.
 v6.0 Phase 38-03: HelpFAQView with 8 expandable FAQ items. contactSupport (mailto), rateApp (StoreKit), About URLs fixed from example.com, bundle version/build from Info.plist.
 v6.0 Phase 38-04: AppState.saveScenario() wired to DataManager (SwiftData persistence). Passcode change redirects to iOS Settings. Phase 38 complete.
+v6.0 Phase 39-01: Removed 3 duplicate Features/ stub files. Fixed deployment target from 26.0 to 17.6.
+v6.0 Phase 39-02: Wired DashboardView quick actions (Plaid, camera, file picker). Wired AnalysisView/IssueDetailView/AnalysisViewModel action stubs.
+v6.0 Phase 39-03: Added 112 accessibility labels across 20 Swift files. SF Symbols, buttons, status indicators all labeled.
+v6.0 Phase 39-04: Error display in AIMarketTimingAnalyzer, AIScenarioAnalyzer, ProfileView. Service TODO stubs documented. Calculator scenario saving wired.
+v6.0 Phase 39-05: App Store metadata created. Visual consistency audit — shadow/opacity harmonized. Phase 39 complete.
 
 ### Deferred Issues
 
@@ -124,5 +129,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-09
-Stopped at: Phase 38 complete, ready for Phase 39
+Stopped at: Phase 39 complete, ready for Phase 40
 Resume file: None
