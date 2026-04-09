@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 37 of 40 (Letter Generation & Export Features)
-Plan: 01 of 03 complete
-Status: Plan 37-01 complete, ready for 37-02
-Last activity: 2026-04-09 - APIClient+Reports extension and backend letter generation wiring
+Plan: 02 of 03 complete
+Status: Plan 37-02 complete, ready for 37-03
+Last activity: 2026-04-09 - PDFGenerator bug fix and PDF export pipeline for letter views
 
-Progress: █████████░ 33%
+Progress: ██████████████░ 67%
 
 ## Performance Metrics
 
@@ -89,6 +89,7 @@ v6.0 Phase 36-01: PlaidLinkService rewired from raw URLRequest to APIClient+Plai
 v6.0 Phase 36-02: EnhancedPlaidService rewired from 5 nonexistent endpoints to typed APIClient calls. Mortgage keyword transaction filtering. UNUserNotificationCenter replaces stub. SecurityService stubs replaced with SecureKeyManager+UserDefaults.
 v6.0 Phase 36-03: PlaidSecurityExtensions 4 placeholders completed (keychain token count, UserDefaults date tracking). Date tracking wired into link and sync flows. Phase 36 complete.
 v6.0 Phase 37-01: APIClient+Reports.swift with generateDisputeLetter() and getConsolidatedReport(). IssueLetterGeneratorView wired to Express backend with local LetterGenerator fallback when caseId nil. ShareUtility wired for all export actions. CaseId plumbed through AnalysisView→IssueDetailView→IssueLetterGeneratorView.
+v6.0 Phase 37-02: Fixed PDFGenerator closure parameter shadowing bug (userContext undefined). Added generateLetterPDFFromText() for backend letter text→PDF. IssueLetterGeneratorView generates PDF after letter creation, all share/save/print actions prefer PDF with text fallback. LetterPreviewView accepts pdfData parameter.
 
 ### Deferred Issues
 
@@ -118,5 +119,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-09
-Stopped at: Phase 37, plan 01 complete, ready for 37-02
+Stopped at: Phase 37, plan 02 complete, ready for 37-03
 Resume file: None
