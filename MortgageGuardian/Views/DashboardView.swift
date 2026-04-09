@@ -1,9 +1,14 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct DashboardView: View {
     @EnvironmentObject var userStore: UserStore
     @State private var showingDocumentPicker = false
     @State private var showingAllIssues = false
+    @State private var showingPlaidConnection = false
+    @State private var showingLetterAlert = false
+    @State private var selectedDocument: MortgageDocument?
+    @State private var showingFileImporter = false
 
     var body: some View {
         NavigationView {
@@ -46,6 +51,40 @@ struct DashboardView: View {
                         }
                 }
             }
+            .sheet(isPresented: $showingPlaidConnection) {
+                RealPlaidConnectionView()
+            }
+            .sheet(item: $selectedDocument) { document in
+                NavigationView {
+                    DocumentsView()
+                        .navigationBarTitleDisplayMode(.inline)
+                }
+            }
+            .alert("Generate Letter", isPresented: $showingLetterAlert) {
+                Button("Go to Analysis") {
+                    showingAllIssues = true
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Select a finding from the Analysis tab to generate a dispute letter.")
+            }
+            .fileImporter(
+                isPresented: $showingFileImporter,
+                allowedContentTypes: [.pdf, .png, .jpeg, .heic],
+                allowsMultipleSelection: false
+            ) { result in
+                switch result {
+                case .success(let urls):
+                    if let url = urls.first {
+                        _ = url.startAccessingSecurityScopedResource()
+                        defer { url.stopAccessingSecurityScopedResource() }
+                        // File selected — trigger refresh to reflect any new uploads
+                        userStore.refreshData()
+                    }
+                case .failure:
+                    break
+                }
+            }
         }
     }
 
@@ -81,6 +120,7 @@ struct DashboardView: View {
                                 .foregroundColor(.white)
                         }
                     }
+                    .accessibilityLabel("\(userStore.criticalIssuesCount()) critical issues")
                 }
             }
 
@@ -177,7 +217,7 @@ struct DashboardView: View {
                     subtitle: userStore.user.isPlaidConnected ? "Connected" : "Plaid",
                     color: userStore.user.isPlaidConnected ? .green : .purple
                 ) {
-                    // TODO: Implement Plaid connection
+                    showingPlaidConnection = true
                 }
 
                 QuickActionButton(
@@ -186,7 +226,7 @@ struct DashboardView: View {
                     subtitle: "Notice of Error",
                     color: .orange
                 ) {
-                    // TODO: Navigate to letter generation
+                    showingLetterAlert = true
                 }
             }
         }
@@ -268,7 +308,7 @@ struct DashboardView: View {
                 LazyVStack(spacing: 8) {
                     ForEach(Array(userStore.documents.prefix(3))) { document in
                         DocumentRow(document: document) {
-                            // TODO: Navigate to document detail
+                            selectedDocument = document
                         }
                         .background(
                             RoundedRectangle(cornerRadius: 8)
@@ -308,6 +348,7 @@ struct QuickActionButton: View {
                 Image(systemName: icon)
                     .font(.title2)
                     .foregroundColor(color)
+                    .accessibilityHidden(true)
 
                 VStack(spacing: 2) {
                     Text(title)
@@ -332,9 +373,11 @@ struct QuickActionButton: View {
     }
 }
 
-// MARK: - Document Picker View (Placeholder)
+// MARK: - Document Picker View
 struct DocumentPickerView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var showingCamera = false
+    @State private var showingFileImporter = false
 
     var body: some View {
         NavigationView {
@@ -342,6 +385,7 @@ struct DocumentPickerView: View {
                 Image(systemName: "doc.badge.plus")
                     .font(.system(size: 64))
                     .foregroundColor(.blue)
+                    .accessibilityLabel("Add document")
 
                 Text("Document Upload")
                     .font(.title2)
@@ -354,8 +398,7 @@ struct DocumentPickerView: View {
 
                 VStack(spacing: 12) {
                     Button("Take Photo") {
-                        // TODO: Implement camera capture
-                        dismiss()
+                        showingCamera = true
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -364,8 +407,7 @@ struct DocumentPickerView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                     Button("Choose from Files") {
-                        // TODO: Implement file picker
-                        dismiss()
+                        showingFileImporter = true
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -384,6 +426,55 @@ struct DocumentPickerView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showingCamera) {
+                CameraPickerView { _ in
+                    dismiss()
+                }
+            }
+            .fileImporter(
+                isPresented: $showingFileImporter,
+                allowedContentTypes: [.pdf, .png, .jpeg, .heic],
+                allowsMultipleSelection: false
+            ) { result in
+                switch result {
+                case .success:
+                    dismiss()
+                case .failure:
+                    break
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Camera Picker (UIImagePickerController bridge)
+struct CameraPickerView: UIViewControllerRepresentable {
+    let onCapture: (UIImage) -> Void
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator(onCapture: onCapture) }
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let onCapture: (UIImage) -> Void
+        init(onCapture: @escaping (UIImage) -> Void) { self.onCapture = onCapture }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                onCapture(image)
+            }
+            picker.dismiss(animated: true)
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            picker.dismiss(animated: true)
         }
     }
 }
