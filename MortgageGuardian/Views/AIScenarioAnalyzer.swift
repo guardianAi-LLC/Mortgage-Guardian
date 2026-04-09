@@ -4,6 +4,8 @@ struct AIScenarioAnalyzer: View {
     let scenario: SavedMortgageScenario
     @State private var isAnalyzing = false
     @State private var selectedAnalysis: AnalysisType = .risk
+    @State private var errorMessage: String?
+    @State private var showingError = false
     @Environment(\.dismiss) private var dismiss
     @StateObject private var aiCoordinator = MortgageAICoordinator()
     
@@ -53,6 +55,11 @@ struct AIScenarioAnalyzer: View {
                         .background(.ultraThinMaterial)
                         .cornerRadius(10)
                 }
+            }
+            .alert("Analysis Error", isPresented: $showingError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage ?? "An unexpected error occurred.")
             }
         }
         .task {
@@ -293,7 +300,8 @@ struct AIScenarioAnalyzer: View {
         do {
             try await aiCoordinator.analyzeScenario(scenario, userProfile: userProfile)
         } catch {
-            print("Error analyzing scenario: \(error)")
+            errorMessage = error.localizedDescription
+            showingError = true
         }
     }
 }

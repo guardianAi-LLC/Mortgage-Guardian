@@ -77,8 +77,7 @@ class TrainingDataManager {
     }
     
     private func fetchRealEstateData() async throws -> [PropertyTrainingData] {
-        // TODO: Implement real API calls
-        // For now, return sample data
+        // Stub: real API calls not yet integrated — using sample data
         return try loadSampleData()
     }
     

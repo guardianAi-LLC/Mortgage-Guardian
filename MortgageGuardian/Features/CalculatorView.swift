@@ -1,11 +1,13 @@
 import SwiftUI
 
 struct CalculatorView: View {
+    @Environment(AppState.self) private var appState: AppState?
     @State private var principalAmount: Double = 300000
     @State private var interestRate: Double = 6.5
     @State private var loanTerm: Int = 30
     @State private var downPayment: Double = 60000
-    
+    @State private var showingSaveConfirmation = false
+
     private var calculation: MortgageCalculation {
         MortgageCalculation(
             principalAmount: principalAmount,
@@ -44,10 +46,25 @@ struct CalculatorView: View {
             .navigationTitle("Mortgage Calculator")
             .toolbar {
                 Button("Save") {
-                    // TODO: Implement scenario saving
+                    saveScenario()
                 }
             }
+            .alert("Scenario Saved", isPresented: $showingSaveConfirmation) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Your mortgage scenario has been saved.")
+            }
         }
+    }
+
+    private func saveScenario() {
+        let scenario = MortgageScenario(
+            calculation: calculation,
+            date: Date(),
+            notes: nil
+        )
+        appState?.saveScenario(scenario)
+        showingSaveConfirmation = true
     }
 }
 
