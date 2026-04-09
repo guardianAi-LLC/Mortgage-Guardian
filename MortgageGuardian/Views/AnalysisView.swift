@@ -518,7 +518,7 @@ struct IssueDetailView: View {
                                 .padding(.vertical, 4)
                                 .background(
                                     Capsule()
-                                        .fill(issue.severity.color.opacity(0.2))
+                                        .fill(issue.severity.color.opacity(0.15))
                                 )
                                 .foregroundColor(issue.severity.color)
                         }
