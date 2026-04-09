@@ -92,7 +92,7 @@ struct AnalysisView: View {
                 )
             }
             .sheet(item: $selectedIssue) { issue in
-                IssueDetailView(issue: issue)
+                IssueDetailView(issue: issue, caseId: nil)
             }
             .sheet(isPresented: $showingLetterGenerator) {
                 LetterGeneratorView()
@@ -438,7 +438,9 @@ struct AnalysisFilterSheet: View {
 // MARK: - Issue Detail View
 struct IssueDetailView: View {
     let issue: AuditResult
+    var caseId: String? = nil
     @Environment(\.dismiss) private var dismiss
+    @State private var showingLetterGenerator = false
 
     var body: some View {
         NavigationView {
@@ -582,7 +584,7 @@ struct IssueDetailView: View {
                     // Action Buttons
                     VStack(spacing: 12) {
                         Button("Generate Notice of Error Letter") {
-                            // TODO: Implement letter generation
+                            showingLetterGenerator = true
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -591,7 +593,8 @@ struct IssueDetailView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8))
 
                         Button("Share Issue") {
-                            // TODO: Implement sharing
+                            let issueText = "\(issue.title)\n\(issue.description)\n\(issue.suggestedAction)"
+                            ShareUtility.presentShareSheet(items: [issueText])
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -612,6 +615,9 @@ struct IssueDetailView: View {
                         dismiss()
                     }
                 }
+            }
+            .sheet(isPresented: $showingLetterGenerator) {
+                IssueLetterGeneratorView(issue: issue, caseId: caseId)
             }
         }
     }

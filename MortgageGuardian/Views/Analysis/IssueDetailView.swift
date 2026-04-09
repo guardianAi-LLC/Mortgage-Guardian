@@ -5,6 +5,7 @@ import QuickLook
 struct IssueDetailView: View {
     let issue: AuditResult
     let viewModel: AnalysisViewModel?
+    let caseId: String?
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) var dynamicTypeSize
@@ -18,9 +19,10 @@ struct IssueDetailView: View {
     @State private var expandedSections: Set<String> = ["overview", "calculation"]
     @State private var shareItems: [Any] = []
 
-    init(issue: AuditResult, viewModel: AnalysisViewModel? = nil) {
+    init(issue: AuditResult, viewModel: AnalysisViewModel? = nil, caseId: String? = nil) {
         self.issue = issue
         self.viewModel = viewModel
+        self.caseId = caseId
     }
 
     var body: some View {
@@ -78,7 +80,7 @@ struct IssueDetailView: View {
             }
         }
         .sheet(isPresented: $showingLetterGenerator) {
-            IssueLetterGeneratorView(issue: issue)
+            IssueLetterGeneratorView(issue: issue, caseId: caseId)
         }
         .sheet(isPresented: $showingDocumentViewer) {
             DocumentEvidenceViewer(issue: issue)
