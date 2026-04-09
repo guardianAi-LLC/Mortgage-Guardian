@@ -194,6 +194,35 @@ class PDFGenerator: ObservableObject {
         )
     }
 
+    /// Generate PDF from plain text letter content (e.g., backend-generated letters)
+    func generateLetterPDFFromText(
+        letterText: String,
+        title: String = "Dispute Letter",
+        configuration: PDFConfiguration = .standard
+    ) async throws -> Data {
+
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineSpacing = 4
+        paragraphStyle.paragraphSpacing = 8
+        paragraphStyle.alignment = .left
+
+        let font = UIFont(name: "Times-Roman", size: 12) ?? UIFont.systemFont(ofSize: 12)
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .paragraphStyle: paragraphStyle,
+            .foregroundColor: UIColor.black
+        ]
+
+        let attributedString = NSAttributedString(string: letterText, attributes: attributes)
+
+        return try await createPDFFromAttributedString(
+            attributedString: attributedString,
+            configuration: configuration,
+            title: title
+        )
+    }
+
     // MARK: - Private Methods
 
     private func validateInputs(
@@ -402,13 +431,13 @@ class PDFGenerator: ObservableObject {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 do {
-                    let pdfData = renderer.pdfData { context in
+                    let pdfData = renderer.pdfData { rendererContext in
                         self.renderPDFContent(
                             content: content,
                             template: template,
-                            context: context,
+                            context: rendererContext,
                             configuration: configuration,
-                            userContext: userContext
+                            userContext: context
                         )
                     }
                     continuation.resume(returning: pdfData)
