@@ -6,6 +6,7 @@ struct SettingsView: View {
     @State private var showingSecuritySettings = false
     @State private var showingAccountManagement = false
     @State private var showingAppInfo = false
+    @State private var showingRetentionPicker = false
 
     var body: some View {
         NavigationView {
@@ -160,10 +161,10 @@ struct SettingsView: View {
                     SettingsRow(
                         icon: "doc.fill",
                         title: "Document Retention",
-                        subtitle: "\(userStore.user.preferences.documentRetentionDays) days",
+                        subtitle: DocumentRetentionView.displayLabel(for: userStore.user.preferences.documentRetentionDays),
                         color: .brown
                     ) {
-                        // TODO: Navigate to document retention settings
+                        showingRetentionPicker = true
                     }
 
                     SettingsRow(
@@ -239,6 +240,9 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showingAppInfo) {
                 AppInfoView()
+            }
+            .sheet(isPresented: $showingRetentionPicker) {
+                DocumentRetentionView()
             }
         }
     }
@@ -681,6 +685,65 @@ struct AppInfoView: View {
                 }
             }
             .navigationTitle("About")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Document Retention View
+private struct DocumentRetentionView: View {
+    @EnvironmentObject var userStore: UserStore
+    @Environment(\.dismiss) private var dismiss
+
+    private static let options: [(label: String, days: Int)] = [
+        ("30 Days", 30),
+        ("90 Days", 90),
+        ("180 Days", 180),
+        ("1 Year", 365),
+        ("2 Years", 730),
+        ("Forever", 0)
+    ]
+
+    static func displayLabel(for days: Int) -> String {
+        options.first(where: { $0.days == days })?.label ?? "\(days) days"
+    }
+
+    var body: some View {
+        NavigationView {
+            List {
+                Section {
+                    ForEach(Self.options, id: \.days) { option in
+                        Button(action: {
+                            var prefs = userStore.user.preferences
+                            prefs.documentRetentionDays = option.days
+                            userStore.updatePreferences(prefs)
+                        }) {
+                            HStack {
+                                Text(option.label)
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                if userStore.user.preferences.documentRetentionDays == option.days {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.blue)
+                                        .fontWeight(.semibold)
+                                }
+                            }
+                        }
+                    }
+                } footer: {
+                    Text("Documents older than this will be automatically removed from your device.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .navigationTitle("Document Retention")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
