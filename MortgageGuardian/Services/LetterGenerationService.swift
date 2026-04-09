@@ -216,21 +216,138 @@ class LetterGenerationService: ObservableObject {
     }
 
     /// Get recommended letter type based on audit results
-    func getRecommendedLetterType(for auditResults: [AuditResult]) -> LetterTemplate.TemplateType {
+    /// Returns the template type and the corresponding backend API letter type string.
+    func getRecommendedLetterType(for auditResults: [AuditResult]) -> (templateType: LetterTemplate.TemplateType, backendLetterType: String) {
         guard !auditResults.isEmpty else {
-            return .noticeOfError
+            return (.noticeOfError, "notice_of_error")
         }
 
         let highSeverityIssues = auditResults.filter { $0.severity == .high || $0.severity == .critical }
         let totalDamages = auditResults.compactMap { $0.affectedAmount }.reduce(0, +)
 
         if totalDamages > 5000 || highSeverityIssues.count >= 3 {
-            return .escalationLetter
+            return (.escalationLetter, "notice_of_error") // escalation uses NOE as backend base
         } else if auditResults.count > 1 {
-            return .qualifiedWrittenRequest
+            return (.qualifiedWrittenRequest, "qualified_written_request")
         } else {
-            return .noticeOfError
+            return (.noticeOfError, "notice_of_error")
         }
+    }
+
+    // MARK: - Backend-Powered Bulk Generation
+
+    /// Generate a series of dispute letters via the Express backend API.
+    ///
+    /// Loops through the requested letter types, calls the backend for each,
+    /// and returns all successfully generated letters. Failures are logged but
+    /// do not prevent the remaining letters from being generated.
+    ///
+    /// - Parameters:
+    ///   - caseId: The case identifier on the backend.
+    ///   - letterTypes: Backend letter type strings (defaults to NOE + QWR).
+    /// - Returns: An array of successfully generated dispute letter responses.
+    func generateBackendLetterSeries(
+        caseId: String,
+        letterTypes: [String] = ["notice_of_error", "qualified_written_request"]
+    ) async throws -> [DisputeLetterResponse] {
+        isLoading = true
+        defer { isLoading = false }
+
+        var results: [DisputeLetterResponse] = []
+
+        for letterType in letterTypes {
+            do {
+                let response = try await APIClient.shared.generateDisputeLetter(
+                    caseId: caseId,
+                    letterType: letterType
+                )
+                results.append(response)
+            } catch {
+                print("LetterGenerationService: Failed to generate \(letterType) via backend: \(error.localizedDescription)")
+            }
+        }
+
+        if results.isEmpty {
+            throw LetterGenerationError.generationFailed("All backend letter requests failed")
+        }
+
+        return results
+    }
+
+    /// Combine multiple backend-generated dispute letters into a single multi-page PDF.
+    ///
+    /// Each letter's content fields (subject, salutation, body, demands,
+    /// legal citations, closing) are formatted into plain text and then
+    /// rendered as consecutive pages via PDFGenerator.
+    ///
+    /// - Parameter letters: The dispute letter responses from the backend.
+    /// - Returns: Combined PDF data containing all letters.
+    func exportLetterSeriesAsPDF(letters: [DisputeLetterResponse]) async throws -> Data {
+        guard !letters.isEmpty else {
+            throw LetterGenerationError.exportFailed
+        }
+
+        var combinedText = ""
+
+        for (index, letter) in letters.enumerated() {
+            if index > 0 {
+                // Page break marker between letters
+                combinedText += "\n\n--- Page Break ---\n\n"
+            }
+
+            let content = letter.content
+            let letterType = letter.letterType ?? "Dispute Letter"
+            let generatedAt = letter.generatedAt ?? ""
+
+            combinedText += "[\(letterType.uppercased())]\n"
+            if !generatedAt.isEmpty {
+                combinedText += "Generated: \(generatedAt)\n"
+            }
+            combinedText += "\n"
+
+            if let subject = content?.subject, !subject.isEmpty {
+                combinedText += "RE: \(subject)\n\n"
+            }
+
+            if let salutation = content?.salutation, !salutation.isEmpty {
+                combinedText += "\(salutation)\n\n"
+            }
+
+            if let body = content?.body, !body.isEmpty {
+                combinedText += "\(body)\n\n"
+            }
+
+            if let demands = content?.demands, !demands.isEmpty {
+                combinedText += "DEMANDS:\n"
+                for demand in demands {
+                    combinedText += "  - \(demand)\n"
+                }
+                combinedText += "\n"
+            }
+
+            if let citations = content?.legalCitations, !citations.isEmpty {
+                combinedText += "LEGAL CITATIONS:\n"
+                for citation in citations {
+                    combinedText += "  - \(citation)\n"
+                }
+                combinedText += "\n"
+            }
+
+            if let closing = content?.closingStatement, !closing.isEmpty {
+                combinedText += "\(closing)\n"
+            }
+
+            if let deadline = content?.responseDeadline, !deadline.isEmpty {
+                combinedText += "\nResponse requested by: \(deadline)\n"
+            }
+        }
+
+        let pdfData = try await pdfGenerator.generateLetterPDFFromText(
+            letterText: combinedText,
+            title: "RESPA Dispute Letters"
+        )
+
+        return pdfData
     }
 
     /// Get templates by type

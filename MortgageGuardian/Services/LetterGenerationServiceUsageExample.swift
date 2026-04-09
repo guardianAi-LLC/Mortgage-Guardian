@@ -201,7 +201,7 @@ class LetterGenerationServiceUsageExample: ObservableObject {
     /// Example: Get recommended letter type based on audit severity
     func getRecommendedLetterType() -> LetterTemplate.TemplateType {
         let auditResults = createSampleAuditResults()
-        return letterService.getRecommendedLetterType(for: auditResults)
+        return letterService.getRecommendedLetterType(for: auditResults).templateType
     }
 
     /// Example: Update letter status for tracking
@@ -239,8 +239,8 @@ class LetterGenerationServiceUsageExample: ObservableObject {
             }
 
             // Generate appropriate letter based on findings
-            let recommendedType = letterService.getRecommendedLetterType(for: auditResults)
-            guard let template = letterService.availableTemplates.first(where: { $0.templateType == recommendedType }) else {
+            let recommended = letterService.getRecommendedLetterType(for: auditResults)
+            guard let template = letterService.availableTemplates.first(where: { $0.templateType == recommended.templateType }) else {
                 throw LetterGenerationService.LetterGenerationError.templateNotFound
             }
 
