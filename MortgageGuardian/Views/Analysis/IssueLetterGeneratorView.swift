@@ -14,6 +14,7 @@ struct IssueLetterGeneratorView: View {
     @State private var showingPreview = false
     @State private var errorMessage: String?
     @State private var showingError = false
+    @State private var generatedPDFData: Data?
 
     init(issue: AuditResult, caseId: String? = nil) {
         self.issue = issue
@@ -48,7 +49,7 @@ struct IssueLetterGeneratorView: View {
             }
             .sheet(isPresented: $showingPreview) {
                 if let letter = generatedLetter {
-                    LetterPreviewView(letterContent: letter, issue: issue)
+                    LetterPreviewView(letterContent: letter, issue: issue, pdfData: generatedPDFData)
                 }
             }
             .alert("Error", isPresented: $showingError) {
@@ -232,6 +233,22 @@ struct IssueLetterGeneratorView: View {
                     .foregroundColor(.primary)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+
+                if generatedPDFData != nil {
+                    Button {
+                        savePDFToFiles()
+                    } label: {
+                        HStack {
+                            Image(systemName: "doc.richtext")
+                            Text("Save as PDF")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color(.systemGray5))
+                        .foregroundColor(.primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                }
             }
         }
     }
@@ -306,7 +323,9 @@ struct IssueLetterGeneratorView: View {
                         caseId: caseId,
                         letterType: backendLetterType
                     )
-                    generatedLetter = formatDisputeLetterResponse(response)
+                    let letterContent = formatDisputeLetterResponse(response)
+                    generatedLetter = letterContent
+                    await generatePDFFromLetterContent(letterContent)
                 } catch {
                     errorMessage = error.localizedDescription
                     showingError = true
@@ -315,13 +334,16 @@ struct IssueLetterGeneratorView: View {
             }
         } else {
             // Offline fallback using local LetterGenerator
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            Task {
+                try? await Task.sleep(nanoseconds: 500_000_000)
                 let generator = LetterGenerator(
                     issue: issue,
                     template: selectedTemplate!,
                     customizations: customizations
                 )
-                generatedLetter = generator.generateLetter()
+                let letterContent = generator.generateLetter()
+                generatedLetter = letterContent
+                await generatePDFFromLetterContent(letterContent)
                 isGenerating = false
             }
         }
@@ -384,24 +406,57 @@ struct IssueLetterGeneratorView: View {
         return parts.joined(separator: "\n")
     }
 
+    private func generatePDFFromLetterContent(_ letterContent: String) async {
+        let pdfGenerator = PDFGenerator()
+        generatedPDFData = try? await pdfGenerator.generateLetterPDFFromText(
+            letterText: letterContent,
+            title: "RESPA Dispute Letter"
+        )
+    }
+
     private func emailLetter() {
-        guard let letter = generatedLetter else { return }
-        ShareUtility.presentShareSheet(items: [letter])
+        if let pdfData = generatedPDFData {
+            let tempURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("DisputeLetter.pdf")
+            try? pdfData.write(to: tempURL)
+            ShareUtility.presentShareSheet(items: [tempURL])
+        } else if let letter = generatedLetter {
+            ShareUtility.presentShareSheet(items: [letter])
+        }
     }
 
     private func saveToFiles() {
-        guard let letter = generatedLetter,
-              let data = letter.data(using: .utf8) else { return }
-        let tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("DisputeLetter.txt")
-        try? data.write(to: tempURL)
+        let tempURL: URL
+        if let pdfData = generatedPDFData {
+            tempURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("DisputeLetter.pdf")
+            try? pdfData.write(to: tempURL)
+        } else if let letter = generatedLetter,
+                  let data = letter.data(using: .utf8) {
+            tempURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("DisputeLetter.txt")
+            try? data.write(to: tempURL)
+        } else {
+            return
+        }
         ShareUtility.saveToFiles(tempURL)
     }
 
     private func printLetter() {
-        guard let letter = generatedLetter,
-              let data = letter.data(using: .utf8) else { return }
-        ShareUtility.printData(data, jobName: "Dispute Letter - \(issue.title)")
+        if let pdfData = generatedPDFData {
+            ShareUtility.printData(pdfData, jobName: "Dispute Letter - \(issue.title)")
+        } else if let letter = generatedLetter,
+                  let data = letter.data(using: .utf8) {
+            ShareUtility.printData(data, jobName: "Dispute Letter - \(issue.title)")
+        }
+    }
+
+    private func savePDFToFiles() {
+        guard let pdfData = generatedPDFData else { return }
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DisputeLetter.pdf")
+        try? pdfData.write(to: tempURL)
+        ShareUtility.saveToFiles(tempURL)
     }
 
     private func formatCurrency(_ amount: Double) -> String {
@@ -625,7 +680,14 @@ class LetterGenerator {
 struct LetterPreviewView: View {
     let letterContent: String
     let issue: AuditResult
+    let pdfData: Data?
     @Environment(\.dismiss) private var dismiss
+
+    init(letterContent: String, issue: AuditResult, pdfData: Data? = nil) {
+        self.letterContent = letterContent
+        self.issue = issue
+        self.pdfData = pdfData
+    }
 
     var body: some View {
         NavigationView {
@@ -646,20 +708,36 @@ struct LetterPreviewView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button("Email") {
-                            ShareUtility.presentShareSheet(items: [letterContent])
+                            if let pdfData = pdfData {
+                                let tempURL = FileManager.default.temporaryDirectory
+                                    .appendingPathComponent("DisputeLetter.pdf")
+                                try? pdfData.write(to: tempURL)
+                                ShareUtility.presentShareSheet(items: [tempURL])
+                            } else {
+                                ShareUtility.presentShareSheet(items: [letterContent])
+                            }
                         }
                         Button("Print") {
-                            if let data = letterContent.data(using: .utf8) {
+                            if let pdfData = pdfData {
+                                ShareUtility.printData(pdfData, jobName: "Dispute Letter - \(issue.title)")
+                            } else if let data = letterContent.data(using: .utf8) {
                                 ShareUtility.printData(data, jobName: "Dispute Letter - \(issue.title)")
                             }
                         }
                         Button("Save to Files") {
-                            if let data = letterContent.data(using: .utf8) {
-                                let tempURL = FileManager.default.temporaryDirectory
+                            let tempURL: URL
+                            if let pdfData = pdfData {
+                                tempURL = FileManager.default.temporaryDirectory
+                                    .appendingPathComponent("DisputeLetter.pdf")
+                                try? pdfData.write(to: tempURL)
+                            } else if let data = letterContent.data(using: .utf8) {
+                                tempURL = FileManager.default.temporaryDirectory
                                     .appendingPathComponent("DisputeLetter.txt")
                                 try? data.write(to: tempURL)
-                                ShareUtility.saveToFiles(tempURL)
+                            } else {
+                                return
                             }
+                            ShareUtility.saveToFiles(tempURL)
                         }
                         Button("Copy to Clipboard") {
                             UIPasteboard.general.string = letterContent
