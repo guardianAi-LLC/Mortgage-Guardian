@@ -312,7 +312,10 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 38-01: TBD
+- [x] 38-01: Plaid Connection & Mortgage Account Management (wire RealPlaidConnectionView, MortgageAccountManagementView) — 2026-04-09
+- [x] 38-02: Document Retention, Data Export & Account Deletion (retention picker, JSON export, delete confirmation) — 2026-04-09
+- [x] 38-03: Help/FAQ, Support Actions & App Info (HelpFAQView, StoreKit, About URLs) — 2026-04-09
+- [x] 38-04: AppState Persistence & Passcode Change (DataManager wiring, iOS Settings redirect) — 2026-04-09
 
 #### Phase 39: UI/UX Polish & App Store Assets
 
@@ -441,7 +444,7 @@ Plans:
 | 35. Analysis & Findings UI Completion | v6.0 | 3/? | In progress | - |
 | 36. Plaid Bank Integration Rewiring | v6.0 | 0/? | Not started | - |
 | 37. Letter Generation & Export Features | v6.0 | 0/? | Not started | - |
-| 38. Settings, Account Management & Persistence | v6.0 | 0/? | Not started | - |
+| 38. Settings, Account Management & Persistence | v6.0 | 4/4 | Complete | 2026-04-09 |
 | 39. UI/UX Polish & App Store Assets | v6.0 | 0/? | Not started | - |
 | 40. End-to-End Testing & TestFlight Prep | v6.0 | 0/? | Not started | - |
 

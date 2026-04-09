@@ -8,10 +8,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 **Current focus:** v6.0 iOS App Completion
 ## Current Position
 
-Phase: 37 of 40 (Letter Generation & Export Features)
-Plan: 03 of 03 complete
-Status: Phase 37 complete, ready for Phase 38
-Last activity: 2026-04-09 - Bulk letter generation, combined PDF export, Phase 37 complete
+Phase: 38 of 40 (Settings, Account Management & Persistence)
+Plan: 04 of 04 complete
+Status: Phase 38 complete, ready for Phase 39
+Last activity: 2026-04-09 - Settings TODOs resolved, Plaid connection wired, AppState persistence, account deletion
 
 Progress: ███████████████ 100%
 
@@ -91,6 +91,10 @@ v6.0 Phase 36-03: PlaidSecurityExtensions 4 placeholders completed (keychain tok
 v6.0 Phase 37-01: APIClient+Reports.swift with generateDisputeLetter() and getConsolidatedReport(). IssueLetterGeneratorView wired to Express backend with local LetterGenerator fallback when caseId nil. ShareUtility wired for all export actions. CaseId plumbed through AnalysisView→IssueDetailView→IssueLetterGeneratorView.
 v6.0 Phase 37-02: Fixed PDFGenerator closure parameter shadowing bug (userContext undefined). Added generateLetterPDFFromText() for backend letter text→PDF. IssueLetterGeneratorView generates PDF after letter creation, all share/save/print actions prefer PDF with text fallback. LetterPreviewView accepts pdfData parameter.
 v6.0 Phase 37-03: generateBackendLetterSeries() bulk API calls, exportLetterSeriesAsPDF() combined PDF. AuditReportView dispute letter section with NOE/QWR toggles. getRecommendedLetterType returns tuple with backend type string. Phase 37 complete.
+v6.0 Phase 38-01: AccountManagementView wired to RealPlaidConnectionView (replaces demo data). MortgageAccountManagementView created with list/add/delete.
+v6.0 Phase 38-02: Document retention picker (6 presets), data export via ShareUtility (JSON), account deletion with confirmation + data purge + sign out.
+v6.0 Phase 38-03: HelpFAQView with 8 expandable FAQ items. contactSupport (mailto), rateApp (StoreKit), About URLs fixed from example.com, bundle version/build from Info.plist.
+v6.0 Phase 38-04: AppState.saveScenario() wired to DataManager (SwiftData persistence). Passcode change redirects to iOS Settings. Phase 38 complete.
 
 ### Deferred Issues
 
@@ -120,5 +124,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-09
-Stopped at: Phase 37 complete, ready for Phase 38
+Stopped at: Phase 38 complete, ready for Phase 39
 Resume file: None
