@@ -500,7 +500,9 @@ struct SecuritySettingsView: View {
                         subtitle: "Managed by iOS Settings",
                         color: .purple
                     ) {
-                        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
                     }
 
                     SettingsRow(
