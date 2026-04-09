@@ -32,6 +32,7 @@ struct SummaryCard: View {
                     Image(systemName: icon)
                         .foregroundColor(color)
                         .font(.title2)
+                        .accessibilityHidden(true)
 
                     Spacer()
 
@@ -39,6 +40,7 @@ struct SummaryCard: View {
                         Image(systemName: "chevron.right")
                             .foregroundColor(.secondary)
                             .font(.caption)
+                            .accessibilityHidden(true)
                     }
                 }
 

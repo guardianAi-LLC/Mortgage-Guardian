@@ -9,26 +9,22 @@ struct MainTabView: View {
         TabView {
             DocumentsView()
                 .tabItem {
-                    Image(systemName: "doc.text")
-                    Text("Documents")
+                    Label("Documents", systemImage: "doc.text")
                 }
 
             AnalysisView()
                 .tabItem {
-                    Image(systemName: "chart.bar.doc.horizontal")
-                    Text("Analysis")
+                    Label("Analysis", systemImage: "chart.bar.doc.horizontal")
                 }
 
             PlaidConnectionView()
                 .tabItem {
-                    Image(systemName: "building.columns")
-                    Text("Accounts")
+                    Label("Accounts", systemImage: "building.columns")
                 }
 
             ProfileView()
                 .tabItem {
-                    Image(systemName: "person.circle")
-                    Text("Profile")
+                    Label("Profile", systemImage: "person.circle")
                 }
         }
         .accentColor(.blue)

@@ -81,6 +81,7 @@ struct AnalysisView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
+                            .accessibilityLabel("More options")
                     }
                 }
             }
@@ -110,6 +111,7 @@ struct AnalysisView: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
 
                 TextField("Search issues...", text: $searchText)
                     .textFieldStyle(PlainTextFieldStyle())
@@ -156,6 +158,7 @@ struct AnalysisView: View {
                 } label: {
                     Image(systemName: "slider.horizontal.3")
                         .foregroundColor(.blue)
+                        .accessibilityLabel("Filter options")
                 }
             }
         }
@@ -338,6 +341,7 @@ struct SeverityCountView: View {
             Image(systemName: icon)
                 .foregroundColor(severity.color)
                 .font(.subheadline)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(count)")
@@ -363,6 +367,7 @@ struct SeveritySectionHeader: View {
             Circle()
                 .fill(severity.color)
                 .frame(width: 8, height: 8)
+                .accessibilityHidden(true)
 
             Text(severity.displayName.uppercased())
                 .font(.caption)
@@ -450,6 +455,7 @@ struct IssueDetailView: View {
                             Image(systemName: issue.issueType.icon)
                                 .foregroundColor(issue.severity.color)
                                 .font(.title2)
+                                .accessibilityHidden(true)
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(issue.title)
@@ -641,6 +647,7 @@ struct LetterGeneratorView: View {
                 Image(systemName: "doc.text.fill")
                     .font(.system(size: 64))
                     .foregroundColor(.blue)
+                    .accessibilityLabel("Letter generator")
 
                 Text("Letter Generator")
                     .font(.title2)

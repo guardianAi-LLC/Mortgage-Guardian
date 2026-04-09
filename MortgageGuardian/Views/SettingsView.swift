@@ -41,6 +41,7 @@ struct SettingsView: View {
                             Image(systemName: "chevron.right")
                                 .foregroundColor(.secondary)
                                 .font(.caption)
+                                .accessibilityHidden(true)
                         }
                         .padding(.vertical, 4)
                     }
@@ -85,6 +86,7 @@ struct SettingsView: View {
                         Image(systemName: "circle.lefthalf.filled")
                             .foregroundColor(.indigo)
                             .frame(width: 24, height: 24)
+                            .accessibilityHidden(true)
 
                         Text("Theme")
 
@@ -274,6 +276,7 @@ struct SettingsRow: View {
                 Image(systemName: icon)
                     .foregroundColor(color)
                     .frame(width: 24, height: 24)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
@@ -290,10 +293,13 @@ struct SettingsRow: View {
                 Image(systemName: "chevron.right")
                     .foregroundColor(.secondary)
                     .font(.caption)
+                    .accessibilityHidden(true)
             }
             .padding(.vertical, 2)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityLabel(title)
+        .accessibilityHint(subtitle)
     }
 }
 
@@ -310,6 +316,7 @@ struct SettingsToggle: View {
             Image(systemName: icon)
                 .foregroundColor(color)
                 .frame(width: 24, height: 24)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -325,6 +332,8 @@ struct SettingsToggle: View {
 
             Toggle("", isOn: $isOn)
                 .labelsHidden()
+                .accessibilityLabel(title)
+                .accessibilityHint(subtitle)
         }
         .padding(.vertical, 2)
     }
@@ -446,6 +455,7 @@ struct SecuritySettingsView: View {
                             Image(systemName: "timer")
                                 .foregroundColor(.gray)
                                 .frame(width: 24, height: 24)
+                                .accessibilityHidden(true)
 
                             Text("Auto Lock Timeout")
 
@@ -540,6 +550,7 @@ struct AccountManagementView: View {
                             HStack {
                                 Image(systemName: "building.columns.fill")
                                     .foregroundColor(.blue)
+                                    .accessibilityHidden(true)
 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(account.displayName)
@@ -565,6 +576,7 @@ struct AccountManagementView: View {
                             Image(systemName: "link.badge.plus")
                                 .font(.title)
                                 .foregroundColor(.blue)
+                                .accessibilityLabel("Connect account")
 
                             Text("No Connected Accounts")
                                 .font(.headline)

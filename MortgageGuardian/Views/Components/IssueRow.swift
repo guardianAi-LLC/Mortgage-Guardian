@@ -22,6 +22,7 @@ struct IssueRow: View {
                     Image(systemName: auditResult.issueType.icon)
                         .foregroundColor(auditResult.severity.color)
                         .font(.system(size: 16, weight: .medium))
+                        .accessibilityHidden(true)
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -69,6 +70,7 @@ struct IssueRow: View {
                             Image(systemName: "chevron.right")
                                 .foregroundColor(.secondary)
                                 .font(.caption)
+                                .accessibilityHidden(true)
                         }
                     }
                 }

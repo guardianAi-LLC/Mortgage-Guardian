@@ -45,6 +45,7 @@ struct LoginView: View {
             Image(systemName: "envelope.badge.fill")
                 .font(.system(size: 50))
                 .foregroundColor(.blue)
+                .accessibilityLabel("Email verification")
 
             Text("Verify Your Email")
                 .font(.title2)
@@ -101,6 +102,7 @@ struct LoginView: View {
                 Image(systemName: "house.circle.fill")
                     .font(.system(size: 80))
                     .foregroundColor(.blue)
+                    .accessibilityLabel("Mortgage Guardian")
 
                 Text("Mortgage Guardian")
                     .font(.largeTitle)

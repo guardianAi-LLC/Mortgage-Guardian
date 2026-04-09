@@ -54,6 +54,7 @@ struct EmptyStateView: View {
             Image(systemName: icon)
                 .font(.system(size: 48))
                 .foregroundColor(.secondary)
+                .accessibilityHidden(true)
 
             VStack(spacing: 8) {
                 Text(title)
@@ -103,6 +104,7 @@ struct ErrorView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 48))
                 .foregroundColor(.red)
+                .accessibilityLabel("Error")
 
             VStack(spacing: 8) {
                 Text("Something went wrong")

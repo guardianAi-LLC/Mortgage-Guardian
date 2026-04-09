@@ -81,6 +81,7 @@ struct DashboardView: View {
                                 .foregroundColor(.white)
                         }
                     }
+                    .accessibilityLabel("\(userStore.criticalIssuesCount()) critical issues")
                 }
             }
 
@@ -308,6 +309,7 @@ struct QuickActionButton: View {
                 Image(systemName: icon)
                     .font(.title2)
                     .foregroundColor(color)
+                    .accessibilityHidden(true)
 
                 VStack(spacing: 2) {
                     Text(title)
@@ -342,6 +344,7 @@ struct DocumentPickerView: View {
                 Image(systemName: "doc.badge.plus")
                     .font(.system(size: 64))
                     .foregroundColor(.blue)
+                    .accessibilityLabel("Add document")
 
                 Text("Document Upload")
                     .font(.title2)

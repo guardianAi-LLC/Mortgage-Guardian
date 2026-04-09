@@ -46,6 +46,7 @@ struct ProfileView: View {
                     Image(systemName: "person.fill")
                         .font(.system(size: 50))
                         .foregroundColor(.white)
+                        .accessibilityHidden(true)
                 )
 
             // User Info
@@ -157,6 +158,7 @@ struct ProfileView: View {
             HStack {
                 Image(systemName: "arrow.right.square.fill")
                     .font(.title3)
+                    .accessibilityHidden(true)
                 Text("Sign Out")
                     .fontWeight(.semibold)
             }
@@ -184,6 +186,7 @@ struct StatCard: View {
             Image(systemName: icon)
                 .font(.title2)
                 .foregroundColor(color)
+                .accessibilityHidden(true)
 
             Text(value)
                 .font(.title)
@@ -197,6 +200,7 @@ struct StatCard: View {
         .padding()
         .background(Color(.secondarySystemGroupedBackground))
         .cornerRadius(12)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -216,6 +220,7 @@ struct SettingsRow: View {
                     .frame(width: 32, height: 32)
                     .background(color)
                     .cornerRadius(8)
+                    .accessibilityHidden(true)
 
                 Text(title)
                     .foregroundColor(.primary)
@@ -225,9 +230,11 @@ struct SettingsRow: View {
                 Image(systemName: "chevron.right")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
             }
             .padding()
         }
+        .accessibilityLabel(title)
     }
 }
 
