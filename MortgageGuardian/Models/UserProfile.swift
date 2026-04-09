@@ -1,8 +1,6 @@
 import SwiftUI
-import SwiftData
 
-@Model
-final class UserProfile {
+final class MortgageUserProfile: ObservableObject {
     var annualIncome: Double
     var creditScore: Int
     var employmentYears: Double

@@ -525,7 +525,7 @@ struct ProfileEditorView: View {
     }
 
     private func saveProfile() {
-        userStore.updateUserProfile(
+        userStore.updateMortgageUserProfile(
             firstName: firstName,
             lastName: lastName,
             email: email,

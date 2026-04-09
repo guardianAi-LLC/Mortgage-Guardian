@@ -155,7 +155,7 @@ public final class MultiModelConsensusService: ObservableObject {
 
     // MARK: - Initialization
 
-    public init(
+    init(
         configuration: ConsensusConfiguration = .strict,
         claudeService: ClaudeAnalysisService = ClaudeAnalysisService.shared,
         bedrockService: BedrockAgentService = BedrockAgentService.shared,
@@ -228,7 +228,7 @@ public final class MultiModelConsensusService: ObservableObject {
     // MARK: - Public Methods
 
     /// Perform consensus analysis across multiple AI models
-    public func performConsensusAnalysis(
+    func performConsensusAnalysis(
         extractedData: ExtractedData,
         bankTransactions: [Transaction],
         loanDetails: LoanDetails?,

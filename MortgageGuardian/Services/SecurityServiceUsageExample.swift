@@ -10,7 +10,7 @@ import Foundation
 
 // MARK: - App Initialization Example
 
-@main
+// @main (disabled - example only)
 struct MortgageGuardianSecureApp: App {
     @StateObject private var securityService = SecurityService.shared
     @StateObject private var userManager = UserManager()
@@ -114,7 +114,7 @@ class SecureDocumentManager: ObservableObject {
 
 // MARK: - Authentication Flow Example
 
-struct LoginView: View {
+struct ExampleLoginView: View {
     @StateObject private var securityService = SecurityService.shared
     @State private var showingBiometricAuth = false
     @State private var authenticationError: String?
@@ -179,7 +179,7 @@ struct LoginView: View {
 
 // MARK: - Secure Settings View Example
 
-struct SecuritySettingsView: View {
+struct ExampleSecuritySettingsView: View {
     @StateObject private var securityService = SecurityService.shared
     @ObservedObject var userManager: UserManager
     @State private var showingKeyRotationAlert = false
@@ -400,7 +400,7 @@ class SecureAPIClient: ObservableObject {
 
 // MARK: - Supporting Types
 
-struct DocumentUploadResponse: Codable {
+struct ExampleDocumentUploadResponse: Codable {
     let documentId: String
     let uploadedAt: Date
 }
@@ -410,7 +410,7 @@ struct TokenResponse: Codable {
     let expiresIn: TimeInterval
 }
 
-enum APIError: Error {
+enum ExampleAPIError: Error {
     case missingToken
     case invalidResponse
 }

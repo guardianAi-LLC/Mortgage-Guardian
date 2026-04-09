@@ -422,7 +422,7 @@ struct DocumentReferenceRow: View {
 }
 
 /// Empty state view with action
-struct EmptyStateView: View {
+struct IssueEmptyStateView: View {
     let icon: String
     let title: String
     let message: String
@@ -482,7 +482,7 @@ enum ActionPriority: String, CaseIterable {
 }
 
 /// Filter chip component
-struct FilterChip: View {
+struct IssueFilterChip: View {
     let title: String
     let isSelected: Bool
     let action: () -> Void

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Comprehensive error types for document analysis operations
-enum DocumentAnalysisError: Error, LocalizedError, Equatable {
+enum DocumentAnalysisError: Error, LocalizedError, Equatable, Hashable {
     // Image processing errors
     case imageConversionFailed
     case imageDataCorrupted
@@ -41,6 +41,88 @@ enum DocumentAnalysisError: Error, LocalizedError, Equatable {
     case unknownError(underlying: Error)
     case operationCancelled
     case serviceUnavailable
+
+    // MARK: - Equatable conformance (manual due to Error associated value)
+
+    static func == (lhs: DocumentAnalysisError, rhs: DocumentAnalysisError) -> Bool {
+        switch (lhs, rhs) {
+        case (.imageConversionFailed, .imageConversionFailed),
+             (.imageDataCorrupted, .imageDataCorrupted),
+             (.imageFormatNotSupported, .imageFormatNotSupported),
+             (.networkUnavailable, .networkUnavailable),
+             (.awsBackendUnavailable, .awsBackendUnavailable),
+             (.awsAuthenticationFailed, .awsAuthenticationFailed),
+             (.awsQuotaExceeded, .awsQuotaExceeded),
+             (.requestTimeout, .requestTimeout),
+             (.invalidAPIResponse, .invalidAPIResponse),
+             (.noTextDetected, .noTextDetected),
+             (.textExtractionFailed, .textExtractionFailed),
+             (.mlModelUnavailable, .mlModelUnavailable),
+             (.processingInterrupted, .processingInterrupted),
+             (.awsCredentialsNotConfigured, .awsCredentialsNotConfigured),
+             (.textractNotConfigured, .textractNotConfigured),
+             (.invalidExtractedData, .invalidExtractedData),
+             (.dataIntegrityCheckFailed, .dataIntegrityCheckFailed),
+             (.operationCancelled, .operationCancelled),
+             (.serviceUnavailable, .serviceUnavailable):
+            return true
+        case (.imageTooLarge(let a), .imageTooLarge(let b)):
+            return a == b
+        case (.imageTooSmall(let a), .imageTooSmall(let b)):
+            return a == b
+        case (.awsServiceError(let c1, let m1), .awsServiceError(let c2, let m2)):
+            return c1 == c2 && m1 == m2
+        case (.documentTypeNotSupported(let a), .documentTypeNotSupported(let b)):
+            return a == b
+        case (.documentQualityTooLow(let a), .documentQualityTooLow(let b)):
+            return a == b
+        case (.invalidConfiguration(let a), .invalidConfiguration(let b)):
+            return a == b
+        case (.confidenceTooLow(let s1, let m1), .confidenceTooLow(let s2, let m2)):
+            return s1 == s2 && m1 == m2
+        case (.missingRequiredFields(let a), .missingRequiredFields(let b)):
+            return a == b
+        case (.unknownError(let a), .unknownError(let b)):
+            return a.localizedDescription == b.localizedDescription
+        default:
+            return false
+        }
+    }
+
+    // MARK: - Hashable conformance
+
+    func hash(into hasher: inout Hasher) {
+        switch self {
+        case .imageConversionFailed: hasher.combine(0)
+        case .imageDataCorrupted: hasher.combine(1)
+        case .imageFormatNotSupported: hasher.combine(2)
+        case .imageTooLarge(let v): hasher.combine(3); hasher.combine(v)
+        case .imageTooSmall(let v): hasher.combine(4); hasher.combine(v.width); hasher.combine(v.height)
+        case .networkUnavailable: hasher.combine(5)
+        case .awsBackendUnavailable: hasher.combine(6)
+        case .awsAuthenticationFailed: hasher.combine(7)
+        case .awsQuotaExceeded: hasher.combine(8)
+        case .awsServiceError(let c, let m): hasher.combine(9); hasher.combine(c); hasher.combine(m)
+        case .requestTimeout: hasher.combine(10)
+        case .invalidAPIResponse: hasher.combine(11)
+        case .noTextDetected: hasher.combine(12)
+        case .documentTypeNotSupported(let t): hasher.combine(13); hasher.combine(t)
+        case .documentQualityTooLow(let s): hasher.combine(14); hasher.combine(s)
+        case .textExtractionFailed: hasher.combine(15)
+        case .mlModelUnavailable: hasher.combine(16)
+        case .processingInterrupted: hasher.combine(17)
+        case .awsCredentialsNotConfigured: hasher.combine(18)
+        case .textractNotConfigured: hasher.combine(19)
+        case .invalidConfiguration(let r): hasher.combine(20); hasher.combine(r)
+        case .invalidExtractedData: hasher.combine(21)
+        case .confidenceTooLow(let s, let m): hasher.combine(22); hasher.combine(s); hasher.combine(m)
+        case .missingRequiredFields(let f): hasher.combine(23); hasher.combine(f)
+        case .dataIntegrityCheckFailed: hasher.combine(24)
+        case .unknownError(let e): hasher.combine(25); hasher.combine(e.localizedDescription)
+        case .operationCancelled: hasher.combine(26)
+        case .serviceUnavailable: hasher.combine(27)
+        }
+    }
 
     var errorDescription: String? {
         switch self {

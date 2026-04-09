@@ -15,7 +15,7 @@ struct ScenarioDetailView: View {
                     VStack(spacing: 8) {
                         Text(scenario.monthlyPayment, format: .currency(code: "USD"))
                             .font(.system(size: 36, weight: .bold))
-                            .foregroundStyle(AppTheme.Colors.light.primary)
+                            .foregroundStyle(AppTheme.primaryGreen)
                         
                         Text("Monthly Payment")
                             .font(.subheadline)
@@ -23,8 +23,8 @@ struct ScenarioDetailView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(AppTheme.Colors.light.surface)
-                    .cornerRadius(AppTheme.cornerRadiusMedium)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(12)
                     
                     // Loan Details
                     VStack(alignment: .leading, spacing: 16) {
@@ -33,12 +33,12 @@ struct ScenarioDetailView: View {
                         
                         DetailRow(title: "Principal", value: scenario.principalAmount)
                         DetailRow(title: "Down Payment", value: scenario.downPayment)
-                        DetailRow(title: "Interest Rate", value: scenario.annualInterestRate, format: .percent)
+                        DetailRow(title: "Interest Rate", value: scenario.annualInterestRate)
                         DetailRow(title: "Loan Term", value: "\(scenario.loanTermYears) Years")
                     }
                     .padding()
-                    .background(AppTheme.Colors.light.surface)
-                    .cornerRadius(AppTheme.cornerRadiusMedium)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(12)
                     
                     // Cost Breakdown
                     VStack(alignment: .leading, spacing: 16) {
@@ -54,8 +54,8 @@ struct ScenarioDetailView: View {
                         )
                     }
                     .padding()
-                    .background(AppTheme.Colors.light.surface)
-                    .cornerRadius(AppTheme.cornerRadiusMedium)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(12)
                     
                     // AI Analysis Section
                     VStack(spacing: 16) {
@@ -101,16 +101,17 @@ struct ScenarioDetailView: View {
                             }
                             .padding()
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(AppTheme.Colors.light.surface)
-                            .cornerRadius(AppTheme.cornerRadiusMedium)
+                            .background(Color(.systemBackground))
+                            .cornerRadius(12)
                         }
                         .buttonStyle(.plain)
                         
-                        NavigationLink(destination: AIMonitoringDashboard(aiCoordinator: aiCoordinator)) {
-                            Label("View AI System Status", systemImage: "gauge")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
+                        // TODO: Add AI coordinator integration
+                        // NavigationLink(destination: AIMonitoringDashboard(aiCoordinator: aiCoordinator)) {
+                        //     Label("View AI System Status", systemImage: "gauge")
+                        //         .font(.subheadline)
+                        //         .foregroundStyle(.secondary)
+                        // }
                     }
                     
                     if let notes = scenario.notes {
@@ -122,8 +123,8 @@ struct ScenarioDetailView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
-                        .background(AppTheme.Colors.light.surface)
-                        .cornerRadius(AppTheme.cornerRadiusMedium)
+                        .background(Color(.systemBackground))
+                        .cornerRadius(12)
                     }
                 }
                 .padding()
@@ -155,37 +156,39 @@ struct ScenarioDetailView: View {
 
 private struct DetailRow: View {
     let title: String
-    let value: Double
-    let format: FloatingPointFormatStyle<Double> = .currency(code: "USD")
+    let numericValue: Double?
+    let stringValue: String?
     let style: DetailRowStyle
-    
+
     enum DetailRowStyle {
         case normal
         case prominent
     }
-    
-    init(title: String, value: Double, format: FloatingPointFormatStyle<Double> = .currency(code: "USD"), style: DetailRowStyle = .normal) {
+
+    init(title: String, value: Double, style: DetailRowStyle = .normal) {
         self.title = title
-        self.value = value
+        self.numericValue = value
+        self.stringValue = nil
         self.style = style
     }
-    
+
     init(title: String, value: String) {
         self.title = title
-        self.value = 0
+        self.numericValue = nil
+        self.stringValue = value
         self.style = .normal
     }
-    
+
     var body: some View {
         HStack {
             Text(title)
                 .foregroundStyle(.secondary)
             Spacer()
-            if value == 0 {
-                Text(title)
+            if let numericValue {
+                Text(numericValue, format: .currency(code: "USD"))
                     .fontWeight(style == .prominent ? .bold : .regular)
-            } else {
-                Text(value, format: format)
+            } else if let stringValue {
+                Text(stringValue)
                     .fontWeight(style == .prominent ? .bold : .regular)
             }
         }

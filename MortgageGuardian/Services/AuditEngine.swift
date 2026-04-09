@@ -1175,14 +1175,6 @@ class ErrorDetectionEngine {
     }
 }
 
-// MARK: - Extensions and Utilities
-extension DateFormatter {
-    static let shortDate: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        return formatter
-    }()
-}
 
 // MARK: - Sample Usage Example
 extension AuditEngine {
@@ -3321,8 +3313,8 @@ class PaymentAllocationValidator {
             let interestAllocations = regularPayments.compactMap { $0.interestApplied }
 
             // Check for unusual variance in allocations
-            if let avgPrincipal = principalAllocations.average(),
-               let avgInterest = interestAllocations.average() {
+            if let avgPrincipal = principalAllocations.safeAverage(),
+               let avgInterest = interestAllocations.safeAverage() {
 
                 for payment in regularPayments {
                     guard let principal = payment.principalApplied,
@@ -3660,16 +3652,12 @@ extension AuditResult.IssueType {
     static let amortizationError = AuditResult.IssueType(rawValue: "amortization_error") ?? .incorrectInterest
 }
 
-extension DateFormatter {
-    static let shortDate: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        return formatter
-    }()
-}
+// DateFormatter.shortDate defined in DocumentProcessor.swift
 
 extension Array where Element == Double {
-    func average() -> Double? {
+    /// Returns the average of the array elements, or nil if empty.
+    /// Named to avoid conflict with the `average` computed property in CostMetricsAndEfficiencyService.
+    func safeAverage() -> Double? {
         guard !isEmpty else { return nil }
         return reduce(0, +) / Double(count)
     }

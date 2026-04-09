@@ -36,7 +36,7 @@ struct DashboardView: View {
                 userStore.refreshData()
             }
             .sheet(isPresented: $showingDocumentPicker) {
-                DocumentPickerView()
+                DashboardDocumentPicker()
             }
             .sheet(isPresented: $showingAllIssues) {
                 NavigationView {
@@ -374,7 +374,7 @@ struct QuickActionButton: View {
 }
 
 // MARK: - Document Picker View
-struct DocumentPickerView: View {
+struct DashboardDocumentPicker: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingCamera = false
     @State private var showingFileImporter = false

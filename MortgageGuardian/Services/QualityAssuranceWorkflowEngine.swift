@@ -257,7 +257,7 @@ public final class QualityAssuranceWorkflowEngine: ObservableObject {
 
     // MARK: - Initialization
 
-    public init(
+    init(
         configuration: WorkflowConfiguration = .strict,
         reviewerPool: ReviewerPoolManager = ReviewerPoolManager(),
         escalationManager: EscalationManager = EscalationManager(),
@@ -276,7 +276,7 @@ public final class QualityAssuranceWorkflowEngine: ObservableObject {
     // MARK: - Public Methods
 
     /// Request expert human review with complete context
-    public func requestExpertReview(
+    func requestExpertReview(
         extractedData: ExtractedData,
         ruleBasedFindings: [ZeroToleranceAuditEngine.ZeroToleranceError],
         aiFindings: [ZeroToleranceAuditEngine.ZeroToleranceError]

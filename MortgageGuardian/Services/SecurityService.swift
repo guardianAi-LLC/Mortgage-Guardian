@@ -116,7 +116,7 @@ public final class SecurityService: ObservableObject {
     // MARK: - Configuration
 
     /// Configure security service with user settings
-    public func configure(with settings: User.SecuritySettings) {
+    func configure(with settings: User.SecuritySettings) {
         self.securitySettings = settings
         setupAutoLock()
         auditLogger.log(.sessionStarted)

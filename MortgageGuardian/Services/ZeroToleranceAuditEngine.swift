@@ -348,7 +348,7 @@ public final class ZeroToleranceAuditEngine: ObservableObject {
     // MARK: - Public Methods
 
     /// Perform zero-tolerance audit with triple redundancy
-    public func performZeroToleranceAudit(
+    func performZeroToleranceAudit(
         extractedData: ExtractedData,
         bankTransactions: [Transaction] = [],
         loanDetails: LoanDetails? = nil,

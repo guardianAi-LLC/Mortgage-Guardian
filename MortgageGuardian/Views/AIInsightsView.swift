@@ -140,7 +140,7 @@ struct AIInsightsView: View {
         
         do {
             // Create a sample user profile (in production, this would come from user data)
-            let userProfile = UserProfile(
+            let userProfile = MortgageUserProfile(
                 annualIncome: 120000,
                 creditScore: 750,
                 employmentYears: 5,

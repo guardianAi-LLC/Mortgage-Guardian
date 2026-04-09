@@ -67,27 +67,27 @@ struct StorageConsentView: View {
                             .font(.headline)
 
                         VStack(alignment: .leading, spacing: 12) {
-                            SecurityFeature(
+                            StorageSecurityFeature(
                                 icon: "key.fill",
                                 text: "Documents encrypted with AES-256"
                             )
 
-                            SecurityFeature(
+                            StorageSecurityFeature(
                                 icon: "timer",
                                 text: "Auto-deleted after 30 days"
                             )
 
-                            SecurityFeature(
+                            StorageSecurityFeature(
                                 icon: "eye.slash.fill",
                                 text: "We cannot access your document content"
                             )
 
-                            SecurityFeature(
+                            StorageSecurityFeature(
                                 icon: "trash.fill",
                                 text: "Delete anytime from Settings"
                             )
 
-                            SecurityFeature(
+                            StorageSecurityFeature(
                                 icon: "hand.raised.fill",
                                 text: "Never shared with third parties"
                             )
@@ -184,7 +184,7 @@ struct FeatureRow: View {
     }
 }
 
-struct SecurityFeature: View {
+struct StorageSecurityFeature: View {
     let icon: String
     let text: String
 

@@ -63,7 +63,7 @@ class MortgageAICoordinator: ObservableObject {
         }
     }
     
-    func analyzeScenario(_ scenario: SavedMortgageScenario, userProfile: UserProfile) async throws {
+    func analyzeScenario(_ scenario: SavedMortgageScenario, userProfile: MortgageUserProfile) async throws {
         // Get latest market data
         await marketDataService.refreshMarketData()
 

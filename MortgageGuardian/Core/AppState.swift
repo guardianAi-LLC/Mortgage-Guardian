@@ -6,6 +6,7 @@ enum Tab {
     case settings
 }
 
+@MainActor
 @Observable
 class AppState {
     var selectedTab: Tab = .calculator

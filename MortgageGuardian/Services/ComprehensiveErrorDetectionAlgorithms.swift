@@ -88,7 +88,7 @@ public final class ComprehensiveErrorDetectionAlgorithms {
     // MARK: - Public Methods
 
     /// Perform comprehensive error detection across all mortgage violation categories
-    public func performExhaustiveValidation(
+    func performExhaustiveValidation(
         extractedData: ExtractedData,
         bankTransactions: [Transaction],
         loanDetails: LoanDetails?
@@ -860,7 +860,7 @@ public class ComprehensiveRuleEngine {
     }
 
     /// Perform exhaustive rule-based validation
-    public func performExhaustiveValidation(
+    func performExhaustiveValidation(
         extractedData: ExtractedData,
         bankTransactions: [Transaction],
         loanDetails: LoanDetails?

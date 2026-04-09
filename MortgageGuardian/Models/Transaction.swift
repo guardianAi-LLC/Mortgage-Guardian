@@ -114,25 +114,7 @@ struct PaymentCorrelation: Identifiable, Codable {
     }
 }
 
-struct PlaidAccount: Identifiable, Codable {
-    let id = UUID()
-    let accountId: String
-    let accountName: String
-    let accountType: String
-    let accountSubtype: String?
-    let institutionName: String
-    let mask: String?
-    let isConnected: Bool
-    let lastSyncDate: Date?
-    let accessToken: String?
-
-    var displayName: String {
-        if let mask = mask {
-            return "\(accountName) ••••\(mask)"
-        }
-        return accountName
-    }
-}
+// PlaidAccount is defined in PlaidAccount.swift
 
 extension Transaction {
     static func sampleMortgagePayment() -> Transaction {

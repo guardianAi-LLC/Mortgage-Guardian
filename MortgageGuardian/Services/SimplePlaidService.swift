@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import os.log
 
 /// Simplified Plaid service for demo purposes
 /// This replaces the complex PlaidService when LinkKit is not available
@@ -42,6 +43,7 @@ public final class PlaidService: ObservableObject {
     public func connectAccount() async throws {
         isLoading = true
         errorMessage = nil
+        defer { isLoading = false }
 
         do {
             // Simulate network delay
@@ -64,8 +66,6 @@ public final class PlaidService: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
             throw error
-        } finally {
-            isLoading = false
         }
     }
 
@@ -106,11 +106,3 @@ public final class PlaidService: ObservableObject {
     }
 }
 
-// MARK: - Logger Import
-import os.log
-
-extension Logger {
-    convenience init(subsystem: String, category: String) {
-        self.init(OSLog(subsystem: subsystem, category: category))
-    }
-}

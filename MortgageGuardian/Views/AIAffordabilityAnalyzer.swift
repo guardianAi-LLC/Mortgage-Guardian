@@ -2,7 +2,7 @@ import SwiftUI
 import Charts
 
 struct AIAffordabilityAnalyzer: View {
-    let userProfile: UserProfile
+    let userProfile: MortgageUserProfile
     @State private var targetHomePrice: Double = 500000
     @State private var isAnalyzing = false
     @State private var analysisResults: AffordabilityAnalysis?

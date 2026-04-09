@@ -8,6 +8,23 @@
 
 /* Begin PBXBuildFile section */
 		09DAEBCF30F627BE59733E9B /* SecureKeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7495A955FAFF22E8195003 /* SecureKeyManager.swift */; };
+		USER_BUILD001 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = USER001 /* User.swift */; };
+		USERPROFILE_BUILD001 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = USERPROFILE001 /* UserProfile.swift */; };
+		MORTGAGEDOC_BUILD001 /* MortgageDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = MORTGAGEDOC001 /* MortgageDocument.swift */; };
+		AUDITRESULT_BUILD001 /* AuditResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = AUDITRESULT001 /* AuditResult.swift */; };
+		TRANSACTION_BUILD001 /* Transaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = TRANSACTION001 /* Transaction.swift */; };
+		USERSTORE_BUILD001 /* UserStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = USERSTORE001 /* UserStore.swift */; };
+		TEST_BF_AI001 /* AIAnalysisServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_AI001 /* AIAnalysisServiceTests.swift */; };
+		TEST_BF_AE001 /* AuditEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_AE001 /* AuditEngineTests.swift */; };
+		TEST_BF_DP001 /* DocumentProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_DP001 /* DocumentProcessorTests.swift */; };
+		TEST_BF_PS001 /* PlaidServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_PS001 /* PlaidServiceTests.swift */; };
+		TEST_BF_SK001 /* SecureKeyManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_SK001 /* SecureKeyManagerTests.swift */; };
+		TEST_BF_SS001 /* SecurityServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_SS001 /* SecurityServiceTests.swift */; };
+		TEST_BF_TH001 /* TestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_TH001 /* TestHelpers.swift */; };
+		TEST_BF_TC001 /* TestConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_TC001 /* TestConfiguration.swift */; };
+		TEST_BF_TG001 /* MortgageTestDataGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_TG001 /* MortgageTestDataGenerator.swift */; };
+		TEST_BF_MD001 /* MockData.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_MD001 /* MockData.swift */; };
+		TEST_BF_MS001 /* MockServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_MS001 /* MockServices.swift */; };
 		APIDOC_BUILD001 /* APIClient+Documents.swift in Sources */ = {isa = PBXBuildFile; fileRef = APIDOC001 /* APIClient+Documents.swift */; };
 		APIPLAID_BUILD001 /* APIClient+Plaid.swift in Sources */ = {isa = PBXBuildFile; fileRef = APIPLAID001 /* APIClient+Plaid.swift */; };
 		APIRPT_BUILD001 /* APIClient+Reports.swift in Sources */ = {isa = PBXBuildFile; fileRef = APIRPT001 /* APIClient+Reports.swift */; };
@@ -25,10 +42,106 @@
 		PLAID001 /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = PLAID002 /* LinkKit */; };
 		AUTH_BUILD001 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AUTH001 /* AuthManager.swift */; };
 		API_BUILD001 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = API001 /* APIClient.swift */; };
-
 		DOCMGR_BUILD001 /* DocumentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DOCMGR001 /* DocumentManager.swift */; };
 		MTGACCTMGMT_BUILD001 /* MortgageAccountManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MTGACCTMGMT001 /* MortgageAccountManagementView.swift */; };
 		HELPFAQ_BUILD001 /* HelpFAQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = HELPFAQ001 /* HelpFAQView.swift */; };
+		CORE_BF_001 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CORE_FR_001 /* AppState.swift */; };
+		CORE_BF_002 /* BrandedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CORE_FR_002 /* BrandedComponents.swift */; };
+		CORE_BF_003 /* BrandedHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CORE_FR_003 /* BrandedHeader.swift */; };
+		CORE_BF_004 /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CORE_FR_004 /* DataManager.swift */; };
+		CORE_BF_005 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = CORE_FR_005 /* Theme.swift */; };
+		EXAMPLES_BF_001 /* MLPredictorUsageExample.swift in Sources */ = {isa = PBXBuildFile; fileRef = EXAMPLES_FR_001 /* MLPredictorUsageExample.swift */; };
+		FEAT_BF_001 /* CalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEAT_FR_001 /* CalculatorView.swift */; };
+		FEAT_BF_002 /* ScenarioDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEAT_FR_002 /* ScenarioDetailView.swift */; };
+		FEAT_BF_003 /* ScenarioListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEAT_FR_003 /* ScenarioListView.swift */; };
+		FEAT_BF_004 /* SplashScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEAT_FR_004 /* SplashScreen.swift */; };
+		ML_BF_001 /* MLModelTrainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = ML_FR_001 /* MLModelTrainer.swift */; };
+		ML_BF_002 /* TrainingDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = ML_FR_002 /* TrainingDataManager.swift */; };
+		MODELS_BF_001 /* ErrorCategorizationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = MODELS_FR_001 /* ErrorCategorizationModels.swift */; };
+		MODELS_BF_002 /* LetterTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = MODELS_FR_002 /* LetterTemplate.swift */; };
+		MODELS_BF_003 /* MLModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = MODELS_FR_003 /* MLModels.swift */; };
+		MODELS_BF_004 /* MLModels+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = MODELS_FR_004 /* MLModels+Helpers.swift */; };
+		MODELS_BF_005 /* MortgageCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = MODELS_FR_005 /* MortgageCalculator.swift */; };
+		MODELS_BF_006 /* PersistentModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = MODELS_FR_006 /* PersistentModels.swift */; };
+		RSRC_BF_001 /* TemplateLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = RSRC_FR_001 /* TemplateLoader.swift */; };
+		SVC_BF_001 /* AIAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_001 /* AIAnalysisService.swift */; };
+		SVC_BF_002 /* AIManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_002 /* AIManager.swift */; };
+		SVC_BF_003 /* AISetupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_003 /* AISetupManager.swift */; };
+		SVC_BF_004 /* AuditEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_004 /* AuditEngine.swift */; };
+		SVC_BF_005 /* ComprehensiveErrorDetectionAlgorithms.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_005 /* ComprehensiveErrorDetectionAlgorithms.swift */; };
+		SVC_BF_006 /* CostMetricsAndEfficiencyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_006 /* CostMetricsAndEfficiencyService.swift */; };
+		SVC_BF_007 /* CredentialManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_007 /* CredentialManager.swift */; };
+		SVC_BF_008 /* DocumentAnalysisError.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_008 /* DocumentAnalysisError.swift */; };
+		SVC_BF_009 /* DocumentAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_009 /* DocumentAnalysisService.swift */; };
+		SVC_BF_010 /* DocumentAnalysisService+FieldExtraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_010 /* DocumentAnalysisService+FieldExtraction.swift */; };
+		SVC_BF_011 /* DocumentProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_011 /* DocumentProcessor.swift */; };
+		SVC_BF_012 /* DocumentStorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_012 /* DocumentStorageService.swift */; };
+		SVC_BF_013 /* EnhancedPlaidService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_013 /* EnhancedPlaidService.swift */; };
+		SVC_BF_014 /* FinancialGradeSecurityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_014 /* FinancialGradeSecurityManager.swift */; };
+		SVC_BF_015 /* GoogleCloudOCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_015 /* GoogleCloudOCRService.swift */; };
+		SVC_BF_016 /* LegalComplianceVerificationSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_016 /* LegalComplianceVerificationSystem.swift */; };
+		SVC_BF_017 /* LetterGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_017 /* LetterGenerationService.swift */; };
+		SVC_BF_018 /* LetterGenerationServiceUsageExample.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_018 /* LetterGenerationServiceUsageExample.swift */; };
+		SVC_BF_019 /* MarketDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_019 /* MarketDataService.swift */; };
+		SVC_BF_020 /* MortgageAICoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_020 /* MortgageAICoordinator.swift */; };
+		SVC_BF_021 /* MortgageErrorDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_021 /* MortgageErrorDetectionService.swift */; };
+		SVC_BF_022 /* MultiModelConsensusService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_022 /* MultiModelConsensusService.swift */; };
+		SVC_BF_023 /* PDFGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_023 /* PDFGenerator.swift */; };
+		SVC_BF_024 /* PermissionsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_024 /* PermissionsManager.swift */; };
+		SVC_BF_025 /* PlaidConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_025 /* PlaidConfiguration.swift */; };
+		SVC_BF_026 /* PlaidSecurityExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_026 /* PlaidSecurityExtensions.swift */; };
+		SVC_BF_027 /* PlaidServiceUsageExample.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_027 /* PlaidServiceUsageExample.swift */; };
+		SVC_BF_028 /* QualityAssuranceWorkflowEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_028 /* QualityAssuranceWorkflowEngine.swift */; };
+		SVC_BF_029 /* SecurityConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_029 /* SecurityConfiguration.swift */; };
+		SVC_BF_030 /* SecurityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_030 /* SecurityService.swift */; };
+		SVC_BF_031 /* SecurityServiceExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_031 /* SecurityServiceExtensions.swift */; };
+		SVC_BF_032 /* SecurityServiceUsageExample.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_032 /* SecurityServiceUsageExample.swift */; };
+		SVC_BF_033 /* ShareUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_033 /* ShareUtility.swift */; };
+		SVC_BF_034 /* SimplePlaidService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_034 /* SimplePlaidService.swift */; };
+		SVC_BF_035 /* VendorNeutralSecurityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_035 /* VendorNeutralSecurityManager.swift */; };
+		SVC_BF_036 /* ZeroToleranceAuditEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_036 /* ZeroToleranceAuditEngine.swift */; };
+		UTILS_BF_001 /* ErrorHandling.swift in Sources */ = {isa = PBXBuildFile; fileRef = UTILS_FR_001 /* ErrorHandling.swift */; };
+		VM_BF_001 /* AnalysisViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = VM_FR_001 /* AnalysisViewModel.swift */; };
+		VM_BF_002 /* DocumentCaptureViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = VM_FR_002 /* DocumentCaptureViewModel.swift */; };
+		VIEW_BF_001 /* AIAffordabilityAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_001 /* AIAffordabilityAnalyzer.swift */; };
+		VIEW_BF_002 /* AIInsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_002 /* AIInsightsView.swift */; };
+		VIEW_BF_003 /* AIMarketTimingAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_003 /* AIMarketTimingAnalyzer.swift */; };
+		VIEW_BF_004 /* AIMonitoringDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_004 /* AIMonitoringDashboard.swift */; };
+		VIEW_BF_005 /* AIScenarioAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_005 /* AIScenarioAnalyzer.swift */; };
+		VIEW_BF_006 /* AIScenarioComparison.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_006 /* AIScenarioComparison.swift */; };
+		VIEW_BF_007 /* AnalysisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_007 /* AnalysisView.swift */; };
+		VIEW_BF_008 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_008 /* DashboardView.swift */; };
+		VIEW_BF_009 /* DocumentPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_009 /* DocumentPickerView.swift */; };
+		VIEW_BF_010 /* DocumentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_010 /* DocumentsView.swift */; };
+		VIEW_BF_011 /* DocumentUploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_011 /* DocumentUploadView.swift */; };
+		VIEW_BF_012 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_012 /* EmptyStateView.swift */; };
+		VIEW_BF_013 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_013 /* LoginView.swift */; };
+		VIEW_BF_014 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_014 /* MainTabView.swift */; };
+		VIEW_BF_015 /* PlaidConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_015 /* PlaidConnectionView.swift */; };
+		VIEW_BF_016 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_016 /* ProfileView.swift */; };
+		VIEW_BF_017 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_017 /* SettingsView.swift */; };
+		VIEW_BF_018 /* StorageConsentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_018 /* StorageConsentView.swift */; };
+		VANAL_BF_001 /* AdvancedFiltersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VANAL_FR_001 /* AdvancedFiltersView.swift */; };
+		VANAL_BF_002 /* AnalysisChartsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VANAL_FR_002 /* AnalysisChartsView.swift */; };
+		VANAL_BF_003 /* AuditReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VANAL_FR_003 /* AuditReportView.swift */; };
+		VANAL_BF_004 /* DocumentEvidenceViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = VANAL_FR_004 /* DocumentEvidenceViewer.swift */; };
+		VANAL_BF_005 /* EnhancedAnalysisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VANAL_FR_005 /* EnhancedAnalysisView.swift */; };
+		VANAL_BF_006 /* IssueDetailComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = VANAL_FR_006 /* IssueDetailComponents.swift */; };
+		VANAL_BF_007 /* IssueDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VANAL_FR_007 /* IssueDetailView.swift */; };
+		VANAL_BF_008 /* IssueLetterGeneratorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VANAL_FR_008 /* IssueLetterGeneratorView.swift */; };
+		VCOMP_BF_001 /* AIInsightCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = VCOMP_FR_001 /* AIInsightCard.swift */; };
+		VCOMP_BF_002 /* DateRangePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = VCOMP_FR_002 /* DateRangePicker.swift */; };
+		VCOMP_BF_003 /* DocumentRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = VCOMP_FR_003 /* DocumentRow.swift */; };
+		VCOMP_BF_004 /* IssueCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = VCOMP_FR_004 /* IssueCard.swift */; };
+		VCOMP_BF_005 /* IssueRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = VCOMP_FR_005 /* IssueRow.swift */; };
+		VCOMP_BF_006 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VCOMP_FR_006 /* LoadingView.swift */; };
+		VCOMP_BF_007 /* SummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = VCOMP_FR_007 /* SummaryCard.swift */; };
+		VDCAP_BF_001 /* CameraViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = VDCAP_FR_001 /* CameraViewController.swift */; };
+		VDCAP_BF_002 /* DocumentCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VDCAP_FR_002 /* DocumentCaptureView.swift */; };
+		VDCAP_BF_003 /* DocumentPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VDCAP_FR_003 /* DocumentPreviewView.swift */; };
+		VDCAP_BF_004 /* FileImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VDCAP_FR_004 /* FileImportView.swift */; };
+		VSETT_BF_001 /* APISettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VSETT_FR_001 /* APISettingsView.swift */; };
+		SVC_BF_037 /* DocumentAnalysisServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC_FR_037 /* DocumentAnalysisServiceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,7 +157,6 @@
 		DD7495A955FAFF22E8195003 /* SecureKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureKeyManager.swift; sourceTree = "<group>"; };
 		AUTH001 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		API001 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
-
 		DOCMGR001 /* DocumentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentManager.swift; sourceTree = "<group>"; };
 		APIDOC001 /* APIClient+Documents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClient+Documents.swift"; sourceTree = "<group>"; };
 		APIPLAID001 /* APIClient+Plaid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClient+Plaid.swift"; sourceTree = "<group>"; };
@@ -52,7 +164,140 @@
 		ANYCODABLE001 /* AnyCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnyCodable.swift; sourceTree = "<group>"; };
 		MTGACCTMGMT001 /* MortgageAccountManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MortgageAccountManagementView.swift; sourceTree = "<group>"; };
 		HELPFAQ001 /* HelpFAQView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpFAQView.swift; sourceTree = "<group>"; };
+		USER001 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		USERPROFILE001 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
+		MORTGAGEDOC001 /* MortgageDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MortgageDocument.swift; sourceTree = "<group>"; };
+		AUDITRESULT001 /* AuditResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuditResult.swift; sourceTree = "<group>"; };
+		TRANSACTION001 /* Transaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transaction.swift; sourceTree = "<group>"; };
+		USERSTORE001 /* UserStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStore.swift; sourceTree = "<group>"; };
+		TEST_FR_AI001 /* AIAnalysisServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAnalysisServiceTests.swift; sourceTree = "<group>"; };
+		TEST_FR_AE001 /* AuditEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuditEngineTests.swift; sourceTree = "<group>"; };
+		TEST_FR_DP001 /* DocumentProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentProcessorTests.swift; sourceTree = "<group>"; };
+		TEST_FR_PS001 /* PlaidServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaidServiceTests.swift; sourceTree = "<group>"; };
+		TEST_FR_SK001 /* SecureKeyManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureKeyManagerTests.swift; sourceTree = "<group>"; };
+		TEST_FR_SS001 /* SecurityServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityServiceTests.swift; sourceTree = "<group>"; };
+		TEST_FR_TH001 /* TestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestHelpers.swift; sourceTree = "<group>"; };
+		TEST_FR_TC001 /* TestConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestConfiguration.swift; sourceTree = "<group>"; };
+		TEST_FR_TG001 /* MortgageTestDataGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MortgageTestDataGenerator.swift; sourceTree = "<group>"; };
+		TEST_FR_MD001 /* MockData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockData.swift; sourceTree = "<group>"; };
+		TEST_FR_MS001 /* MockServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockServices.swift; sourceTree = "<group>"; };
+		TEST_PRODUCT001 /* MortgageGuardianTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MortgageGuardianTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CORE_FR_001 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		CORE_FR_002 /* BrandedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandedComponents.swift; sourceTree = "<group>"; };
+		CORE_FR_003 /* BrandedHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandedHeader.swift; sourceTree = "<group>"; };
+		CORE_FR_004 /* DataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
+		CORE_FR_005 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		EXAMPLES_FR_001 /* MLPredictorUsageExample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLPredictorUsageExample.swift; sourceTree = "<group>"; };
+		FEAT_FR_001 /* CalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorView.swift; sourceTree = "<group>"; };
+		FEAT_FR_002 /* ScenarioDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenarioDetailView.swift; sourceTree = "<group>"; };
+		FEAT_FR_003 /* ScenarioListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenarioListView.swift; sourceTree = "<group>"; };
+		FEAT_FR_004 /* SplashScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreen.swift; sourceTree = "<group>"; };
+		ML_FR_001 /* MLModelTrainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLModelTrainer.swift; sourceTree = "<group>"; };
+		ML_FR_002 /* TrainingDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingDataManager.swift; sourceTree = "<group>"; };
+		MODELS_FR_001 /* ErrorCategorizationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorCategorizationModels.swift; sourceTree = "<group>"; };
+		MODELS_FR_002 /* LetterTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterTemplate.swift; sourceTree = "<group>"; };
+		MODELS_FR_003 /* MLModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLModels.swift; sourceTree = "<group>"; };
+		MODELS_FR_004 /* MLModels+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MLModels+Helpers.swift"; sourceTree = "<group>"; };
+		MODELS_FR_005 /* MortgageCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MortgageCalculator.swift; sourceTree = "<group>"; };
+		MODELS_FR_006 /* PersistentModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistentModels.swift; sourceTree = "<group>"; };
+		RSRC_FR_001 /* TemplateLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateLoader.swift; sourceTree = "<group>"; };
+		SVC_FR_001 /* AIAnalysisService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAnalysisService.swift; sourceTree = "<group>"; };
+		SVC_FR_002 /* AIManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIManager.swift; sourceTree = "<group>"; };
+		SVC_FR_003 /* AISetupManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AISetupManager.swift; sourceTree = "<group>"; };
+		SVC_FR_004 /* AuditEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuditEngine.swift; sourceTree = "<group>"; };
+		SVC_FR_005 /* ComprehensiveErrorDetectionAlgorithms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComprehensiveErrorDetectionAlgorithms.swift; sourceTree = "<group>"; };
+		SVC_FR_006 /* CostMetricsAndEfficiencyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CostMetricsAndEfficiencyService.swift; sourceTree = "<group>"; };
+		SVC_FR_007 /* CredentialManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialManager.swift; sourceTree = "<group>"; };
+		SVC_FR_008 /* DocumentAnalysisError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentAnalysisError.swift; sourceTree = "<group>"; };
+		SVC_FR_009 /* DocumentAnalysisService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentAnalysisService.swift; sourceTree = "<group>"; };
+		SVC_FR_010 /* DocumentAnalysisService+FieldExtraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DocumentAnalysisService+FieldExtraction.swift"; sourceTree = "<group>"; };
+		SVC_FR_011 /* DocumentProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentProcessor.swift; sourceTree = "<group>"; };
+		SVC_FR_037 /* DocumentAnalysisServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentAnalysisServiceTests.swift; sourceTree = "<group>"; };
+		SVC_FR_012 /* DocumentStorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentStorageService.swift; sourceTree = "<group>"; };
+		SVC_FR_013 /* EnhancedPlaidService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnhancedPlaidService.swift; sourceTree = "<group>"; };
+		SVC_FR_014 /* FinancialGradeSecurityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinancialGradeSecurityManager.swift; sourceTree = "<group>"; };
+		SVC_FR_015 /* GoogleCloudOCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleCloudOCRService.swift; sourceTree = "<group>"; };
+		SVC_FR_016 /* LegalComplianceVerificationSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalComplianceVerificationSystem.swift; sourceTree = "<group>"; };
+		SVC_FR_017 /* LetterGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterGenerationService.swift; sourceTree = "<group>"; };
+		SVC_FR_018 /* LetterGenerationServiceUsageExample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterGenerationServiceUsageExample.swift; sourceTree = "<group>"; };
+		SVC_FR_019 /* MarketDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketDataService.swift; sourceTree = "<group>"; };
+		SVC_FR_020 /* MortgageAICoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MortgageAICoordinator.swift; sourceTree = "<group>"; };
+		SVC_FR_021 /* MortgageErrorDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MortgageErrorDetectionService.swift; sourceTree = "<group>"; };
+		SVC_FR_022 /* MultiModelConsensusService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiModelConsensusService.swift; sourceTree = "<group>"; };
+		SVC_FR_023 /* PDFGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFGenerator.swift; sourceTree = "<group>"; };
+		SVC_FR_024 /* PermissionsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsManager.swift; sourceTree = "<group>"; };
+		SVC_FR_025 /* PlaidConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaidConfiguration.swift; sourceTree = "<group>"; };
+		SVC_FR_026 /* PlaidSecurityExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaidSecurityExtensions.swift; sourceTree = "<group>"; };
+		SVC_FR_027 /* PlaidServiceUsageExample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaidServiceUsageExample.swift; sourceTree = "<group>"; };
+		SVC_FR_028 /* QualityAssuranceWorkflowEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QualityAssuranceWorkflowEngine.swift; sourceTree = "<group>"; };
+		SVC_FR_029 /* SecurityConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityConfiguration.swift; sourceTree = "<group>"; };
+		SVC_FR_030 /* SecurityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityService.swift; sourceTree = "<group>"; };
+		SVC_FR_031 /* SecurityServiceExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityServiceExtensions.swift; sourceTree = "<group>"; };
+		SVC_FR_032 /* SecurityServiceUsageExample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityServiceUsageExample.swift; sourceTree = "<group>"; };
+		SVC_FR_033 /* ShareUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareUtility.swift; sourceTree = "<group>"; };
+		SVC_FR_034 /* SimplePlaidService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplePlaidService.swift; sourceTree = "<group>"; };
+		SVC_FR_035 /* VendorNeutralSecurityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VendorNeutralSecurityManager.swift; sourceTree = "<group>"; };
+		SVC_FR_036 /* ZeroToleranceAuditEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZeroToleranceAuditEngine.swift; sourceTree = "<group>"; };
+		UTILS_FR_001 /* ErrorHandling.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorHandling.swift; sourceTree = "<group>"; };
+		VM_FR_001 /* AnalysisViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisViewModel.swift; sourceTree = "<group>"; };
+		VM_FR_002 /* DocumentCaptureViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentCaptureViewModel.swift; sourceTree = "<group>"; };
+		VIEW_FR_001 /* AIAffordabilityAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAffordabilityAnalyzer.swift; sourceTree = "<group>"; };
+		VIEW_FR_002 /* AIInsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIInsightsView.swift; sourceTree = "<group>"; };
+		VIEW_FR_003 /* AIMarketTimingAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIMarketTimingAnalyzer.swift; sourceTree = "<group>"; };
+		VIEW_FR_004 /* AIMonitoringDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIMonitoringDashboard.swift; sourceTree = "<group>"; };
+		VIEW_FR_005 /* AIScenarioAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIScenarioAnalyzer.swift; sourceTree = "<group>"; };
+		VIEW_FR_006 /* AIScenarioComparison.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIScenarioComparison.swift; sourceTree = "<group>"; };
+		VIEW_FR_007 /* AnalysisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisView.swift; sourceTree = "<group>"; };
+		VIEW_FR_008 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		VIEW_FR_009 /* DocumentPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPickerView.swift; sourceTree = "<group>"; };
+		VIEW_FR_010 /* DocumentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentsView.swift; sourceTree = "<group>"; };
+		VIEW_FR_011 /* DocumentUploadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentUploadView.swift; sourceTree = "<group>"; };
+		VIEW_FR_012 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		VIEW_FR_013 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		VIEW_FR_014 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		VIEW_FR_015 /* PlaidConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaidConnectionView.swift; sourceTree = "<group>"; };
+		VIEW_FR_016 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		VIEW_FR_017 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		VIEW_FR_018 /* StorageConsentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageConsentView.swift; sourceTree = "<group>"; };
+		VANAL_FR_001 /* AdvancedFiltersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedFiltersView.swift; sourceTree = "<group>"; };
+		VANAL_FR_002 /* AnalysisChartsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisChartsView.swift; sourceTree = "<group>"; };
+		VANAL_FR_003 /* AuditReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuditReportView.swift; sourceTree = "<group>"; };
+		VANAL_FR_004 /* DocumentEvidenceViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentEvidenceViewer.swift; sourceTree = "<group>"; };
+		VANAL_FR_005 /* EnhancedAnalysisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnhancedAnalysisView.swift; sourceTree = "<group>"; };
+		VANAL_FR_006 /* IssueDetailComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueDetailComponents.swift; sourceTree = "<group>"; };
+		VANAL_FR_007 /* IssueDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueDetailView.swift; sourceTree = "<group>"; };
+		VANAL_FR_008 /* IssueLetterGeneratorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueLetterGeneratorView.swift; sourceTree = "<group>"; };
+		VCOMP_FR_001 /* AIInsightCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIInsightCard.swift; sourceTree = "<group>"; };
+		VCOMP_FR_002 /* DateRangePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateRangePicker.swift; sourceTree = "<group>"; };
+		VCOMP_FR_003 /* DocumentRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentRow.swift; sourceTree = "<group>"; };
+		VCOMP_FR_004 /* IssueCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueCard.swift; sourceTree = "<group>"; };
+		VCOMP_FR_005 /* IssueRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueRow.swift; sourceTree = "<group>"; };
+		VCOMP_FR_006 /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
+		VCOMP_FR_007 /* SummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryCard.swift; sourceTree = "<group>"; };
+		VDCAP_FR_001 /* CameraViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewController.swift; sourceTree = "<group>"; };
+		VDCAP_FR_002 /* DocumentCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentCaptureView.swift; sourceTree = "<group>"; };
+		VDCAP_FR_003 /* DocumentPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPreviewView.swift; sourceTree = "<group>"; };
+		VDCAP_FR_004 /* FileImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileImportView.swift; sourceTree = "<group>"; };
+		VSETT_FR_001 /* APISettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APISettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXContainerItemProxy section */
+		TEST_PROXY001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1DFDFDEE294B8F5A00C8A8A8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1DFDFDFC294B8F5A00C8A8A8;
+			remoteInfo = MortgageGuardian;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		TEST_DEP_ITEM001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1DFDFDFC294B8F5A00C8A8A8 /* MortgageGuardian */;
+			targetProxy = TEST_PROXY001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		1DFDFDFA294B8F5A00C8A8A8 /* Frameworks */ = {
@@ -61,6 +306,13 @@
 			files = (
 				CLERK001 /* ClerkSDK in Frameworks */,
 				PLAID001 /* LinkKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		TEST_FRAMEWORKS_PHASE001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,6 +331,7 @@
 			isa = PBXGroup;
 			children = (
 				1DFDFDFF294B8F5A00C8A8A8 /* MortgageGuardian */,
+				TEST_GRP_ROOT /* Tests */,
 				1DFDFDFB294B8F5A00C8A8A8 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -87,8 +340,52 @@
 			isa = PBXGroup;
 			children = (
 				1DFDFDFD294B8F5A00C8A8A8 /* MortgageGuardian.app */,
+				TEST_PRODUCT001 /* MortgageGuardianTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		TEST_GRP_ROOT /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				TEST_GRP_UNIT /* UnitTests */,
+				TEST_GRP_HELPERS /* TestHelpers */,
+				TEST_GRP_MOCK /* MockData */,
+			);
+			name = Tests;
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		TEST_GRP_UNIT /* UnitTests */ = {
+			isa = PBXGroup;
+			children = (
+				TEST_FR_AI001 /* AIAnalysisServiceTests.swift */,
+				TEST_FR_AE001 /* AuditEngineTests.swift */,
+				TEST_FR_DP001 /* DocumentProcessorTests.swift */,
+				TEST_FR_PS001 /* PlaidServiceTests.swift */,
+				TEST_FR_SK001 /* SecureKeyManagerTests.swift */,
+				TEST_FR_SS001 /* SecurityServiceTests.swift */,
+			);
+			path = UnitTests;
+			sourceTree = "<group>";
+		};
+		TEST_GRP_HELPERS /* TestHelpers */ = {
+			isa = PBXGroup;
+			children = (
+				TEST_FR_TH001 /* TestHelpers.swift */,
+				TEST_FR_TC001 /* TestConfiguration.swift */,
+				TEST_FR_TG001 /* MortgageTestDataGenerator.swift */,
+			);
+			path = TestHelpers;
+			sourceTree = "<group>";
+		};
+		TEST_GRP_MOCK /* MockData */ = {
+			isa = PBXGroup;
+			children = (
+				TEST_FR_MD001 /* MockData.swift */,
+				TEST_FR_MS001 /* MockServices.swift */,
+			);
+			path = MockData;
 			sourceTree = "<group>";
 		};
 		1DFDFDFF294B8F5A00C8A8A8 /* MortgageGuardian */ = {
@@ -96,9 +393,17 @@
 			children = (
 				1D000000294B8F5A00C8A8A8 /* MortgageGuardianApp.swift */,
 				1D000002294B8F5A00C8A8A8 /* ContentView.swift */,
+				CORE_GRP001 /* Core */,
 				20CA005F001E39B6D0A60C2D /* Models */,
 				21F558C793CBEBC90ED50DDA /* Services */,
 				6934E1BECC35344B1654E9C4 /* Views */,
+				VM_GRP001 /* ViewModels */,
+				FEAT_GRP001 /* Features */,
+				ML_GRP001 /* ML */,
+				EXAMPLES_GRP001 /* Examples */,
+				RSRC_GRP001 /* Resources */,
+				UTILS_GRP001 /* Utils */,
+				STORE_GRP001 /* Store */,
 				B24B66EE093BE06D6040258B /* Configuration */,
 				1D000004294B8F5B00C8A8A8 /* Assets.xcassets */,
 				1D000006294B8F5B00C8A8A8 /* Preview Content */,
@@ -106,13 +411,44 @@
 			path = MortgageGuardian;
 			sourceTree = "<group>";
 		};
+		CORE_GRP001 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				CORE_FR_001 /* AppState.swift */,
+				CORE_FR_002 /* BrandedComponents.swift */,
+				CORE_FR_003 /* BrandedHeader.swift */,
+				CORE_FR_004 /* DataManager.swift */,
+				CORE_FR_005 /* Theme.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
 		20CA005F001E39B6D0A60C2D /* Models */ = {
 			isa = PBXGroup;
 			children = (
 				0332F96FFE078D44705C0965 /* PlaidAccount.swift */,
 				ANYCODABLE001 /* AnyCodable.swift */,
+				USER001 /* User.swift */,
+				USERPROFILE001 /* UserProfile.swift */,
+				MORTGAGEDOC001 /* MortgageDocument.swift */,
+				AUDITRESULT001 /* AuditResult.swift */,
+				TRANSACTION001 /* Transaction.swift */,
+				MODELS_FR_001 /* ErrorCategorizationModels.swift */,
+				MODELS_FR_002 /* LetterTemplate.swift */,
+				MODELS_FR_003 /* MLModels.swift */,
+				MODELS_FR_004 /* MLModels+Helpers.swift */,
+				MODELS_FR_005 /* MortgageCalculator.swift */,
+				MODELS_FR_006 /* PersistentModels.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		STORE_GRP001 /* Store */ = {
+			isa = PBXGroup;
+			children = (
+				USERSTORE001 /* UserStore.swift */,
+			);
+			path = Store;
 			sourceTree = "<group>";
 		};
 		21F558C793CBEBC90ED50DDA /* Services */ = {
@@ -126,6 +462,43 @@
 				DOCMGR001 /* DocumentManager.swift */,
 				6AEEE4B45ACEA51A18398F19 /* PlaidLinkService.swift */,
 				DD7495A955FAFF22E8195003 /* SecureKeyManager.swift */,
+				SVC_FR_001 /* AIAnalysisService.swift */,
+				SVC_FR_002 /* AIManager.swift */,
+				SVC_FR_003 /* AISetupManager.swift */,
+				SVC_FR_004 /* AuditEngine.swift */,
+				SVC_FR_005 /* ComprehensiveErrorDetectionAlgorithms.swift */,
+				SVC_FR_006 /* CostMetricsAndEfficiencyService.swift */,
+				SVC_FR_007 /* CredentialManager.swift */,
+				SVC_FR_008 /* DocumentAnalysisError.swift */,
+				SVC_FR_009 /* DocumentAnalysisService.swift */,
+				SVC_FR_010 /* DocumentAnalysisService+FieldExtraction.swift */,
+				SVC_FR_037 /* DocumentAnalysisServiceTests.swift */,
+				SVC_FR_011 /* DocumentProcessor.swift */,
+				SVC_FR_012 /* DocumentStorageService.swift */,
+				SVC_FR_013 /* EnhancedPlaidService.swift */,
+				SVC_FR_014 /* FinancialGradeSecurityManager.swift */,
+				SVC_FR_015 /* GoogleCloudOCRService.swift */,
+				SVC_FR_016 /* LegalComplianceVerificationSystem.swift */,
+				SVC_FR_017 /* LetterGenerationService.swift */,
+				SVC_FR_018 /* LetterGenerationServiceUsageExample.swift */,
+				SVC_FR_019 /* MarketDataService.swift */,
+				SVC_FR_020 /* MortgageAICoordinator.swift */,
+				SVC_FR_021 /* MortgageErrorDetectionService.swift */,
+				SVC_FR_022 /* MultiModelConsensusService.swift */,
+				SVC_FR_023 /* PDFGenerator.swift */,
+				SVC_FR_024 /* PermissionsManager.swift */,
+				SVC_FR_025 /* PlaidConfiguration.swift */,
+				SVC_FR_026 /* PlaidSecurityExtensions.swift */,
+				SVC_FR_027 /* PlaidServiceUsageExample.swift */,
+				SVC_FR_028 /* QualityAssuranceWorkflowEngine.swift */,
+				SVC_FR_029 /* SecurityConfiguration.swift */,
+				SVC_FR_030 /* SecurityService.swift */,
+				SVC_FR_031 /* SecurityServiceExtensions.swift */,
+				SVC_FR_032 /* SecurityServiceUsageExample.swift */,
+				SVC_FR_033 /* ShareUtility.swift */,
+				SVC_FR_034 /* SimplePlaidService.swift */,
+				SVC_FR_035 /* VendorNeutralSecurityManager.swift */,
+				SVC_FR_036 /* ZeroToleranceAuditEngine.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -134,9 +507,70 @@
 			isa = PBXGroup;
 			children = (
 				C43EABF7802DC41281DE5BBA /* RealPlaidConnectionView.swift */,
+				VIEW_FR_001 /* AIAffordabilityAnalyzer.swift */,
+				VIEW_FR_002 /* AIInsightsView.swift */,
+				VIEW_FR_003 /* AIMarketTimingAnalyzer.swift */,
+				VIEW_FR_004 /* AIMonitoringDashboard.swift */,
+				VIEW_FR_005 /* AIScenarioAnalyzer.swift */,
+				VIEW_FR_006 /* AIScenarioComparison.swift */,
+				VIEW_FR_007 /* AnalysisView.swift */,
+				VIEW_FR_008 /* DashboardView.swift */,
+				VIEW_FR_009 /* DocumentPickerView.swift */,
+				VIEW_FR_010 /* DocumentsView.swift */,
+				VIEW_FR_011 /* DocumentUploadView.swift */,
+				VIEW_FR_012 /* EmptyStateView.swift */,
+				VIEW_FR_013 /* LoginView.swift */,
+				VIEW_FR_014 /* MainTabView.swift */,
+				VIEW_FR_015 /* PlaidConnectionView.swift */,
+				VIEW_FR_016 /* ProfileView.swift */,
+				VIEW_FR_017 /* SettingsView.swift */,
+				VIEW_FR_018 /* StorageConsentView.swift */,
+				VANAL_GRP001 /* Analysis */,
+				VCOMP_GRP001 /* Components */,
+				VDCAP_GRP001 /* DocumentCapture */,
 				SETTINGS_GRP001 /* Settings */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		VANAL_GRP001 /* Analysis */ = {
+			isa = PBXGroup;
+			children = (
+				VANAL_FR_001 /* AdvancedFiltersView.swift */,
+				VANAL_FR_002 /* AnalysisChartsView.swift */,
+				VANAL_FR_003 /* AuditReportView.swift */,
+				VANAL_FR_004 /* DocumentEvidenceViewer.swift */,
+				VANAL_FR_005 /* EnhancedAnalysisView.swift */,
+				VANAL_FR_006 /* IssueDetailComponents.swift */,
+				VANAL_FR_007 /* IssueDetailView.swift */,
+				VANAL_FR_008 /* IssueLetterGeneratorView.swift */,
+			);
+			path = Analysis;
+			sourceTree = "<group>";
+		};
+		VCOMP_GRP001 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				VCOMP_FR_001 /* AIInsightCard.swift */,
+				VCOMP_FR_002 /* DateRangePicker.swift */,
+				VCOMP_FR_003 /* DocumentRow.swift */,
+				VCOMP_FR_004 /* IssueCard.swift */,
+				VCOMP_FR_005 /* IssueRow.swift */,
+				VCOMP_FR_006 /* LoadingView.swift */,
+				VCOMP_FR_007 /* SummaryCard.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		VDCAP_GRP001 /* DocumentCapture */ = {
+			isa = PBXGroup;
+			children = (
+				VDCAP_FR_001 /* CameraViewController.swift */,
+				VDCAP_FR_002 /* DocumentCaptureView.swift */,
+				VDCAP_FR_003 /* DocumentPreviewView.swift */,
+				VDCAP_FR_004 /* FileImportView.swift */,
+			);
+			path = DocumentCapture;
 			sourceTree = "<group>";
 		};
 		SETTINGS_GRP001 /* Settings */ = {
@@ -144,8 +578,78 @@
 			children = (
 				MTGACCTMGMT001 /* MortgageAccountManagementView.swift */,
 				HELPFAQ001 /* HelpFAQView.swift */,
+				VSETT_FR_001 /* APISettingsView.swift */,
 			);
 			path = Settings;
+			sourceTree = "<group>";
+		};
+		VM_GRP001 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				VM_FR_001 /* AnalysisViewModel.swift */,
+				VM_FR_002 /* DocumentCaptureViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		FEAT_GRP001 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				FEAT_FR_002 /* ScenarioDetailView.swift */,
+				FEAT_FR_003 /* ScenarioListView.swift */,
+				FEAT_FR_004 /* SplashScreen.swift */,
+				FEAT_CALC_GRP001 /* Calculator */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		FEAT_CALC_GRP001 /* Calculator */ = {
+			isa = PBXGroup;
+			children = (
+				FEAT_FR_001 /* CalculatorView.swift */,
+			);
+			path = Calculator;
+			sourceTree = "<group>";
+		};
+		ML_GRP001 /* ML */ = {
+			isa = PBXGroup;
+			children = (
+				ML_FR_001 /* MLModelTrainer.swift */,
+				ML_FR_002 /* TrainingDataManager.swift */,
+			);
+			path = ML;
+			sourceTree = "<group>";
+		};
+		EXAMPLES_GRP001 /* Examples */ = {
+			isa = PBXGroup;
+			children = (
+				EXAMPLES_FR_001 /* MLPredictorUsageExample.swift */,
+			);
+			path = Examples;
+			sourceTree = "<group>";
+		};
+		RSRC_GRP001 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				RSRC_LETTERS_GRP001 /* LetterTemplates */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		RSRC_LETTERS_GRP001 /* LetterTemplates */ = {
+			isa = PBXGroup;
+			children = (
+				RSRC_FR_001 /* TemplateLoader.swift */,
+			);
+			path = LetterTemplates;
+			sourceTree = "<group>";
+		};
+		UTILS_GRP001 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				UTILS_FR_001 /* ErrorHandling.swift */,
+			);
+			path = Utils;
 			sourceTree = "<group>";
 		};
 		B24B66EE093BE06D6040258B /* Configuration */ = {
@@ -180,6 +684,23 @@
 			productReference = 1DFDFDFD294B8F5A00C8A8A8 /* MortgageGuardian.app */;
 			productType = "com.apple.product-type.application";
 		};
+		TEST_TARGET001 /* MortgageGuardianTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = TEST_CFGLIST001 /* Build configuration list for PBXNativeTarget "MortgageGuardianTests" */;
+			buildPhases = (
+				TEST_SOURCES_PHASE001 /* Sources */,
+				TEST_FRAMEWORKS_PHASE001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				TEST_DEP_ITEM001 /* PBXTargetDependency */,
+			);
+			name = MortgageGuardianTests;
+			productName = MortgageGuardianTests;
+			productReference = TEST_PRODUCT001 /* MortgageGuardianTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -192,6 +713,10 @@
 				TargetAttributes = {
 					1DFDFDFC294B8F5A00C8A8A8 = {
 						CreatedOnToolsVersion = 15.0;
+					};
+					TEST_TARGET001 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = 1DFDFDFC294B8F5A00C8A8A8;
 					};
 				};
 			};
@@ -213,6 +738,7 @@
 			projectRoot = "";
 			targets = (
 				1DFDFDFC294B8F5A00C8A8A8 /* MortgageGuardian */,
+				TEST_TARGET001 /* MortgageGuardianTests */,
 			);
 		};
 /* End PBXProject section */
@@ -235,12 +761,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1D000003294B8F5A00C8A8A8 /* ContentView.swift in Sources */,
 				1D000001294B8F5A00C8A8A8 /* MortgageGuardianApp.swift in Sources */,
 				AUTH_BUILD001 /* AuthManager.swift in Sources */,
 				API_BUILD001 /* APIClient.swift in Sources */,
 				DOCMGR_BUILD001 /* DocumentManager.swift in Sources */,
-
 				F4FD0A761798883E8200D80F /* PlaidLinkService.swift in Sources */,
 				4C4443BB4BE8184C58A49BFD /* RealPlaidConnectionView.swift in Sources */,
 				17194166DCB18B258065C268 /* PlaidAccount.swift in Sources */,
@@ -252,6 +776,126 @@
 				ANYCODABLE_BUILD001 /* AnyCodable.swift in Sources */,
 				MTGACCTMGMT_BUILD001 /* MortgageAccountManagementView.swift in Sources */,
 				HELPFAQ_BUILD001 /* HelpFAQView.swift in Sources */,
+				USER_BUILD001 /* User.swift in Sources */,
+				USERPROFILE_BUILD001 /* UserProfile.swift in Sources */,
+				MORTGAGEDOC_BUILD001 /* MortgageDocument.swift in Sources */,
+				AUDITRESULT_BUILD001 /* AuditResult.swift in Sources */,
+				TRANSACTION_BUILD001 /* Transaction.swift in Sources */,
+				USERSTORE_BUILD001 /* UserStore.swift in Sources */,
+				CORE_BF_001 /* AppState.swift in Sources */,
+				CORE_BF_002 /* BrandedComponents.swift in Sources */,
+				CORE_BF_003 /* BrandedHeader.swift in Sources */,
+				CORE_BF_004 /* DataManager.swift in Sources */,
+				CORE_BF_005 /* Theme.swift in Sources */,
+				EXAMPLES_BF_001 /* MLPredictorUsageExample.swift in Sources */,
+				FEAT_BF_001 /* CalculatorView.swift in Sources */,
+				FEAT_BF_002 /* ScenarioDetailView.swift in Sources */,
+				FEAT_BF_003 /* ScenarioListView.swift in Sources */,
+				FEAT_BF_004 /* SplashScreen.swift in Sources */,
+				ML_BF_001 /* MLModelTrainer.swift in Sources */,
+				ML_BF_002 /* TrainingDataManager.swift in Sources */,
+				MODELS_BF_001 /* ErrorCategorizationModels.swift in Sources */,
+				MODELS_BF_002 /* LetterTemplate.swift in Sources */,
+				MODELS_BF_003 /* MLModels.swift in Sources */,
+				MODELS_BF_004 /* MLModels+Helpers.swift in Sources */,
+				MODELS_BF_005 /* MortgageCalculator.swift in Sources */,
+				MODELS_BF_006 /* PersistentModels.swift in Sources */,
+				RSRC_BF_001 /* TemplateLoader.swift in Sources */,
+				SVC_BF_001 /* AIAnalysisService.swift in Sources */,
+				SVC_BF_002 /* AIManager.swift in Sources */,
+				SVC_BF_003 /* AISetupManager.swift in Sources */,
+				SVC_BF_004 /* AuditEngine.swift in Sources */,
+				SVC_BF_005 /* ComprehensiveErrorDetectionAlgorithms.swift in Sources */,
+				SVC_BF_006 /* CostMetricsAndEfficiencyService.swift in Sources */,
+				SVC_BF_007 /* CredentialManager.swift in Sources */,
+				SVC_BF_008 /* DocumentAnalysisError.swift in Sources */,
+				SVC_BF_009 /* DocumentAnalysisService.swift in Sources */,
+				SVC_BF_010 /* DocumentAnalysisService+FieldExtraction.swift in Sources */,
+				SVC_BF_011 /* DocumentProcessor.swift in Sources */,
+				SVC_BF_012 /* DocumentStorageService.swift in Sources */,
+				SVC_BF_013 /* EnhancedPlaidService.swift in Sources */,
+				SVC_BF_014 /* FinancialGradeSecurityManager.swift in Sources */,
+				SVC_BF_015 /* GoogleCloudOCRService.swift in Sources */,
+				SVC_BF_016 /* LegalComplianceVerificationSystem.swift in Sources */,
+				SVC_BF_017 /* LetterGenerationService.swift in Sources */,
+				SVC_BF_018 /* LetterGenerationServiceUsageExample.swift in Sources */,
+				SVC_BF_019 /* MarketDataService.swift in Sources */,
+				SVC_BF_020 /* MortgageAICoordinator.swift in Sources */,
+				SVC_BF_021 /* MortgageErrorDetectionService.swift in Sources */,
+				SVC_BF_022 /* MultiModelConsensusService.swift in Sources */,
+				SVC_BF_023 /* PDFGenerator.swift in Sources */,
+				SVC_BF_024 /* PermissionsManager.swift in Sources */,
+				SVC_BF_025 /* PlaidConfiguration.swift in Sources */,
+				SVC_BF_026 /* PlaidSecurityExtensions.swift in Sources */,
+				SVC_BF_027 /* PlaidServiceUsageExample.swift in Sources */,
+				SVC_BF_028 /* QualityAssuranceWorkflowEngine.swift in Sources */,
+				SVC_BF_029 /* SecurityConfiguration.swift in Sources */,
+				SVC_BF_030 /* SecurityService.swift in Sources */,
+				SVC_BF_031 /* SecurityServiceExtensions.swift in Sources */,
+				SVC_BF_032 /* SecurityServiceUsageExample.swift in Sources */,
+				SVC_BF_033 /* ShareUtility.swift in Sources */,
+				SVC_BF_034 /* SimplePlaidService.swift in Sources */,
+				SVC_BF_035 /* VendorNeutralSecurityManager.swift in Sources */,
+				SVC_BF_036 /* ZeroToleranceAuditEngine.swift in Sources */,
+				UTILS_BF_001 /* ErrorHandling.swift in Sources */,
+				VM_BF_001 /* AnalysisViewModel.swift in Sources */,
+				VM_BF_002 /* DocumentCaptureViewModel.swift in Sources */,
+				VIEW_BF_001 /* AIAffordabilityAnalyzer.swift in Sources */,
+				VIEW_BF_002 /* AIInsightsView.swift in Sources */,
+				VIEW_BF_003 /* AIMarketTimingAnalyzer.swift in Sources */,
+				VIEW_BF_004 /* AIMonitoringDashboard.swift in Sources */,
+				VIEW_BF_005 /* AIScenarioAnalyzer.swift in Sources */,
+				VIEW_BF_006 /* AIScenarioComparison.swift in Sources */,
+				VIEW_BF_007 /* AnalysisView.swift in Sources */,
+				VIEW_BF_008 /* DashboardView.swift in Sources */,
+				VIEW_BF_009 /* DocumentPickerView.swift in Sources */,
+				VIEW_BF_010 /* DocumentsView.swift in Sources */,
+				VIEW_BF_011 /* DocumentUploadView.swift in Sources */,
+				VIEW_BF_012 /* EmptyStateView.swift in Sources */,
+				VIEW_BF_013 /* LoginView.swift in Sources */,
+				VIEW_BF_014 /* MainTabView.swift in Sources */,
+				VIEW_BF_015 /* PlaidConnectionView.swift in Sources */,
+				VIEW_BF_016 /* ProfileView.swift in Sources */,
+				VIEW_BF_017 /* SettingsView.swift in Sources */,
+				VIEW_BF_018 /* StorageConsentView.swift in Sources */,
+				VANAL_BF_001 /* AdvancedFiltersView.swift in Sources */,
+				VANAL_BF_002 /* AnalysisChartsView.swift in Sources */,
+				VANAL_BF_003 /* AuditReportView.swift in Sources */,
+				VANAL_BF_004 /* DocumentEvidenceViewer.swift in Sources */,
+				VANAL_BF_005 /* EnhancedAnalysisView.swift in Sources */,
+				VANAL_BF_006 /* IssueDetailComponents.swift in Sources */,
+				VANAL_BF_007 /* IssueDetailView.swift in Sources */,
+				VANAL_BF_008 /* IssueLetterGeneratorView.swift in Sources */,
+				VCOMP_BF_001 /* AIInsightCard.swift in Sources */,
+				VCOMP_BF_002 /* DateRangePicker.swift in Sources */,
+				VCOMP_BF_003 /* DocumentRow.swift in Sources */,
+				VCOMP_BF_004 /* IssueCard.swift in Sources */,
+				VCOMP_BF_005 /* IssueRow.swift in Sources */,
+				VCOMP_BF_006 /* LoadingView.swift in Sources */,
+				VCOMP_BF_007 /* SummaryCard.swift in Sources */,
+				VDCAP_BF_001 /* CameraViewController.swift in Sources */,
+				VDCAP_BF_002 /* DocumentCaptureView.swift in Sources */,
+				VDCAP_BF_003 /* DocumentPreviewView.swift in Sources */,
+				VDCAP_BF_004 /* FileImportView.swift in Sources */,
+				VSETT_BF_001 /* APISettingsView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		TEST_SOURCES_PHASE001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				TEST_BF_AI001 /* AIAnalysisServiceTests.swift in Sources */,
+				TEST_BF_AE001 /* AuditEngineTests.swift in Sources */,
+				TEST_BF_DP001 /* DocumentProcessorTests.swift in Sources */,
+				TEST_BF_PS001 /* PlaidServiceTests.swift in Sources */,
+				TEST_BF_SK001 /* SecureKeyManagerTests.swift in Sources */,
+				TEST_BF_SS001 /* SecurityServiceTests.swift in Sources */,
+				TEST_BF_TH001 /* TestHelpers.swift in Sources */,
+				TEST_BF_TC001 /* TestConfiguration.swift in Sources */,
+				TEST_BF_TG001 /* MortgageTestDataGenerator.swift in Sources */,
+				TEST_BF_MD001 /* MockData.swift in Sources */,
+				TEST_BF_MS001 /* MockServices.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -449,6 +1093,46 @@
 			};
 			name = Release;
 		};
+		TEST_CFG_DEBUG001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = AQ4G5FP8KF;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nickgarrison.mortgageguardian.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MortgageGuardian.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MortgageGuardian";
+			};
+			name = Debug;
+		};
+		TEST_CFG_RELEASE001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = AQ4G5FP8KF;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nickgarrison.mortgageguardian.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MortgageGuardian.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MortgageGuardian";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -466,6 +1150,15 @@
 			buildConfigurations = (
 				1D000009294B8F5B00C8A8A8 /* Debug */,
 				1D00000A294B8F5B00C8A8A8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		TEST_CFGLIST001 /* Build configuration list for PBXNativeTarget "MortgageGuardianTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				TEST_CFG_DEBUG001 /* Debug */,
+				TEST_CFG_RELEASE001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

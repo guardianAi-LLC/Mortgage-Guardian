@@ -3,7 +3,7 @@ import SwiftUI
 
 @Observable
 class AIManager {
-    private let mlPredictor = MLPredictor()
+    private let mlPredictor = MLPredictor.shared
     private let documentAnalyzer = DocumentAnalysisService()
     
     // Market data service for real-time updates
@@ -23,7 +23,7 @@ class AIManager {
         }
     }
     
-    func analyzeScenario(_ scenario: SavedMortgageScenario, userProfile: UserProfile) async throws {
+    func analyzeScenario(_ scenario: SavedMortgageScenario, userProfile: MortgageUserProfile) async throws {
         async let riskAssessment = mlPredictor.assessMortgageRisk(
             scenario: scenario,
             annualIncome: userProfile.annualIncome,
@@ -66,7 +66,7 @@ class AIManager {
 }
 
 // User profile for AI analysis
-struct UserProfile {
+struct AIManagerMortgageProfile {
     var annualIncome: Double
     var creditScore: Int
     var employmentYears: Double

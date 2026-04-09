@@ -215,7 +215,7 @@ public final class MortgageErrorDetectionService: ObservableObject {
 
     // MARK: - Initialization
 
-    public init(
+    init(
         auditEngine: AuditEngine = AuditEngine(),
         aiAnalysisService: AIAnalysisService = AIAnalysisService.shared,
         zeroToleranceEngine: ZeroToleranceAuditEngine? = nil, // NEW: Optional zero-tolerance engine
@@ -248,7 +248,7 @@ public final class MortgageErrorDetectionService: ObservableObject {
     // MARK: - Public Methods
 
     /// Perform tiered error detection analysis on mortgage document
-    public func analyzeDocument(
+    func analyzeDocument(
         extractedData: ExtractedData,
         bankTransactions: [Transaction] = [],
         loanDetails: LoanDetails? = nil,
@@ -1149,25 +1149,20 @@ extension MortgageErrorDetectionService.ErrorSeverity: Comparable {
 
 // MARK: - Placeholder Types (to be implemented based on actual AI service)
 
-struct AIAnalysisContext {
+struct DetectionAIAnalysisContext {
     let extractedData: ExtractedData
     let bankTransactions: [Transaction]
     let loanDetails: LoanDetails?
     let existingFindings: [MortgageErrorDetectionService.DetectedError]
 }
 
-struct AIAnalysisResult {
+struct DetectionAIAnalysisResult {
     let findings: [String] // Placeholder
 }
 
-enum AIFocusArea {
+enum DetectionAIFocusArea {
     case complexPatterns
     case regulatoryCompliance
 }
 
-extension AIAnalysisService {
-    func analyzeComplexPatterns(context: AIAnalysisContext, focusAreas: [AIFocusArea]) async throws -> [AIAnalysisResult] {
-        // Placeholder implementation
-        return []
-    }
-}
+// analyzeComplexPatterns is defined in AIAnalysisService.swift

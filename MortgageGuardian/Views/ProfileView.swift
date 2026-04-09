@@ -57,11 +57,11 @@ struct ProfileView: View {
 
             // User Info
             VStack(spacing: 4) {
-                Text(authManager.user?.firstName ?? "User")
+                Text(authManager.userName ?? "User")
                     .font(.title2)
                     .fontWeight(.bold)
 
-                Text(authManager.user?.primaryEmailAddress?.emailAddress ?? "")
+                Text(authManager.userEmail ?? "")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -106,7 +106,7 @@ struct ProfileView: View {
                 .padding(.horizontal)
 
             VStack(spacing: 0) {
-                SettingsRow(
+                ProfileSettingsRow(
                     icon: "bell.fill",
                     title: "Notifications",
                     color: .orange
@@ -115,7 +115,7 @@ struct ProfileView: View {
                 Divider()
                     .padding(.leading, 56)
 
-                SettingsRow(
+                ProfileSettingsRow(
                     icon: "lock.fill",
                     title: "Privacy & Security",
                     color: .blue
@@ -124,7 +124,7 @@ struct ProfileView: View {
                 Divider()
                     .padding(.leading, 56)
 
-                SettingsRow(
+                ProfileSettingsRow(
                     icon: "doc.text.fill",
                     title: "Terms & Conditions",
                     color: .gray
@@ -133,7 +133,7 @@ struct ProfileView: View {
                 Divider()
                     .padding(.leading, 56)
 
-                SettingsRow(
+                ProfileSettingsRow(
                     icon: "questionmark.circle.fill",
                     title: "Help & Support",
                     color: .purple
@@ -142,7 +142,7 @@ struct ProfileView: View {
                 Divider()
                     .padding(.leading, 56)
 
-                SettingsRow(
+                ProfileSettingsRow(
                     icon: "info.circle.fill",
                     title: "About",
                     color: .cyan
@@ -214,7 +214,7 @@ struct StatCard: View {
     }
 }
 
-struct SettingsRow: View {
+struct ProfileSettingsRow: View {
     let icon: String
     let title: String
     let color: Color

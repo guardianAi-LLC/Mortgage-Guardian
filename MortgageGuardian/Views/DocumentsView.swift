@@ -133,7 +133,7 @@ struct DocumentsView: View {
             HStack {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        FilterChip(
+                        DocFilterChip(
                             title: "All",
                             isSelected: selectedDocumentType == nil
                         ) {
@@ -141,7 +141,7 @@ struct DocumentsView: View {
                         }
 
                         ForEach(MortgageDocument.DocumentType.allCases, id: \.self) { type in
-                            FilterChip(
+                            DocFilterChip(
                                 title: type.displayName,
                                 isSelected: selectedDocumentType == type
                             ) {
@@ -339,7 +339,7 @@ struct DocumentsView: View {
 }
 
 // MARK: - Filter Chip Component
-struct FilterChip: View {
+struct DocFilterChip: View {
     let title: String
     let isSelected: Bool
     let action: () -> Void
@@ -510,10 +510,10 @@ struct DocumentDetailView: View {
                             .fontWeight(.semibold)
 
                         VStack(spacing: 8) {
-                            InfoRow(label: "File Name", value: document.fileName)
-                            InfoRow(label: "Type", value: document.documentType.displayName)
-                            InfoRow(label: "Upload Date", value: formatDate(document.uploadDate))
-                            InfoRow(label: "Status", value: document.isAnalyzed ? "Analyzed" : "Pending Analysis")
+                            DocInfoRow(label: "File Name", value: document.fileName)
+                            DocInfoRow(label: "Type", value: document.documentType.displayName)
+                            DocInfoRow(label: "Upload Date", value: formatDate(document.uploadDate))
+                            DocInfoRow(label: "Status", value: document.isAnalyzed ? "Analyzed" : "Pending Analysis")
                         }
                     }
 
@@ -759,7 +759,7 @@ struct FindingRowView: View {
 }
 
 // MARK: - Info Row Component
-struct InfoRow: View {
+struct DocInfoRow: View {
     let label: String
     let value: String
 

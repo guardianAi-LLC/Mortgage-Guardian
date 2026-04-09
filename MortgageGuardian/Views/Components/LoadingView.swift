@@ -28,7 +28,7 @@ struct LoadingView: View {
 }
 
 /// A reusable empty state view component
-struct EmptyStateView: View {
+struct ComponentEmptyStateView: View {
     let icon: String
     let title: String
     let message: String
@@ -143,7 +143,7 @@ struct ErrorView: View {
     VStack(spacing: 32) {
         LoadingView(message: "Analyzing documents...")
 
-        EmptyStateView(
+        ComponentEmptyStateView(
             icon: "doc.text",
             title: "No Documents",
             message: "Upload your first mortgage document to get started with analysis",

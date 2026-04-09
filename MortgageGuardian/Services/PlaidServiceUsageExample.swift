@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import UIKit
+import Combine
 
 /// Comprehensive usage examples and integration patterns for PlaidService
 /// This file demonstrates how to integrate Plaid functionality into the Mortgage Guardian app
@@ -164,7 +165,7 @@ public class PlaidServiceUsageExample {
     // MARK: - UI Integration Example
 
     /// Example 5: SwiftUI integration
-    public struct PlaidIntegrationView: View {
+    struct PlaidIntegrationView: View {
         @StateObject private var plaidService = PlaidService.shared
         @State private var showingLinkFlow = false
         @State private var selectedAccount: PlaidAccount?
@@ -311,7 +312,7 @@ public class PlaidServiceUsageExample {
     }
 
     /// Account row view component
-    public struct AccountRowView: View {
+    struct AccountRowView: View {
         let account: PlaidAccount
         let onTap: () -> Void
 
@@ -344,7 +345,7 @@ public class PlaidServiceUsageExample {
     }
 
     /// Plaid Link flow wrapper
-    public struct PlaidLinkView: UIViewControllerRepresentable {
+    struct PlaidLinkView: UIViewControllerRepresentable {
         @Environment(\.presentationMode) var presentationMode
 
         func makeUIViewController(context: Context) -> UIViewController {
@@ -521,7 +522,7 @@ public class PlaidServiceUsageExample {
 
     private static func displayAuditResults(_ results: [AuditResult]) {
         print("\n🔍 AUDIT RESULTS:")
-        print("=" * 50)
+        print(String(repeating: "=", count: 50))
 
         for (index, result) in results.enumerated() {
             print("\n\(index + 1). \(result.title)")
@@ -534,7 +535,7 @@ public class PlaidServiceUsageExample {
             print("   Confidence: \(String(format: "%.0f", result.confidence * 100))%")
         }
 
-        print("\n" + "=" * 50)
+        print("\n" + String(repeating: "=", count: 50))
         print("Total Issues Found: \(results.count)")
 
         let criticalIssues = results.filter { $0.severity == .critical }.count
@@ -618,11 +619,6 @@ public class PlaidServiceUsageExample {
         print("⏰ Scheduling retry in 60 seconds")
         try? await Task.sleep(nanoseconds: 60_000_000_000) // 60 seconds
         await PlaidService.shared.syncTransactions()
-    }
-
-    // Helper for string multiplication
-    private static func *(left: String, right: Int) -> String {
-        return String(repeating: left, count: right)
     }
 
     // Store for Combine subscriptions

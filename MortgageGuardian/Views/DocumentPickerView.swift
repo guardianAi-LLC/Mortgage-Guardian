@@ -245,7 +245,7 @@ struct DocumentPickerView: View {
                 } else {
                     // Assume it's an image
                     guard let image = UIImage(data: data) else {
-                        throw DocumentError.unsupportedFormat
+                        throw PickerDocumentError.unsupportedFormat
                     }
                     extractedText = await extractTextFromImage(image)
                 }
@@ -389,7 +389,7 @@ struct DocumentTypeCard: View {
     }
 }
 
-struct CameraView: UIViewControllerRepresentable {
+struct PickerCameraView: UIViewControllerRepresentable {
     let onImageCaptured: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -428,7 +428,7 @@ struct CameraView: UIViewControllerRepresentable {
 
 // MARK: - Supporting Types
 
-enum DocumentError: LocalizedError {
+enum PickerDocumentError: LocalizedError {
     case unsupportedFormat
     case processingFailed
 

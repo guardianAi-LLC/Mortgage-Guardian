@@ -36,25 +36,25 @@ struct PlaidConnectionView: View {
                             .fontWeight(.semibold)
 
                         VStack(spacing: 12) {
-                            BenefitRow(
+                            PlaidBenefitRow(
                                 icon: "checkmark.shield.fill",
                                 title: "Verify Payments",
                                 description: "Cross-check your actual payments against servicer records"
                             )
 
-                            BenefitRow(
+                            PlaidBenefitRow(
                                 icon: "magnifyingglass.circle.fill",
                                 title: "Detect Errors",
                                 description: "Automatically find payment allocation mistakes"
                             )
 
-                            BenefitRow(
+                            PlaidBenefitRow(
                                 icon: "chart.line.uptrend.xyaxis",
                                 title: "Track History",
                                 description: "Monitor payment patterns and escrow changes"
                             )
 
-                            BenefitRow(
+                            PlaidBenefitRow(
                                 icon: "doc.text.fill",
                                 title: "Generate Reports",
                                 description: "Create detailed payment history for disputes"
@@ -74,22 +74,22 @@ struct PlaidConnectionView: View {
                             .fontWeight(.semibold)
 
                         VStack(spacing: 8) {
-                            SecurityFeature(
+                            PlaidSecurityFeatureView(
                                 icon: "lock.shield.fill",
                                 text: "256-bit encryption protects your data"
                             )
 
-                            SecurityFeature(
+                            PlaidSecurityFeatureView(
                                 icon: "eye.slash.fill",
                                 text: "We never see your login credentials"
                             )
 
-                            SecurityFeature(
+                            PlaidSecurityFeatureView(
                                 icon: "hand.raised.fill",
                                 text: "Read-only access - we cannot move money"
                             )
 
-                            SecurityFeature(
+                            PlaidSecurityFeatureView(
                                 icon: "building.2.fill",
                                 text: "Trusted by 11,000+ financial apps"
                             )
@@ -209,7 +209,7 @@ struct PlaidConnectionView: View {
     }
 }
 
-struct BenefitRow: View {
+struct PlaidBenefitRow: View {
     let icon: String
     let title: String
     let description: String
@@ -237,7 +237,7 @@ struct BenefitRow: View {
     }
 }
 
-struct SecurityFeature: View {
+struct PlaidSecurityFeatureView: View {
     let icon: String
     let text: String
 
@@ -258,7 +258,7 @@ struct SecurityFeature: View {
     }
 }
 
-struct ConnectedAccountsView: View {
+struct PlaidConnectedAccountsView: View {
     @StateObject private var plaidService = PlaidService.shared
     @State private var showingPlaidConnection = false
 
@@ -295,7 +295,7 @@ struct ConnectedAccountsView: View {
                 } else {
                     Section("Connected Accounts") {
                         ForEach(plaidService.accounts) { account in
-                            AccountRow(account: account)
+                            PlaidAccountRow(account: account)
                         }
                         .onDelete(perform: deleteAccount)
                     }
@@ -314,17 +314,17 @@ struct ConnectedAccountsView: View {
                 }
 
                 Section("Information") {
-                    InfoRow(
+                    PlaidInfoRow(
                         title: "Security",
                         value: "Bank-grade encryption"
                     )
 
-                    InfoRow(
+                    PlaidInfoRow(
                         title: "Access",
                         value: "Read-only"
                     )
 
-                    InfoRow(
+                    PlaidInfoRow(
                         title: "Data Usage",
                         value: "Mortgage payment verification only"
                     )
@@ -356,7 +356,7 @@ struct ConnectedAccountsView: View {
     }
 }
 
-struct AccountRow: View {
+struct PlaidAccountRow: View {
     let account: PlaidAccount
 
     var body: some View {
@@ -393,7 +393,7 @@ struct AccountRow: View {
     }
 }
 
-struct InfoRow: View {
+struct PlaidInfoRow: View {
     let title: String
     let value: String
 
@@ -415,5 +415,5 @@ struct InfoRow: View {
 }
 
 #Preview {
-    ConnectedAccountsView()
+    PlaidConnectedAccountsView()
 }

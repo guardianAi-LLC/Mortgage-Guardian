@@ -49,7 +49,7 @@ public final class DocumentStorageService: ObservableObject {
         let thumbnailURL: String?
         let isEncrypted: Bool
 
-        public init(id: String, userId: String, fileName: String, documentType: MortgageDocument.DocumentType, uploadDate: Date, fileSize: Int, analysisResults: [AuditResult]? = nil, thumbnailURL: String? = nil, isEncrypted: Bool = true) {
+        init(id: String, userId: String, fileName: String, documentType: MortgageDocument.DocumentType, uploadDate: Date, fileSize: Int, analysisResults: [AuditResult]? = nil, thumbnailURL: String? = nil, isEncrypted: Bool = true) {
             self.id = id
             self.userId = userId
             self.fileName = fileName
@@ -116,7 +116,7 @@ public final class DocumentStorageService: ObservableObject {
     }
 
     /// Upload document to cloud storage
-    public func uploadDocument(_ document: MortgageDocument, analysisResults: [AuditResult]? = nil) async throws -> StoredDocument {
+    func uploadDocument(_ document: MortgageDocument, analysisResults: [AuditResult]? = nil) async throws -> StoredDocument {
         guard hasUserConsented && storageSettings.isEnabled else {
             throw StorageError.userNotConsented
         }
@@ -190,11 +190,12 @@ public final class DocumentStorageService: ObservableObject {
 
         } catch {
             logger.error("Document upload failed: \(error.localizedDescription)")
-            throw StorageError.uploadFailed(error.localizedDescription)
-        } finally {
             isUploading = false
             uploadProgress = 0.0
+            throw StorageError.uploadFailed(error.localizedDescription)
         }
+        isUploading = false
+        uploadProgress = 0.0
     }
 
     /// Retrieve user's stored documents
@@ -230,7 +231,7 @@ public final class DocumentStorageService: ObservableObject {
     }
 
     /// Download a specific document
-    public func downloadDocument(_ documentId: String) async throws -> MortgageDocument {
+    func downloadDocument(_ documentId: String) async throws -> MortgageDocument {
         guard hasUserConsented && storageSettings.isEnabled else {
             throw StorageError.userNotConsented
         }

@@ -1,3 +1,4 @@
+#if canImport(CreateML)
 import CoreML
 import CreateML
 import Foundation
@@ -35,12 +36,9 @@ class MLModelTrainer {
         // 2. Configure the regressor
         let parameters = MLBoostedTreeRegressor.ModelParameters(
             maxDepth: 8,
-            minSampleCount: 3,
             maxIterations: 100,
-            stepSize: 0.1,
             minLossReduction: 0.1,
-            maxEpochs: 5,
-            validationData: validationData
+            stepSize: 0.1
         )
         
         // 3. Train the model
@@ -67,8 +65,8 @@ class MLModelTrainer {
             let evaluationMetrics = regressor.evaluation(on: validationData)
             print("Model evaluation metrics:")
             print("- Root Mean Squared Error: \(evaluationMetrics.rootMeanSquaredError)")
-            print("- Mean Absolute Error: \(evaluationMetrics.meanAbsoluteError)")
-            print("- R-squared: \(evaluationMetrics.rSquared)")
+            print("- Maximum Error: \(evaluationMetrics.maximumError)")
+            print("- RMSE: \(evaluationMetrics.rootMeanSquaredError)")
             
             // 5. Export the model
             try regressor.write(to: URL(fileURLWithPath: modelOutputPath))
@@ -124,3 +122,4 @@ extension MLModelTrainer {
         return true
     }
 }
+#endif

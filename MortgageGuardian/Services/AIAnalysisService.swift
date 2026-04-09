@@ -62,7 +62,7 @@ public final class AIAnalysisService: ObservableObject {
     }
 
     /// Analysis progress tracking
-    public struct AnalysisProgress {
+    struct AnalysisProgress {
         let step: AnalysisStep
         let percentComplete: Double
         let message: String
@@ -82,7 +82,7 @@ public final class AIAnalysisService: ObservableObject {
     }
 
     /// AI Analysis configuration
-    public struct AIConfiguration {
+    struct AIConfiguration {
         let model: ClaudeModel
         let maxTokens: Int
         let temperature: Double
@@ -134,7 +134,7 @@ public final class AIAnalysisService: ObservableObject {
             }
         }
 
-        public static let `default` = AIConfiguration(
+        static let `default` = AIConfiguration(
             model: .claude35Sonnet,
             maxTokens: 4096,
             temperature: 0.1,
@@ -145,7 +145,7 @@ public final class AIAnalysisService: ObservableObject {
             concurrentAnalysisLimit: 3
         )
 
-        public static let fast = AIConfiguration(
+        static let fast = AIConfiguration(
             model: .claude3Haiku,
             maxTokens: 2048,
             temperature: 0.0,
@@ -158,7 +158,7 @@ public final class AIAnalysisService: ObservableObject {
     }
 
     /// AI Analysis result structure
-    public struct AIAnalysisResult {
+    struct AIAnalysisResult {
         let findings: [AuditResult]
         let confidence: Double
         let analysisMetadata: AnalysisMetadata
@@ -166,7 +166,7 @@ public final class AIAnalysisService: ObservableObject {
         let processingTime: TimeInterval
         let tokensUsed: TokenUsage
 
-        public struct AnalysisMetadata {
+        struct AnalysisMetadata {
             let documentType: MortgageDocument.DocumentType
             let analysisType: AnalysisType
             let modelUsed: AIConfiguration.ClaudeModel
@@ -182,7 +182,7 @@ public final class AIAnalysisService: ObservableObject {
             }
         }
 
-        public struct TokenUsage {
+        struct TokenUsage {
             let inputTokens: Int
             let outputTokens: Int
             let totalTokens: Int
@@ -191,7 +191,7 @@ public final class AIAnalysisService: ObservableObject {
     }
 
     /// Letter generation result
-    public struct LetterGenerationResult {
+    struct LetterGenerationResult {
         let letterContent: String
         let letterType: LetterType
         let confidence: Double
@@ -218,7 +218,7 @@ public final class AIAnalysisService: ObservableObject {
             }
         }
 
-        public struct LetterMetadata {
+        struct LetterMetadata {
             let generatedDate: Date
             let userInfo: User
             let mortgageAccount: User.MortgageAccount
@@ -247,7 +247,7 @@ public final class AIAnalysisService: ObservableObject {
 
     // MARK: - Properties
 
-    public static let shared = AIAnalysisService()
+    static let shared = AIAnalysisService()
 
     private let securityService: SecurityService
     private let logger = Logger(subsystem: "com.mortgageguardian", category: "AIAnalysisService")
@@ -255,12 +255,12 @@ public final class AIAnalysisService: ObservableObject {
     private let analysisQueue = DispatchQueue(label: "ai.analysis", qos: .userInitiated)
     private let promptManager = PromptManager()
     private let responseParser = ResponseParser()
-    private let letterGenerator = LetterGenerator()
+    private let letterGenerator = AILetterGenerator()
 
-    @Published public var currentProgress: AnalysisProgress?
-    @Published public var isAnalyzing = false
-    @Published public var analysisHistory: [AIAnalysisResult] = []
-    @Published public var configuration: AIConfiguration = .default
+    @Published var currentProgress: AnalysisProgress?
+    @Published var isAnalyzing = false
+    @Published var analysisHistory: [AIAnalysisResult] = []
+    @Published var configuration: AIConfiguration = .default
 
     private var activeAnalysisTasks: Set<UUID> = []
     private var rateLimitTracker = RateLimitTracker()
@@ -291,7 +291,7 @@ public final class AIAnalysisService: ObservableObject {
     // MARK: - Public API
 
     /// Analyze mortgage document using Claude AI
-    public func analyzeDocument(
+    func analyzeDocument(
         _ document: MortgageDocument,
         userContext: User,
         bankTransactions: [Transaction] = [],
@@ -404,14 +404,14 @@ public final class AIAnalysisService: ObservableObject {
         } catch {
             logger.error("AI analysis failed: \(error.localizedDescription)")
             updateProgress(.completion, percentComplete: 100, message: "Analysis failed: \(error.localizedDescription)")
-            throw error
-        } finally {
             isAnalyzing = activeAnalysisTasks.count > 0
+            throw error
         }
+        isAnalyzing = activeAnalysisTasks.count > 0
     }
 
     /// Combine AI analysis with manual algorithm results
-    public func performHybridAnalysis(
+    func performHybridAnalysis(
         document: MortgageDocument,
         userContext: User,
         bankTransactions: [Transaction] = [],
@@ -434,7 +434,7 @@ public final class AIAnalysisService: ObservableObject {
     }
 
     /// Generate professional Notice of Error letter using Claude AI
-    public func generateNoticeOfErrorLetter(
+    func generateNoticeOfErrorLetter(
         for issues: [AuditResult],
         userInfo: User,
         mortgageAccount: User.MortgageAccount,
@@ -492,7 +492,7 @@ public final class AIAnalysisService: ObservableObject {
     }
 
     /// Validate AI findings against known patterns and rules
-    public func validateAIFindings(
+    func validateAIFindings(
         _ findings: [AuditResult],
         againstDocument document: MortgageDocument,
         userContext: User
@@ -515,20 +515,20 @@ public final class AIAnalysisService: ObservableObject {
     }
 
     /// Configure AI service settings
-    public func configure(with configuration: AIConfiguration) {
+    func configure(with configuration: AIConfiguration) {
         self.configuration = configuration
         logger.info("AI service configured with model: \(configuration.model.displayName)")
     }
 
     /// Get analysis cost estimate
-    public func estimateAnalysisCost(for document: MortgageDocument) -> Double {
+    func estimateAnalysisCost(for document: MortgageDocument) -> Double {
         let estimatedTokens = estimateTokenCount(for: document)
         return Double(estimatedTokens) * configuration.model.costPerInputToken
     }
 
     /// Perform second-tier AI analysis for complex patterns not detected by rule-based validation
     /// This method is specifically designed for the tiered error detection system
-    public func analyzeComplexPatterns(
+    func analyzeComplexPatterns(
         context: AIAnalysisContext,
         focusAreas: [AIFocusArea]
     ) async throws -> [AIAnalysisResult] {
@@ -577,7 +577,7 @@ public final class AIAnalysisService: ObservableObject {
 
     /// Analyze mortgage document with cost-conscious AI integration
     /// Designed to work with rule-based pre-analysis
-    public func performSecondTierAnalysis(
+    func performSecondTierAnalysis(
         extractedData: ExtractedData,
         bankTransactions: [Transaction],
         loanDetails: LoanDetails?,
@@ -626,7 +626,7 @@ public final class AIAnalysisService: ObservableObject {
     }
 
     /// Test API connection to backend Claude service
-    public func testAPIConnection() async throws -> String {
+    func testAPIConnection() async throws -> String {
         let testPrompt = "This is a test connection to verify Claude API integration. Please respond with a simple confirmation."
 
         do {
@@ -1147,7 +1147,7 @@ private class PromptManager {
         for documentType: MortgageDocument.DocumentType,
         content: String,
         context: AnalysisContext,
-        analysisType: AIAnalysisResult.AnalysisMetadata.AnalysisType
+        analysisType: AIAnalysisService.AIAnalysisResult.AnalysisMetadata.AnalysisType
     ) async throws -> String {
 
         let basePrompt = getBasePrompt(for: documentType, analysisType: analysisType)
@@ -1188,7 +1188,7 @@ private class PromptManager {
 
     private func getBasePrompt(
         for documentType: MortgageDocument.DocumentType,
-        analysisType: AIAnalysisResult.AnalysisMetadata.AnalysisType
+        analysisType: AIAnalysisService.AIAnalysisResult.AnalysisMetadata.AnalysisType
     ) -> String {
 
         let baseRole = """
@@ -1364,7 +1364,7 @@ private class ResponseParser {
 }
 
 /// Letter generation for RESPA compliance documents
-private class LetterGenerator {
+private class AILetterGenerator {
 
     func generateLetter(
         type: AIAnalysisService.LetterGenerationResult.LetterType,
@@ -1990,21 +1990,12 @@ private class RateLimitTracker {
         }.joined(separator: "\n")
     }
 
-    // MARK: - Enhanced AI Configuration
-
-    private extension AIConfiguration {
-        static let focused = AIConfiguration(
-            model: .claude35Sonnet,
-            maxTokens: 2000,
-            temperature: 0.3, // Lower temperature for more focused analysis
-            confidenceThreshold: 0.7,
-            timeoutInterval: 45.0, // Shorter timeout for cost control
-            enableStreamingResponse: false,
-            retryAttempts: 2,
-            concurrentAnalysisLimit: 1
-        )
-    }
 }
+
+// MARK: - Enhanced AI Configuration
+
+// Extension moved into the AIAnalysisService class scope
+// static let focused configuration available via AIAnalysisService.AIConfiguration
 
 // MARK: - Supporting Types for Tiered Analysis
 
@@ -2034,7 +2025,7 @@ enum AIFocusArea {
     }
 }
 
-/// AI Analysis Result structure
+/// AI Analysis Result structure for tiered analysis
 struct AIAnalysisResult {
     let category: String
     let severity: String
@@ -2048,41 +2039,5 @@ struct AIAnalysisResult {
 }
 
 // MARK: - Extensions
+// DateFormatter extensions moved to Utils/ErrorHandling.swift to avoid redeclaration
 
-extension DateFormatter {
-    static let fullDate: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .full
-        formatter.timeStyle = .none
-        return formatter
-    }()
-
-    static let iso8601: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-        return formatter
-    }()
-
-    static let dateOnly: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter
-    }()
-
-    static let shortDate: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        return formatter
-    }()
-}
-
-extension AuditResult.Severity {
-    var numericValue: Int {
-        switch self {
-        case .low: return 1
-        case .medium: return 2
-        case .high: return 3
-        case .critical: return 4
-        }
-    }
-}

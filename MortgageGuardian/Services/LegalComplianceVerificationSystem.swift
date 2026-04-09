@@ -236,7 +236,7 @@ public final class LegalComplianceVerificationSystem: ObservableObject {
 
         public struct RegulatoryRisk {
             let enforcementProbability: Double
-            case examinationTrigger: Bool
+            let examinationTrigger: Bool
             let civilMoneyPenaltyRisk: Double
             let correctionTimeframe: TimeInterval
             let publicDisclosureRisk: Bool
@@ -418,7 +418,7 @@ public final class LegalComplianceVerificationSystem: ObservableObject {
     // MARK: - Public Methods
 
     /// Perform comprehensive legal compliance verification
-    public func verifyLegalCompliance(
+    func verifyLegalCompliance(
         for errors: [ZeroToleranceAuditEngine.ZeroToleranceError],
         extractedData: ExtractedData,
         loanDetails: LoanDetails?
@@ -1026,17 +1026,19 @@ public final class LegalComplianceVerificationSystem: ObservableObject {
 // MARK: - Supporting Classes and Types
 
 // Placeholder types for comprehensive implementation
-struct Evidence {}
-struct DefensiveStrategy {}
-struct LegalPrecedent {}
-struct ComplianceDeadline {}
-struct RequiredDisclosure {}
-struct RemedialAction {}
-struct ReportingObligation {}
-struct DocumentationRequirement {}
-struct ComplianceReport {}
+public struct Evidence {}
+public struct DefensiveStrategy {}
+public struct LegalPrecedent {}
+public struct ComplianceDeadline {}
+public struct RequiredDisclosure {}
+public struct RemedialAction {}
+public struct ReportingObligation {}
+public struct DocumentationRequirement {}
+public struct MitigationStrategy {}
+public struct MonitoringRequirement {}
+public struct ComplianceReport {}
 
-enum AuditExportFormat {
+public enum AuditExportFormat {
     case json
     case xml
     case pdf

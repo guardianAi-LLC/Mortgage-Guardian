@@ -21,9 +21,9 @@ struct CalculatorView: View {
         NavigationView {
             Form {
                 Section("Loan Details") {
-                    LoanInputField(value: $principalAmount, title: "Purchase Price", format: .currency(code: "USD"))
-                    LoanInputField(value: $downPayment, title: "Down Payment", format: .currency(code: "USD"))
-                    LoanInputField(value: $interestRate, title: "Interest Rate", format: .percent)
+                    LoanInputField(value: $principalAmount, title: "Purchase Price", isCurrency: true)
+                    LoanInputField(value: $downPayment, title: "Down Payment", isCurrency: true)
+                    LoanInputField(value: $interestRate, title: "Interest Rate", isPercent: true)
                     Picker("Loan Term", selection: $loanTerm) {
                         Text("15 Years").tag(15)
                         Text("20 Years").tag(20)
@@ -71,15 +71,22 @@ struct CalculatorView: View {
 struct LoanInputField: View {
     @Binding var value: Double
     let title: String
-    let format: FloatingPointFormatStyle<Double>
-    
+    var isCurrency: Bool = false
+    var isPercent: Bool = false
+
     var body: some View {
         HStack {
             Text(title)
             Spacer()
-            TextField("", value: $value, format: format)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
+            if isPercent {
+                TextField("", value: $value, format: .percent)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+            } else {
+                TextField("", value: $value, format: .currency(code: "USD"))
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+            }
         }
     }
 }

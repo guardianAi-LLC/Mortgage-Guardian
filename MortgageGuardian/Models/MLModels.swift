@@ -72,12 +72,12 @@ class MLPredictor {
     private var recommendationModel: MLModel?
 
     // Services
-    private let marketDataService = MarketDataService()
+    let marketDataService = MarketDataService()
     private let logger = Logger(subsystem: "com.mortgageguardian.ml", category: "MLPredictor")
 
     // Model metadata and caching
     private var modelPerformanceMetrics: [String: Double] = [:]
-    private let cache = NSCache<NSString, NSData>()
+    let cache = NSCache<NSString, NSData>()
     private var lastModelUpdate: Date?
 
     // Configuration
@@ -204,7 +204,7 @@ class MLPredictor {
             )
 
             // Make prediction
-            let prediction = try model.prediction(from: inputFeatures)
+            let prediction = try await model.prediction(from: inputFeatures)
 
             // Extract predicted value and confidence
             let predictedValue = extractPredictedValue(from: prediction)

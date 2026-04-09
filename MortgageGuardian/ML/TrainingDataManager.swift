@@ -1,3 +1,4 @@
+#if canImport(CreateML)
 import Foundation
 import CoreML
 import CreateML
@@ -97,27 +98,26 @@ class TrainingDataManager {
     }
     
     private func createMLDataTable(from data: [PropertyTrainingData]) throws -> MLDataTable {
-        // Convert PropertyTrainingData to format suitable for MLDataTable
-        let rows: [[String: Any]] = data.map { property in
-            [
-                "salePrice": property.salePrice,
-                "squareFootage": property.propertyDetails.squareFootage,
-                "bedrooms": property.propertyDetails.bedrooms,
-                "bathrooms": property.propertyDetails.bathrooms,
-                "lotSize": property.propertyDetails.lotSize,
-                "propertyAge": Date().timeIntervalSince1970 - Double(property.propertyDetails.yearBuilt),
-                "latitude": property.locationData.latitude,
-                "longitude": property.locationData.longitude,
-                "schoolRating": property.locationData.schoolRating,
-                "medianIncome": property.locationData.medianIncome,
-                "marketMedianPrice": property.marketConditions.medianHomePrice,
-                "daysOnMarket": property.marketConditions.daysOnMarket,
-                "mortgageRate": property.marketConditions.mortgageRate,
-                "unemploymentRate": property.marketConditions.unemploymentRate,
-                "gdpGrowth": property.marketConditions.gdpGrowth
-            ]
-        }
-        
-        return try MLDataTable(dictionary: rows)
+        // Convert PropertyTrainingData to column-oriented format for MLDataTable
+        let columns: [String: MLDataValueConvertible] = [
+            "salePrice": data.map { $0.salePrice },
+            "squareFootage": data.map { $0.propertyDetails.squareFootage },
+            "bedrooms": data.map { $0.propertyDetails.bedrooms },
+            "bathrooms": data.map { $0.propertyDetails.bathrooms },
+            "lotSize": data.map { $0.propertyDetails.lotSize },
+            "propertyAge": data.map { Date().timeIntervalSince1970 - Double($0.propertyDetails.yearBuilt) },
+            "latitude": data.map { $0.locationData.latitude },
+            "longitude": data.map { $0.locationData.longitude },
+            "schoolRating": data.map { $0.locationData.schoolRating },
+            "medianIncome": data.map { $0.locationData.medianIncome },
+            "marketMedianPrice": data.map { $0.marketConditions.medianHomePrice },
+            "daysOnMarket": data.map { $0.marketConditions.daysOnMarket },
+            "mortgageRate": data.map { $0.marketConditions.mortgageRate },
+            "unemploymentRate": data.map { $0.marketConditions.unemploymentRate },
+            "gdpGrowth": data.map { $0.marketConditions.gdpGrowth }
+        ]
+
+        return try MLDataTable(dictionary: columns)
     }
 }
+#endif

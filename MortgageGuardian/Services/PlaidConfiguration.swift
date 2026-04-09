@@ -1,5 +1,8 @@
 import Foundation
+
+#if canImport(LinkKit)
 import LinkKit
+#endif
 
 /// Plaid configuration and setup utilities for Mortgage Guardian
 public class PlaidConfiguration {
@@ -8,6 +11,7 @@ public class PlaidConfiguration {
 
     /// Plaid environment settings
     public struct Environment {
+        #if canImport(LinkKit)
         static let current: PLKEnvironment = {
             #if DEBUG
             return .sandbox
@@ -28,8 +32,18 @@ public class PlaidConfiguration {
                 return "https://sandbox.plaid.com"
             }
         }()
+        #else
+        static let baseURL: String = {
+            #if DEBUG
+            return "https://sandbox.plaid.com"
+            #else
+            return "https://production.plaid.com"
+            #endif
+        }()
+        #endif
     }
 
+    #if canImport(LinkKit)
     // MARK: - Product Configuration
 
     /// Plaid products required for mortgage auditing
@@ -80,6 +94,7 @@ public class PlaidConfiguration {
         // Configure for update mode
         return config
     }
+    #endif
 
     // MARK: - Institution Configuration
 
@@ -94,6 +109,7 @@ public class PlaidConfiguration {
         // Add more as needed
     ]
 
+    #if canImport(LinkKit)
     /// Institution-specific configuration
     public struct InstitutionConfig {
         let institutionId: String
@@ -122,35 +138,38 @@ public class PlaidConfiguration {
             )
         ]
     }
+    #endif
 
+    #if canImport(LinkKit)
     // MARK: - Account Type Configuration
 
     /// Account types relevant for mortgage tracking
     public struct AccountTypeConfig {
-        static let relevantTypes: Set<PLKAccountType> = [
-            .depository, // Checking, savings accounts
-            .credit      // Credit cards (for balance transfers, etc.)
+        static let relevantTypes: Set<AnyHashable> = [
+            PLKAccountType.depository, // Checking, savings accounts
+            PLKAccountType.credit      // Credit cards (for balance transfers, etc.)
         ]
 
-        static let relevantSubtypes: Set<PLKAccountSubtype> = [
-            .checking,
-            .savings,
-            .moneyMarket,
-            .cd, // Certificate of deposit
-            .creditCard
+        static let relevantSubtypes: Set<AnyHashable> = [
+            PLKAccountSubtype.checking,
+            PLKAccountSubtype.savings,
+            PLKAccountSubtype.moneyMarket,
+            PLKAccountSubtype.cd, // Certificate of deposit
+            PLKAccountSubtype.creditCard
         ]
 
         /// Check if account type is relevant for mortgage auditing
         public static func isRelevantAccount(type: PLKAccountType, subtype: PLKAccountSubtype?) -> Bool {
-            guard relevantTypes.contains(type) else { return false }
+            guard relevantTypes.contains(AnyHashable(type)) else { return false }
 
             if let subtype = subtype {
-                return relevantSubtypes.contains(subtype)
+                return relevantSubtypes.contains(AnyHashable(subtype))
             }
 
             return true
         }
     }
+    #endif
 
     // MARK: - Transaction Filtering
 
@@ -462,10 +481,14 @@ public class PlaidConfiguration {
             errors.append("PLAID_SANDBOX_SECRET environment variable not set")
         }
 
+        #if canImport(LinkKit)
         // Check LinkKit framework availability
         if !LinkKit.isAvailable {
             errors.append("LinkKit framework not available")
         }
+        #else
+        errors.append("LinkKit framework not available (not imported)")
+        #endif
 
         // Check network connectivity requirements
         // Additional validation as needed
@@ -475,6 +498,7 @@ public class PlaidConfiguration {
 
     /// Get configuration summary for debugging
     public static func getConfigurationSummary() -> [String: Any] {
+        #if canImport(LinkKit)
         return [
             "environment": Environment.current.rawValue,
             "baseURL": Environment.baseURL,
@@ -485,9 +509,20 @@ public class PlaidConfiguration {
             "maxLinkedAccounts": FeatureFlags.maxLinkedAccounts,
             "transactionRetentionDays": DataRetention.transactionRetentionDays
         ]
+        #else
+        return [
+            "baseURL": Environment.baseURL,
+            "securityEnabled": Security.requireBiometricAuth,
+            "webhooksEnabled": FeatureFlags.enableWebhooks,
+            "backgroundSyncEnabled": FeatureFlags.enableBackgroundSync,
+            "maxLinkedAccounts": FeatureFlags.maxLinkedAccounts,
+            "transactionRetentionDays": DataRetention.transactionRetentionDays
+        ]
+        #endif
     }
 }
 
+#if canImport(LinkKit)
 // MARK: - Extensions
 
 extension PLKProduct {
@@ -554,3 +589,4 @@ extension PLKAccountSubtype {
         }
     }
 }
+#endif

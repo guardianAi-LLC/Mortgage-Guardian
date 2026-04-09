@@ -95,7 +95,7 @@ struct AnalysisView: View {
                 )
             }
             .sheet(item: $selectedIssue) { issue in
-                IssueDetailView(issue: issue, caseId: nil)
+                AnalysisIssueDetailView(issue: issue, caseId: nil)
             }
             .sheet(isPresented: $showingLetterGenerator) {
                 LetterGeneratorView()
@@ -481,7 +481,7 @@ struct AnalysisFilterSheet: View {
 }
 
 // MARK: - Issue Detail View
-struct IssueDetailView: View {
+struct AnalysisIssueDetailView: View {
     let issue: AuditResult
     var caseId: String? = nil
     @Environment(\.dismiss) private var dismiss

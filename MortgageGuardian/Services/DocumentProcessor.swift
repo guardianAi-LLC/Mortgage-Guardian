@@ -291,7 +291,7 @@ public final class DocumentProcessor: ObservableObject {
     // MARK: - Public API
 
     /// Process document from image data
-    public func processDocument(
+    func processDocument(
         from imageData: Data,
         fileName: String,
         configuration: OCRConfiguration = .default
@@ -342,7 +342,7 @@ public final class DocumentProcessor: ObservableObject {
     }
 
     /// Process document from PDF
-    public func processDocument(
+    func processDocument(
         from pdfData: Data,
         fileName: String,
         configuration: OCRConfiguration = .default
@@ -409,7 +409,7 @@ public final class DocumentProcessor: ObservableObject {
     }
 
     /// Process document with integrated tiered error detection
-    public func processDocumentWithTieredAnalysis(
+    func processDocumentWithTieredAnalysis(
         from imageData: Data,
         fileName: String,
         bankTransactions: [Transaction] = [],
@@ -515,7 +515,7 @@ public final class DocumentProcessor: ObservableObject {
     }
 
     /// Process multiple documents in batch
-    public func processBatch(
+    func processBatch(
         documents: [(data: Data, fileName: String)],
         configuration: OCRConfiguration = .default
     ) async throws -> [MortgageDocument] {
@@ -545,7 +545,7 @@ public final class DocumentProcessor: ObservableObject {
     }
 
     /// Process batch with tiered error detection
-    public func processBatchWithTieredAnalysis(
+    func processBatchWithTieredAnalysis(
         documents: [(data: Data, fileName: String, bankTransactions: [Transaction], loanDetails: LoanDetails?)],
         errorDetectionConfig: MortgageErrorDetectionService.DetectionConfiguration = .default,
         configuration: OCRConfiguration = .default

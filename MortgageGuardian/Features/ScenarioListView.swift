@@ -12,7 +12,7 @@ struct ScenarioListView: View {
                     VStack(spacing: 20) {
                         Image(systemName: "house.circle.fill")
                             .font(.system(size: 60))
-                            .foregroundStyle(AppTheme.Colors.light.gradient)
+                            .foregroundStyle(AppTheme.gradient)
                         
                         Text("No Scenarios Yet")
                             .font(.title2)
@@ -51,7 +51,7 @@ struct ScenarioListView: View {
                         showingAddSheet = true
                     } label: {
                         Image(systemName: "plus")
-                            .foregroundStyle(AppTheme.Colors.light.primary)
+                            .foregroundStyle(AppTheme.primaryGreen)
                     }
                 }
             }

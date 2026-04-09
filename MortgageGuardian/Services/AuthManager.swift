@@ -6,7 +6,8 @@ import SwiftUI
 class AuthManager: ObservableObject {
     @Published var isSignedIn = false
     @Published var isLoading = true
-    @Published var user: User?
+    @Published var userName: String?
+    @Published var userEmail: String?
 
     private var tokenRefreshTask: Task<Void, Never>?
 
@@ -18,14 +19,20 @@ class AuthManager: ObservableObject {
         Clerk.shared.configure(publishableKey: "pk_test_Zm9uZC1tYWtvLTcxLmNsZXJrLmFjY291bnRzLmRldiQ")
 
         Task {
-            if let existingUser = Clerk.shared.user {
-                self.user = existingUser
+            if Clerk.shared.user != nil {
+                updateUserInfo()
                 self.isSignedIn = true
                 await refreshToken()
                 startPeriodicTokenRefresh()
             }
             self.isLoading = false
         }
+    }
+
+    private func updateUserInfo() {
+        let clerkUser = Clerk.shared.user
+        self.userName = clerkUser?.firstName
+        self.userEmail = clerkUser?.primaryEmailAddress?.emailAddress
     }
 
     // MARK: - Token Lifecycle
@@ -66,7 +73,7 @@ class AuthManager: ObservableObject {
         )
 
         if signIn.status == .complete {
-            self.user = Clerk.shared.user
+            updateUserInfo()
             self.isSignedIn = true
             await refreshToken()
             startPeriodicTokenRefresh()
@@ -86,10 +93,10 @@ class AuthManager: ObservableObject {
             throw NSError(domain: "AuthManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "No pending sign-up found."])
         }
 
-        try await signUp.attemptVerification(.emailCode(code: code))
+        try await signUp.attemptVerification(strategy: .emailCode(code: code))
 
         if signUp.status == .complete {
-            self.user = Clerk.shared.user
+            updateUserInfo()
             self.isSignedIn = true
             await refreshToken()
             startPeriodicTokenRefresh()
@@ -101,7 +108,8 @@ class AuthManager: ObservableObject {
     func signOut() async throws {
         stopPeriodicTokenRefresh()
         try await Clerk.shared.signOut()
-        self.user = nil
+        self.userName = nil
+        self.userEmail = nil
         self.isSignedIn = false
         APIClient.shared.setAuthToken("")
     }

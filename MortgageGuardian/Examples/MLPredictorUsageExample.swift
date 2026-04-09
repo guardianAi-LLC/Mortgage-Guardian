@@ -4,6 +4,7 @@ import SwiftUI
 
 /// Example usage of the MLPredictor class for Mortgage Guardian
 /// This demonstrates how to use the comprehensive ML prediction capabilities
+@MainActor
 class MLPredictorUsageExample {
 
     /// Example: Property Value Prediction

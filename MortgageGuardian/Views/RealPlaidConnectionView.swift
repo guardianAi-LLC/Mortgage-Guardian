@@ -40,25 +40,25 @@ struct RealPlaidConnectionView: View {
                             .fontWeight(.semibold)
 
                         VStack(spacing: 12) {
-                            BenefitRow(
+                            RealPlaidBenefitRow(
                                 icon: "checkmark.shield.fill",
                                 title: "Verify Payments",
                                 description: "Cross-check your actual payments against servicer records"
                             )
 
-                            BenefitRow(
+                            RealPlaidBenefitRow(
                                 icon: "magnifyingglass.circle.fill",
                                 title: "Detect Errors",
                                 description: "Automatically find payment allocation mistakes"
                             )
 
-                            BenefitRow(
+                            RealPlaidBenefitRow(
                                 icon: "chart.line.uptrend.xyaxis",
                                 title: "Track History",
                                 description: "Monitor payment patterns and escrow changes"
                             )
 
-                            BenefitRow(
+                            RealPlaidBenefitRow(
                                 icon: "doc.text.fill",
                                 title: "Generate Reports",
                                 description: "Create detailed payment history for disputes"
@@ -83,27 +83,27 @@ struct RealPlaidConnectionView: View {
                         }
 
                         VStack(spacing: 8) {
-                            SecurityFeature(
+                            RealPlaidSecurityFeature(
                                 icon: "lock.shield.fill",
                                 text: "Bank-level 256-bit encryption"
                             )
 
-                            SecurityFeature(
+                            RealPlaidSecurityFeature(
                                 icon: "eye.slash.fill",
                                 text: "We never see your login credentials"
                             )
 
-                            SecurityFeature(
+                            RealPlaidSecurityFeature(
                                 icon: "hand.raised.fill",
                                 text: "Read-only access - we cannot move money"
                             )
 
-                            SecurityFeature(
+                            RealPlaidSecurityFeature(
                                 icon: "building.2.fill",
                                 text: "Trusted by 11,000+ financial apps"
                             )
 
-                            SecurityFeature(
+                            RealPlaidSecurityFeature(
                                 icon: "checkmark.seal.fill",
                                 text: "SOC 2 Type II certified"
                             )
@@ -210,7 +210,7 @@ struct RealPlaidConnectionView: View {
     }
 }
 
-struct ConnectedAccountsView: View {
+struct RealPlaidConnectedAccounts: View {
     @StateObject private var plaidService = PlaidLinkService.shared
     @State private var showingPlaidConnection = false
     @State private var isRefreshing = false
@@ -248,7 +248,7 @@ struct ConnectedAccountsView: View {
                 } else {
                     Section("Connected Accounts") {
                         ForEach(plaidService.accounts) { account in
-                            AccountRow(account: account)
+                            RealPlaidAccountRow(account: account)
                         }
                         .onDelete(perform: deleteAccount)
                     }
@@ -267,22 +267,22 @@ struct ConnectedAccountsView: View {
                 }
 
                 Section("Information") {
-                    InfoRow(
+                    RealPlaidInfoRow(
                         title: "Security",
                         value: "Bank-grade encryption via Plaid"
                     )
 
-                    InfoRow(
+                    RealPlaidInfoRow(
                         title: "Access",
                         value: "Read-only"
                     )
 
-                    InfoRow(
+                    RealPlaidInfoRow(
                         title: "Data Usage",
                         value: "Mortgage payment verification only"
                     )
 
-                    InfoRow(
+                    RealPlaidInfoRow(
                         title: "Provider",
                         value: "Plaid (SOC 2 Type II certified)"
                     )
@@ -344,7 +344,7 @@ struct ConnectedAccountsView: View {
     }
 }
 
-struct AccountRow: View {
+struct RealPlaidAccountRow: View {
     let account: PlaidAccount
 
     var body: some View {
@@ -394,7 +394,7 @@ struct AccountRow: View {
     }
 }
 
-struct BenefitRow: View {
+struct RealPlaidBenefitRow: View {
     let icon: String
     let title: String
     let description: String
@@ -422,7 +422,7 @@ struct BenefitRow: View {
     }
 }
 
-struct SecurityFeature: View {
+struct RealPlaidSecurityFeature: View {
     let icon: String
     let text: String
 
@@ -443,7 +443,7 @@ struct SecurityFeature: View {
     }
 }
 
-struct InfoRow: View {
+struct RealPlaidInfoRow: View {
     let title: String
     let value: String
 
@@ -475,5 +475,5 @@ extension NumberFormatter {
 }
 
 #Preview {
-    ConnectedAccountsView()
+    RealPlaidConnectedAccounts()
 }

@@ -2,7 +2,6 @@ import Foundation
 import SwiftUI
 
 @MainActor
-@Observable
 class MarketDataService: ObservableObject {
     private let secureKeyManager = SecureKeyManager.shared
 

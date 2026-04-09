@@ -3,6 +3,7 @@ import SwiftUI
 import Combine
 
 /// ObservableObject that manages user state and provides data for the entire app
+@MainActor
 class UserStore: ObservableObject {
     @Published var user: User
     @Published var documents: [MortgageDocument] = []
@@ -68,7 +69,7 @@ class UserStore: ObservableObject {
     }
 
     // MARK: - User Profile Management
-    func updateUserProfile(firstName: String, lastName: String, email: String, phoneNumber: String?) {
+    func updateMortgageUserProfile(firstName: String, lastName: String, email: String, phoneNumber: String?) {
         user.firstName = firstName
         user.lastName = lastName
         user.email = email
@@ -301,15 +302,14 @@ class UserStore: ObservableObject {
         if user.isPlaidConnected {
             plaidAccounts = [
                 PlaidAccount(
-                    accountId: "account_123",
-                    accountName: "Wells Fargo Checking",
-                    accountType: "depository",
-                    accountSubtype: "checking",
-                    institutionName: "Wells Fargo",
+                    id: "account_123",
+                    name: "Wells Fargo Checking",
+                    type: "depository",
+                    subtype: "checking",
                     mask: "1234",
-                    isConnected: true,
-                    lastSyncDate: Date(),
-                    accessToken: "access_token_sample"
+                    institutionName: "Wells Fargo",
+                    isActive: true,
+                    dateConnected: Date()
                 )
             ]
         }

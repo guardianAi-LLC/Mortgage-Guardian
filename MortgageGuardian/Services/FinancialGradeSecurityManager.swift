@@ -22,14 +22,14 @@ public final class FinancialGradeSecurityManager: ObservableObject {
     }
 
     // MARK: - Security Levels
-    enum SecurityLevel: Int, Comparable {
-        case public = 0      // Public information
-        case internal = 1    // Internal use only
+    public enum SecurityLevel: Int, Comparable {
+        case `public` = 0      // Public information
+        case `internal` = 1    // Internal use only
         case confidential = 2 // Confidential data
         case restricted = 3   // Restricted - PII/Financial
         case critical = 4     // Critical - Payment/Banking data
 
-        static func < (lhs: SecurityLevel, rhs: SecurityLevel) -> Bool {
+        public static func < (lhs: SecurityLevel, rhs: SecurityLevel) -> Bool {
             return lhs.rawValue < rhs.rawValue
         }
 
@@ -67,12 +67,16 @@ public final class FinancialGradeSecurityManager: ObservableObject {
     }
 
     // MARK: - Encryption Standards
-    enum EncryptionStandard {
-        case aes128
-        case aes256
-        case aes256gcm        // AES-256 with Galois/Counter Mode
-        case aes256gcmWithHSM // Hardware Security Module backed
-        case quantumResistant // Post-quantum cryptography
+    enum EncryptionStandard: Int, Comparable {
+        case aes128 = 0
+        case aes256 = 1
+        case aes256gcm = 2        // AES-256 with Galois/Counter Mode
+        case aes256gcmWithHSM = 3 // Hardware Security Module backed
+        case quantumResistant = 4 // Post-quantum cryptography
+
+        public static func < (lhs: EncryptionStandard, rhs: EncryptionStandard) -> Bool {
+            return lhs.rawValue < rhs.rawValue
+        }
     }
 
     // MARK: - HSM Integration
@@ -112,6 +116,10 @@ public final class FinancialGradeSecurityManager: ObservableObject {
         private let vaultId = UUID()
         private var encryptedStore: [String: EncryptedCredential] = [:]
         private let hsm = HSMInterface()
+
+        /// Callback to the parent security manager's logging facility.
+        /// Must be set by the owning `FinancialGradeSecurityManager` after init.
+        var securityEventLogger: ((SecurityEvent, String, SecurityLevel) async -> Void)?
 
         struct EncryptedCredential {
             let encryptedData: Data
@@ -157,7 +165,7 @@ public final class FinancialGradeSecurityManager: ObservableObject {
             )
 
             // Audit log
-            await logSecurityEvent(.credentialStored, key: key, level: level)
+            await securityEventLogger?(.credentialStored, key, level)
         }
 
         func retrieveCredential(_ key: String, requiredLevel: SecurityLevel) async throws -> String? {
@@ -177,7 +185,7 @@ public final class FinancialGradeSecurityManager: ObservableObject {
             }
 
             // Log access
-            await logSecurityEvent(.credentialAccessed, key: key, level: encrypted.securityLevel)
+            await securityEventLogger?(.credentialAccessed, key, encrypted.securityLevel)
 
             return String(data: decrypted, encoding: .utf8)
         }
@@ -483,7 +491,7 @@ public final class FinancialGradeSecurityManager: ObservableObject {
     }
 
     // MARK: - Audit Trail System
-    private class AuditTrailManager {
+    fileprivate class AuditTrailManager {
         private let immutableLedger = ImmutableAuditLedger()
 
         struct AuditEntry {
@@ -550,36 +558,61 @@ public final class FinancialGradeSecurityManager: ObservableObject {
     }
 
     // MARK: - Security Context
-    struct SecurityContext {
-        let userId: String
-        let deviceId: String
-        let ipAddress: String
-        let location: Location?
-        let timestamp: Date
-        let sessionId: String
+    public struct SecurityContext {
+        public let userId: String
+        public let deviceId: String
+        public let ipAddress: String
+        public let location: Location?
+        public let timestamp: Date
+        public let sessionId: String
 
-        struct Location {
-            let latitude: Double
-            let longitude: Double
-            let accuracy: Double
+        public struct Location {
+            public let latitude: Double
+            public let longitude: Double
+            public let accuracy: Double
+
+            public init(latitude: Double, longitude: Double, accuracy: Double) {
+                self.latitude = latitude
+                self.longitude = longitude
+                self.accuracy = accuracy
+            }
+        }
+
+        public init(userId: String, deviceId: String, ipAddress: String, location: Location?, timestamp: Date, sessionId: String) {
+            self.userId = userId
+            self.deviceId = deviceId
+            self.ipAddress = ipAddress
+            self.location = location
+            self.timestamp = timestamp
+            self.sessionId = sessionId
         }
     }
 
     // MARK: - Financial Transaction
-    struct FinancialTransaction {
-        let id: UUID
-        let amount: Decimal
-        let currency: String
-        let type: TransactionType
-        let timestamp: Date
-        let merchantId: String?
-        let metadata: [String: Any]
+    public struct FinancialTransaction {
+        public let id: UUID
+        public let amount: Decimal
+        public let currency: String
+        public let type: TransactionType
+        public let timestamp: Date
+        public let merchantId: String?
+        public let metadata: [String: Any]
 
-        enum TransactionType {
+        public enum TransactionType {
             case payment
             case transfer
             case withdrawal
             case deposit
+        }
+
+        public init(id: UUID, amount: Decimal, currency: String, type: TransactionType, timestamp: Date, merchantId: String?, metadata: [String: Any]) {
+            self.id = id
+            self.amount = amount
+            self.currency = currency
+            self.type = type
+            self.timestamp = timestamp
+            self.merchantId = merchantId
+            self.metadata = metadata
         }
     }
 
@@ -601,6 +634,12 @@ public final class FinancialGradeSecurityManager: ObservableObject {
     private let fraudDetector = FraudDetectionEngine()
     private let complianceMonitor = ComplianceMonitor()
     private let auditTrail = AuditTrailManager()
+
+    private init() {
+        vault.securityEventLogger = { [weak self] event, key, level in
+            await self?.logSecurityEvent(event, key: key, level: level)
+        }
+    }
 
     // MARK: - Public Methods
 

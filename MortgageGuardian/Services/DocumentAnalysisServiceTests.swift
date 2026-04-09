@@ -166,7 +166,8 @@ class DocumentAnalysisServiceTests: ObservableObject {
 
         } catch let error as DocumentAnalysisError {
             // This is expected - check if it's the right error type
-            let isCorrectError = case .imageTooSmall = error
+            let isCorrectError: Bool
+            if case .imageTooSmall = error { isCorrectError = true } else { isCorrectError = false }
             let duration = CFAbsoluteTimeGetCurrent() - startTime
 
             let result = TestResult(

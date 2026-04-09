@@ -15,12 +15,12 @@ struct BrandedTextField: View {
     var body: some View {
         HStack {
             Image(systemName: icon)
-                .foregroundStyle(AppTheme.Colors.light.primary)
+                .foregroundStyle(AppTheme.primaryGreen)
             TextField(title, text: text)
         }
         .padding()
         .background(Color(.systemGray6))
-        .cornerRadius(AppTheme.cornerRadiusSmall)
+        .cornerRadius(8)
     }
 }
 
@@ -49,22 +49,22 @@ struct BrandedButton: View {
                 .padding()
                 .background(backgroundForStyle)
                 .foregroundStyle(foregroundForStyle)
-                .cornerRadius(AppTheme.cornerRadiusSmall)
+                .cornerRadius(8)
                 .overlay(
-                    RoundedRectangle(cornerRadius: AppTheme.cornerRadiusSmall)
-                        .stroke(style == .outline ? AppTheme.Colors.light.primary : .clear, lineWidth: 2)
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(style == .outline ? AppTheme.primaryGreen : .clear, lineWidth: 2)
                 )
         }
     }
     
-    private var backgroundForStyle: some ShapeStyle {
+    private var backgroundForStyle: AnyShapeStyle {
         switch style {
         case .primary:
-            AppTheme.Colors.light.gradient
+            AnyShapeStyle(AppTheme.gradient)
         case .secondary:
-            AppTheme.Colors.light.surface
+            AnyShapeStyle(Color(.systemBackground))
         case .outline:
-            .clear
+            AnyShapeStyle(Color.clear)
         }
     }
     
@@ -73,7 +73,7 @@ struct BrandedButton: View {
         case .primary:
             .white
         case .secondary, .outline:
-            AppTheme.Colors.light.primary
+            AppTheme.primaryGreen
         }
     }
 }
@@ -88,7 +88,7 @@ struct InfoCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: icon)
-                    .foregroundStyle(AppTheme.Colors.light.primary)
+                    .foregroundStyle(AppTheme.primaryGreen)
                 Text(title)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -97,11 +97,11 @@ struct InfoCard: View {
             Text(value)
                 .font(.title2)
                 .fontWeight(.bold)
-                .foregroundStyle(AppTheme.Colors.light.text)
+                .foregroundStyle(.primary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .cardStyle()
+        .background(Color(.systemBackground)).cornerRadius(12).shadow(radius: 2)
     }
 }
 
@@ -114,7 +114,7 @@ struct ScenarioListItem: View {
     var body: some View {
         HStack(spacing: 16) {
             Circle()
-                .fill(AppTheme.Colors.light.gradient)
+                .fill(AppTheme.gradient)
                 .frame(width: 40, height: 40)
                 .overlay(
                     Image(systemName: "house.fill")
@@ -133,11 +133,11 @@ struct ScenarioListItem: View {
             
             Text(value)
                 .font(.headline)
-                .foregroundStyle(AppTheme.Colors.light.primary)
+                .foregroundStyle(AppTheme.primaryGreen)
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusSmall)
+        .background(Color(.systemBackground))
+        .cornerRadius(8)
     }
 }
 
@@ -151,7 +151,7 @@ struct NavigationRow: View {
         Button(action: action) {
             HStack {
                 Image(systemName: icon)
-                    .foregroundStyle(AppTheme.Colors.light.primary)
+                    .foregroundStyle(AppTheme.primaryGreen)
                     .frame(width: 30)
                 
                 Text(title)
@@ -162,8 +162,8 @@ struct NavigationRow: View {
                     .foregroundStyle(.secondary)
             }
             .padding()
-            .background(AppTheme.Colors.light.surface)
-            .cornerRadius(AppTheme.cornerRadiusSmall)
+            .background(Color(.systemBackground))
+            .cornerRadius(8)
         }
     }
 }

@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 
+@MainActor
 @Observable
 class DataManager {
     private let modelContainer: ModelContainer

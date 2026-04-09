@@ -107,7 +107,7 @@ extension SecurityService {
     }
 
     /// Securely store bank transaction data
-    public func storePlaidTransactions(_ transactions: [Transaction]) async throws {
+    func storePlaidTransactions(_ transactions: [Transaction]) async throws {
         let sanitizedTransactions = sanitizeTransactionData(transactions)
         let encryptedData = try await encryptPlaidData(sanitizedTransactions, context: .bankTransactions)
 
@@ -121,7 +121,7 @@ extension SecurityService {
     }
 
     /// Retrieve stored bank transactions with security validation
-    public func retrievePlaidTransactions() async throws -> [Transaction] {
+    func retrievePlaidTransactions() async throws -> [Transaction] {
         // Find the most recent transaction data
         guard let latestKey = try findLatestTransactionKey() else {
             return []
@@ -139,7 +139,7 @@ extension SecurityService {
     }
 
     /// Store payment correlation data securely
-    public func storePlaidCorrelations(_ correlations: [PaymentCorrelation]) async throws {
+    func storePlaidCorrelations(_ correlations: [PaymentCorrelation]) async throws {
         let encryptedData = try await encryptPlaidData(correlations, context: .correlationData)
 
         try storeInKeychain(
@@ -152,7 +152,7 @@ extension SecurityService {
     }
 
     /// Retrieve payment correlation data
-    public func retrievePlaidCorrelations() async throws -> [PaymentCorrelation] {
+    func retrievePlaidCorrelations() async throws -> [PaymentCorrelation] {
         guard let latestKey = try findLatestCorrelationKey() else {
             return []
         }

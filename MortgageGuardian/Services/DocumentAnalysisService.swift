@@ -13,8 +13,7 @@ import ImageIO
 import MobileCoreServices
 #endif
 
-@Observable
-class DocumentAnalysisService {
+class DocumentAnalysisService: ObservableObject {
     enum DocumentType: String, CaseIterable {
         case bankStatement = "bank_statement"
         case payStub = "pay_stub"
@@ -33,6 +32,14 @@ class DocumentAnalysisService {
         let analysisId: String?
     }
 
+    /// AI-generated insights from document analysis
+    struct AIInsights: Codable {
+        let summary: String
+        let keyFindings: [String]
+        let confidenceScore: Double
+        let recommendations: [String]?
+    }
+
     struct MLAnalysisResult {
         let structuredData: DocumentStructuredData
         let nlpInsights: NLPInsights
@@ -49,7 +56,7 @@ class DocumentAnalysisService {
 
     struct NamedEntity {
         let text: String
-        let category: NLLanguageTag
+        let category: NLTag
         let confidence: Double
         let range: NSRange
     }
@@ -256,7 +263,7 @@ class DocumentAnalysisService {
     private let retryConfig = RetryConfiguration()
 
     // ML and NLP components (for fallback/local processing)
-    private let nlProcessor = NLTagger(tagSchemes: [.nameType, .language, .sentiment])
+    private let nlProcessor = NLTagger(tagSchemes: [.nameType, .language, .sentimentScore])
     private var documentClassificationModel: MLModel?
     private var fieldExtractionModel: MLModel?
 
@@ -544,9 +551,7 @@ class DocumentAnalysisService {
 
     private func convertImageToData(_ image: CGImage) throws -> Data {
         #if canImport(UIKit)
-        guard let uiImage = UIImage(cgImage: image) else {
-            throw DocumentAnalysisError.imageConversionFailed
-        }
+        let uiImage = UIImage(cgImage: image)
 
         guard let jpegData = uiImage.jpegData(compressionQuality: 0.8) else {
             throw DocumentAnalysisError.imageConversionFailed
@@ -1032,24 +1037,15 @@ class DocumentAnalysisService {
     }
 
     private func calculateDocumentSentiment(text: String) -> Double? {
-        let tagger = NLTagger(tagSchemes: [.sentiment])
+        let tagger = NLTagger(tagSchemes: [.sentimentScore])
         tagger.string = text
 
         var sentimentSum = 0.0
         var sentimentCount = 0
 
-        tagger.enumerateTags(in: text.startIndex..<text.endIndex, unit: .sentence, scheme: .sentiment) { tag, _ in
-            if let sentiment = tag {
-                switch sentiment {
-                case .positive:
-                    sentimentSum += 1.0
-                case .negative:
-                    sentimentSum -= 1.0
-                case .neutral:
-                    sentimentSum += 0.0
-                default:
-                    break
-                }
+        tagger.enumerateTags(in: text.startIndex..<text.endIndex, unit: .sentence, scheme: .sentimentScore) { tag, _ in
+            if let tag = tag, let score = Double(tag.rawValue) {
+                sentimentSum += score
                 sentimentCount += 1
             }
             return true
@@ -1465,500 +1461,6 @@ class DocumentAnalysisService {
         )
     }
 
-    // MARK: - Tax Return Extraction Methods
-
-    private func extractAdjustedGrossIncome(from text: String) -> Double? {
-        return firstMatchingNumber(prefixes: ["Adjusted Gross Income", "AGI"], in: text)
-    }
-
-    private func extractTotalIncome(from text: String) -> Double? {
-        return firstMatchingNumber(prefixes: ["Total Income", "Gross Income"], in: text)
-    }
-
-    private func extractTaxLiability(from text: String) -> Double? {
-        return firstMatchingNumber(prefixes: ["Tax Liability", "Total Tax"], in: text)
-    }
-
-    private func extractFilingStatus(from text: String) -> FilingStatus? {
-        for status in FilingStatus.allCases {
-            if text.localizedCaseInsensitiveContains(status.rawValue) {
-                return status
-            }
-        }
-        return nil
-    }
-
-    private func extractDependents(from text: String) -> Int? {
-        let pattern = "dependents?[:\\s]*([0-9]+)"
-        do {
-            let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: text.count))
-            if let match = matches.first, match.numberOfRanges > 1 {
-                let dependentString = (text as NSString).substring(with: match.range(at: 1))
-                return Int(dependentString)
-            }
-        } catch {}
-        return nil
-    }
-
-    private func extractTaxYear(from text: String) -> Int? {
-        let pattern = "\\b(20[0-9]{2})\\b"
-        do {
-            let regex = try NSRegularExpression(pattern: pattern)
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: text.count))
-            for match in matches {
-                let yearString = (text as NSString).substring(with: match.range)
-                if let year = Int(yearString), year >= 2010 && year <= 2030 {
-                    return year
-                }
-            }
-        } catch {}
-        return nil
-    }
-
-    private func extractRefundAmount(from text: String) -> Double? {
-        return firstMatchingNumber(prefixes: ["Refund", "Overpaid"], in: text)
-    }
-
-    private func extractPreparedBy(from text: String) -> String? {
-        let pattern = "prepared by[:\\s]*([^\\n]+)"
-        do {
-            let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: text.count))
-            if let match = matches.first, match.numberOfRanges > 1 {
-                return (text as NSString).substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-        } catch {}
-        return nil
-    }
-
-    private func extractTaxDeductions(from text: String) -> TaxDeductions {
-        return TaxDeductions(
-            standardDeduction: firstMatchingNumber(prefixes: ["Standard Deduction"], in: text),
-            itemizedDeductions: firstMatchingNumber(prefixes: ["Itemized Deductions"], in: text),
-            mortgageInterest: firstMatchingNumber(prefixes: ["Mortgage Interest"], in: text),
-            stateAndLocalTaxes: firstMatchingNumber(prefixes: ["State and Local", "SALT"], in: text),
-            charitableContributions: firstMatchingNumber(prefixes: ["Charitable"], in: text)
-        )
-    }
-
-    private func calculateTaxReturnExtractionConfidence(
-        agi: Double?,
-        totalIncome: Double?,
-        taxLiability: Double?,
-        filingStatus: FilingStatus?,
-        deductions: TaxDeductions
-    ) -> Double {
-        var score = 0.0
-        var maxScore = 5.0
-
-        if agi != nil { score += 1.0 }
-        if totalIncome != nil { score += 1.0 }
-        if taxLiability != nil { score += 1.0 }
-        if filingStatus != nil { score += 1.0 }
-        if deductions.standardDeduction != nil || deductions.itemizedDeductions != nil { score += 1.0 }
-
-        return score / maxScore
-    }
-
-    // MARK: - Property Appraisal Extraction Methods
-
-    private func extractAppraisedValue(from text: String) -> Double? {
-        return firstMatchingNumber(prefixes: ["Appraised Value", "Market Value", "Fair Market Value"], in: text)
-    }
-
-    private func extractAppraisalDate(from text: String) -> Date? {
-        let pattern = datePattern
-        do {
-            let regex = try NSRegularExpression(pattern: pattern)
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: text.count))
-            if let match = matches.first {
-                let dateString = (text as NSString).substring(with: match.range)
-                let formatter = DateFormatter()
-                formatter.dateFormat = "MM/dd/yyyy"
-                return formatter.date(from: dateString)
-            }
-        } catch {}
-        return nil
-    }
-
-    private func extractPropertyAddress(from text: String) -> String? {
-        // Look for address patterns
-        let patterns = [
-            "(?:subject property|property address)[:\\s]*([^\\n]+)",
-            "\\b\\d+\\s+[A-Za-z\\s]+(?:street|st|avenue|ave|road|rd|drive|dr|lane|ln|boulevard|blvd)\\b[^\\n]*"
-        ]
-
-        for pattern in patterns {
-            do {
-                let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-                let matches = regex.matches(in: text, range: NSRange(location: 0, length: text.count))
-                if let match = matches.first {
-                    let addressString = (text as NSString).substring(with: match.range)
-                    return addressString.trimmingCharacters(in: .whitespacesAndNewlines)
-                }
-            } catch {}
-        }
-        return nil
-    }
-
-    private func extractSquareFootage(from text: String) -> Int? {
-        let pattern = "(?:square feet|sq\\.?\\s*ft\\.?|sf)[:\\s]*([0-9,]+)"
-        do {
-            let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: text.count))
-            if let match = matches.first, match.numberOfRanges > 1 {
-                let sqftString = (text as NSString).substring(with: match.range(at: 1))
-                return Int(sqftString.replacingOccurrences(of: ",", with: ""))
-            }
-        } catch {}
-        return nil
-    }
-
-    private func extractLotSize(from text: String) -> Double? {
-        let pattern = "lot size[:\\s]*([0-9,\\.]+)"
-        do {
-            let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: text.count))
-            if let match = matches.first, match.numberOfRanges > 1 {
-                let lotString = (text as NSString).substring(with: match.range(at: 1))
-                return Double(lotString.replacingOccurrences(of: ",", with: ""))
-            }
-        } catch {}
-        return nil
-    }
-
-    private func extractYearBuilt(from text: String) -> Int? {
-        let pattern = "(?:year built|built)[:\\s]*(19|20)([0-9]{2})"
-        do {
-            let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: text.count))
-            if let match = matches.first {
-                let yearString = (text as NSString).substring(with: match.range)
-                let components = yearString.components(separatedBy: CharacterSet.decimalDigits.inverted)
-                for component in components {
-                    if let year = Int(component), year >= 1800 && year <= 2030 {
-                        return year
-                    }
-                }
-            }
-        } catch {}
-        return nil
-    }
-
-    private func extractPropertyType(from text: String) -> String? {
-        let types = ["Single Family", "Condominium", "Townhouse", "Multi-Family", "Vacant Land"]
-        for type in types {
-            if text.localizedCaseInsensitiveContains(type) {
-                return type
-            }
-        }
-        return nil
-    }
-
-    private func extractConditionRating(from text: String) -> PropertyCondition? {
-        for condition in PropertyCondition.allCases {
-            if text.localizedCaseInsensitiveContains(condition.rawValue) {
-                return condition
-            }
-        }
-        return nil
-    }
-
-    private func extractComparableSales(from text: String) -> [ComparableSale] {
-        // Simplified implementation - in practice would need more sophisticated parsing
-        var comparables: [ComparableSale] = []
-        let lines = text.components(separatedBy: "\n")
-
-        for line in lines {
-            if line.localizedCaseInsensitiveContains("comparable") || line.localizedCaseInsensitiveContains("comp") {
-                let amounts = extractCurrencyNumbers(from: line)
-                if let salePrice = amounts.first {
-                    comparables.append(ComparableSale(
-                        address: nil,
-                        salePrice: salePrice,
-                        saleDate: nil,
-                        squareFootage: nil,
-                        adjustments: nil
-                    ))
-                }
-            }
-        }
-
-        return comparables
-    }
-
-    private func extractAppraiserName(from text: String) -> String? {
-        let pattern = "appraiser[:\\s]*([^\\n]+)"
-        do {
-            let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: text.count))
-            if let match = matches.first, match.numberOfRanges > 1 {
-                return (text as NSString).substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-        } catch {}
-        return nil
-    }
-
-    private func extractAppraisalCompany(from text: String) -> String? {
-        let pattern = "appraisal company[:\\s]*([^\\n]+)"
-        do {
-            let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: text.count))
-            if let match = matches.first, match.numberOfRanges > 1 {
-                return (text as NSString).substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-        } catch {}
-        return nil
-    }
-
-    private func calculateAppraisalExtractionConfidence(
-        appraisedValue: Double?,
-        propertyAddress: String?,
-        squareFootage: Int?,
-        comparableSales: [ComparableSale]
-    ) -> Double {
-        var score = 0.0
-        var maxScore = 4.0
-
-        if appraisedValue != nil { score += 1.0 }
-        if propertyAddress != nil { score += 1.0 }
-        if squareFootage != nil { score += 1.0 }
-        if !comparableSales.isEmpty { score += 1.0 }
-
-        return score / maxScore
-    }
-
-    // MARK: - Bank Statement Extraction Methods
-
-    private func extractAccountNumber(from text: String) -> String? {
-        let pattern = "account\\s*(?:number|#)[:\\s]*([0-9\\-]+)"
-        do {
-            let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: text.count))
-            if let match = matches.first, match.numberOfRanges > 1 {
-                return (text as NSString).substring(with: match.range(at: 1))
-            }
-        } catch {}
-        return nil
-    }
-
-    private func extractBankName(from text: String) -> String? {
-        let banks = ["Chase", "Bank of America", "Wells Fargo", "Citibank", "US Bank", "PNC", "Capital One", "TD Bank"]
-        for bank in banks {
-            if text.localizedCaseInsensitiveContains(bank) {
-                return bank
-            }
-        }
-        return nil
-    }
-
-    private func extractStatementPeriod(from text: String) -> DateInterval? {
-        // Simplified implementation
-        return nil
-    }
-
-    private func extractOpeningBalance(from text: String) -> Double? {
-        return firstMatchingNumber(prefixes: ["Opening Balance", "Previous Balance", "Beginning Balance"], in: text)
-    }
-
-    private func extractClosingBalance(from text: String) -> Double? {
-        return firstMatchingNumber(prefixes: ["Closing Balance", "Ending Balance", "Current Balance"], in: text)
-    }
-
-    private func extractInterestEarned(from text: String) -> Double? {
-        return firstMatchingNumber(prefixes: ["Interest Earned", "Interest Income"], in: text)
-    }
-
-    private func extractBankTransactions(from text: String, observations: [VNRecognizedTextObservation]) async -> [BankTransaction] {
-        // Simplified implementation
-        var transactions: [BankTransaction] = []
-        let lines = text.components(separatedBy: "\n")
-
-        for line in lines {
-            let amounts = extractCurrencyNumbers(from: line)
-            if let amount = amounts.first {
-                transactions.append(BankTransaction(
-                    date: nil,
-                    description: line,
-                    amount: amount,
-                    type: .debit,
-                    category: .other,
-                    confidence: 0.7
-                ))
-            }
-        }
-
-        return transactions
-    }
-
-    private func extractBankFees(from text: String) -> [BankFee] {
-        var fees: [BankFee] = []
-        let lines = text.components(separatedBy: "\n")
-
-        for line in lines {
-            if line.localizedCaseInsensitiveContains("fee") {
-                let amounts = extractCurrencyNumbers(from: line)
-                if let amount = amounts.first {
-                    fees.append(BankFee(type: "Fee", amount: amount, date: nil))
-                }
-            }
-        }
-
-        return fees
-    }
-
-    private func calculateAverageDailyBalance(
-        openingBalance: Double?,
-        closingBalance: Double?,
-        transactions: [BankTransaction]
-    ) -> Double? {
-        guard let opening = openingBalance, let closing = closingBalance else { return nil }
-        return (opening + closing) / 2.0
-    }
-
-    private func calculateBankStatementExtractionConfidence(
-        accountNumber: String?,
-        bankName: String?,
-        openingBalance: Double?,
-        closingBalance: Double?,
-        transactions: [BankTransaction]
-    ) -> Double {
-        var score = 0.0
-        var maxScore = 5.0
-
-        if accountNumber != nil { score += 1.0 }
-        if bankName != nil { score += 1.0 }
-        if openingBalance != nil { score += 1.0 }
-        if closingBalance != nil { score += 1.0 }
-        if !transactions.isEmpty { score += 1.0 }
-
-        return score / maxScore
-    }
-
-    // MARK: - Pay Stub Extraction Methods
-
-    private func extractEmployerName(from text: String) -> String? {
-        let pattern = "employer[:\\s]*([^\\n]+)"
-        do {
-            let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: text.count))
-            if let match = matches.first, match.numberOfRanges > 1 {
-                return (text as NSString).substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-        } catch {}
-        return nil
-    }
-
-    private func extractEmployeeName(from text: String) -> String? {
-        let pattern = "employee[:\\s]*([^\\n]+)"
-        do {
-            let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: text.count))
-            if let match = matches.first, match.numberOfRanges > 1 {
-                return (text as NSString).substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-        } catch {}
-        return nil
-    }
-
-    private func extractPayPeriod(from text: String) -> DateInterval? {
-        // Simplified implementation
-        return nil
-    }
-
-    private func extractPayRate(from text: String) -> Double? {
-        return firstMatchingNumber(prefixes: ["Pay Rate", "Hourly Rate", "Rate"], in: text)
-    }
-
-    private func extractHoursWorked(from text: String) -> Double? {
-        let pattern = "hours[:\\s]*([0-9\\.]+)"
-        do {
-            let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: text.count))
-            if let match = matches.first, match.numberOfRanges > 1 {
-                let hoursString = (text as NSString).substring(with: match.range(at: 1))
-                return Double(hoursString)
-            }
-        } catch {}
-        return nil
-    }
-
-    private func extractGrossPay(from text: String) -> PayAmount? {
-        let current = firstMatchingNumber(prefixes: ["Gross Pay"], in: text)
-        let ytd = firstMatchingNumber(prefixes: ["Gross YTD", "YTD Gross"], in: text)
-
-        if let current = current {
-            return PayAmount(current: current, yearToDate: ytd ?? 0.0)
-        }
-        return nil
-    }
-
-    private func extractNetPay(from text: String) -> PayAmount? {
-        let current = firstMatchingNumber(prefixes: ["Net Pay"], in: text)
-        let ytd = firstMatchingNumber(prefixes: ["Net YTD", "YTD Net"], in: text)
-
-        if let current = current {
-            return PayAmount(current: current, yearToDate: ytd ?? 0.0)
-        }
-        return nil
-    }
-
-    private func extractPayrollDeductions(from text: String) -> PayrollDeductions {
-        return PayrollDeductions(
-            healthInsurance: firstMatchingNumber(prefixes: ["Health Insurance", "Medical"], in: text),
-            dentalInsurance: firstMatchingNumber(prefixes: ["Dental"], in: text),
-            retirement401k: firstMatchingNumber(prefixes: ["401k", "Retirement"], in: text),
-            lifeInsurance: firstMatchingNumber(prefixes: ["Life Insurance"], in: text),
-            otherDeductions: [:]
-        )
-    }
-
-    private func extractPayrollTaxes(from text: String) -> PayrollTaxes {
-        return PayrollTaxes(
-            federalIncomeTax: firstMatchingNumber(prefixes: ["Federal Income Tax", "Fed Tax"], in: text),
-            stateIncomeTax: firstMatchingNumber(prefixes: ["State Income Tax", "State Tax"], in: text),
-            socialSecurityTax: firstMatchingNumber(prefixes: ["Social Security", "FICA"], in: text),
-            medicareTax: firstMatchingNumber(prefixes: ["Medicare"], in: text),
-            otherTaxes: [:]
-        )
-    }
-
-    private func extractYearToDateTotals(from text: String) -> YearToDateTotals? {
-        guard let grossPay = firstMatchingNumber(prefixes: ["Gross YTD"], in: text),
-              let netPay = firstMatchingNumber(prefixes: ["Net YTD"], in: text) else {
-            return nil
-        }
-
-        return YearToDateTotals(
-            grossPay: grossPay,
-            netPay: netPay,
-            federalTax: firstMatchingNumber(prefixes: ["Fed Tax YTD"], in: text) ?? 0.0,
-            stateTax: firstMatchingNumber(prefixes: ["State Tax YTD"], in: text) ?? 0.0,
-            socialSecurity: firstMatchingNumber(prefixes: ["SS YTD"], in: text) ?? 0.0,
-            medicare: firstMatchingNumber(prefixes: ["Medicare YTD"], in: text) ?? 0.0
-        )
-    }
-
-    private func calculatePayStubExtractionConfidence(
-        employerName: String?,
-        grossPay: PayAmount?,
-        netPay: PayAmount?,
-        deductions: PayrollDeductions,
-        taxes: PayrollTaxes
-    ) -> Double {
-        var score = 0.0
-        var maxScore = 5.0
-
-        if employerName != nil { score += 1.0 }
-        if grossPay != nil { score += 1.0 }
-        if netPay != nil { score += 1.0 }
-        if deductions.healthInsurance != nil || deductions.retirement401k != nil { score += 1.0 }
-        if taxes.federalIncomeTax != nil || taxes.stateIncomeTax != nil { score += 1.0 }
-
-        return score / maxScore
-    }
-
     // MARK: - Network Monitoring with Retry Logic
 
     /// Perform AWS API call with retry logic and exponential backoff
@@ -1996,40 +1498,6 @@ class DocumentAnalysisService {
         throw lastError ?? DocumentAnalysisError.unknownError(underlying: NSError(domain: "DocumentAnalysisService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unexpected retry failure"]))
     }
 
-    // MARK: - ML Confidence and Quality Assessment
-
-    private func calculateMLConfidenceScores(
-        structuredData: DocumentStructuredData,
-        nlpInsights: NLPInsights,
-        observations: [VNRecognizedTextObservation]
-    ) -> [String: Double] {
-        var scores: [String: Double] = [:]
-
-        scores["extraction"] = structuredData.extractionConfidence
-        scores["language"] = nlpInsights.languageDetection == "en" ? 1.0 : 0.5
-        scores["ocr_quality"] = observations.isEmpty ? 1.0 : calculateConfidence(observations)
-        scores["overall"] = (scores.values.reduce(0, +)) / Double(scores.count)
-
-        return scores
-    }
-
-    private func assessExtractionQuality(
-        structuredData: DocumentStructuredData,
-        rawText: String,
-        observations: [VNRecognizedTextObservation]
-    ) -> ExtractionQuality {
-        let textClarity = observations.isEmpty ? 1.0 : calculateConfidence(observations)
-        let structuralIntegrity = structuredData.extractionConfidence
-        let dataCompleteness = min(Double(rawText.count) / 1000.0, 1.0) // Rough estimate
-        let overallScore = (textClarity + structuralIntegrity + dataCompleteness) / 3.0
-
-        return ExtractionQuality(
-            overallScore: overallScore,
-            textClarity: textClarity,
-            structuralIntegrity: structuralIntegrity,
-            dataCompleteness: dataCompleteness
-        )
-    }
 }
 
 // MARK: - Network Monitor Implementation

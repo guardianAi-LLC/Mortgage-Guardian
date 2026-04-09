@@ -88,7 +88,7 @@ public final class VendorNeutralSecurityManager: ObservableObject {
 
         func encryptData(_ data: Data) throws -> Data {
             guard let key = masterKey else {
-                throw SecurityError.noMasterKey
+                throw VNSecurityError.noMasterKey
             }
 
             // AES-256-GCM encryption
@@ -98,7 +98,7 @@ public final class VendorNeutralSecurityManager: ObservableObject {
 
         func decryptData(_ encryptedData: Data) throws -> Data {
             guard let key = masterKey else {
-                throw SecurityError.noMasterKey
+                throw VNSecurityError.noMasterKey
             }
 
             let sealedBox = try AES.GCM.SealedBox(combined: encryptedData)
@@ -250,7 +250,7 @@ public final class VendorNeutralSecurityManager: ObservableObject {
             // Verify checksum
             let currentChecksum = SHA512.hash(data: encrypted.encryptedValue)
             guard Data(currentChecksum) == encrypted.checksum else {
-                throw SecurityError.checksumMismatch
+                throw VNSecurityError.checksumMismatch
             }
 
             // Decrypt
@@ -289,7 +289,7 @@ public final class VendorNeutralSecurityManager: ObservableObject {
             }
 
             guard result == kCCSuccess else {
-                throw SecurityError.keyDerivationFailed
+                throw VNSecurityError.keyDerivationFailed
             }
 
             return derivedKey
@@ -305,7 +305,7 @@ public final class VendorNeutralSecurityManager: ObservableObject {
                 .biometryCurrentSet,
                 nil
             ) else {
-                throw SecurityError.accessControlCreationFailed
+                throw VNSecurityError.accessControlCreationFailed
             }
 
             let query: [String: Any] = [
@@ -323,7 +323,7 @@ public final class VendorNeutralSecurityManager: ObservableObject {
             // Add new item
             let status = SecItemAdd(query as CFDictionary, nil)
             guard status == errSecSuccess else {
-                throw SecurityError.keychainError(status)
+                throw VNSecurityError.keychainError(status)
             }
         }
 
@@ -344,11 +344,11 @@ public final class VendorNeutralSecurityManager: ObservableObject {
                 if status == errSecItemNotFound {
                     return nil
                 }
-                throw SecurityError.keychainError(status)
+                throw VNSecurityError.keychainError(status)
             }
 
             guard let data = item as? Data else {
-                throw SecurityError.invalidData
+                throw VNSecurityError.invalidData
             }
 
             return String(data: data, encoding: .utf8)
@@ -635,7 +635,7 @@ public final class VendorNeutralSecurityManager: ObservableObject {
 
         var error: NSError?
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
-            throw SecurityError.biometricUnavailable
+            throw VNSecurityError.biometricUnavailable
         }
 
         let success = try await context.evaluatePolicy(
@@ -644,7 +644,7 @@ public final class VendorNeutralSecurityManager: ObservableObject {
         )
 
         guard success else {
-            throw SecurityError.authenticationFailed
+            throw VNSecurityError.authenticationFailed
         }
 
         // Log attempt
@@ -674,7 +674,7 @@ public final class VendorNeutralSecurityManager: ObservableObject {
 
 // MARK: - Supporting Types
 
-enum SecurityError: LocalizedError {
+enum VNSecurityError: LocalizedError {
     case noMasterKey
     case checksumMismatch
     case keyDerivationFailed
@@ -707,30 +707,6 @@ enum SecurityError: LocalizedError {
 }
 
 // MARK: - CommonCrypto Bridge
-
+// CommonCrypto types (CCPBKDFAlgorithm, CCPseudoRandomAlgorithm, kCCSuccess,
+// CCKeyDerivationPBKDF) are provided by the system CommonCrypto module.
 import CommonCrypto
-
-enum CCPBKDFAlgorithm: CCPBKDFAlgorithm {
-    case kCCPBKDF2 = 2
-}
-
-enum CCPseudoRandomAlgorithm: CCPseudoRandomAlgorithm {
-    case kCCPRFHmacAlgSHA512 = 5
-}
-
-let kCCSuccess = 0
-
-func CCKeyDerivationPBKDF(
-    _ algorithm: CCPBKDFAlgorithm,
-    _ password: UnsafePointer<Int8>,
-    _ passwordLen: Int,
-    _ salt: UnsafePointer<UInt8>,
-    _ saltLen: Int,
-    _ prf: CCPseudoRandomAlgorithm,
-    _ rounds: UInt32,
-    _ derivedKey: UnsafeMutablePointer<UInt8>,
-    _ derivedKeyLen: Int
-) -> Int32 {
-    // Bridge to CommonCrypto
-    return 0 // Placeholder
-}
