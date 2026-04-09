@@ -3,6 +3,7 @@ import SwiftUI
 /// Letter generation interface for specific issues
 struct IssueLetterGeneratorView: View {
     let issue: AuditResult
+    let caseId: String?
     @Environment(\.dismiss) private var dismiss
 
     @State private var letterType: LetterType = .noticeOfError
@@ -11,6 +12,13 @@ struct IssueLetterGeneratorView: View {
     @State private var isGenerating = false
     @State private var generatedLetter: String?
     @State private var showingPreview = false
+    @State private var errorMessage: String?
+    @State private var showingError = false
+
+    init(issue: AuditResult, caseId: String? = nil) {
+        self.issue = issue
+        self.caseId = caseId
+    }
 
     var body: some View {
         NavigationView {
@@ -42,6 +50,11 @@ struct IssueLetterGeneratorView: View {
                 if let letter = generatedLetter {
                     LetterPreviewView(letterContent: letter, issue: issue)
                 }
+            }
+            .alert("Error", isPresented: $showingError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage ?? "An unknown error occurred.")
             }
         }
     }
@@ -280,36 +293,115 @@ struct IssueLetterGeneratorView: View {
 
     // MARK: - Actions
     private func generateLetter() {
-        guard let template = selectedTemplate else { return }
+        guard selectedTemplate != nil else { return }
 
         isGenerating = true
 
-        // Simulate letter generation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            let generator = LetterGenerator(
-                issue: issue,
-                template: template,
-                customizations: customizations
-            )
-
-            generatedLetter = generator.generateLetter()
-            isGenerating = false
+        if let caseId = caseId {
+            // Backend letter generation
+            Task {
+                do {
+                    let backendLetterType = letterType.backendKey
+                    let response = try await APIClient.shared.generateDisputeLetter(
+                        caseId: caseId,
+                        letterType: backendLetterType
+                    )
+                    generatedLetter = formatDisputeLetterResponse(response)
+                } catch {
+                    errorMessage = error.localizedDescription
+                    showingError = true
+                }
+                isGenerating = false
+            }
+        } else {
+            // Offline fallback using local LetterGenerator
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                let generator = LetterGenerator(
+                    issue: issue,
+                    template: selectedTemplate!,
+                    customizations: customizations
+                )
+                generatedLetter = generator.generateLetter()
+                isGenerating = false
+            }
         }
     }
 
+    /// Map a `DisputeLetterResponse` into a single formatted string for display and sharing.
+    private func formatDisputeLetterResponse(_ response: DisputeLetterResponse) -> String {
+        var parts: [String] = []
+
+        if let subject = response.content?.subject, !subject.isEmpty {
+            parts.append("RE: \(subject)")
+        }
+
+        if let recipientName = response.recipientInfo?.servicerName {
+            parts.append(recipientName)
+        }
+        if let recipientAddress = response.recipientInfo?.servicerAddress {
+            parts.append(recipientAddress)
+        }
+
+        if !parts.isEmpty {
+            parts.append("") // blank line separator
+        }
+
+        if let salutation = response.content?.salutation, !salutation.isEmpty {
+            parts.append(salutation)
+            parts.append("")
+        }
+
+        if let body = response.content?.body, !body.isEmpty {
+            parts.append(body)
+            parts.append("")
+        }
+
+        if let demands = response.content?.demands, !demands.isEmpty {
+            parts.append("DEMANDS:")
+            for (index, demand) in demands.enumerated() {
+                parts.append("\(index + 1). \(demand)")
+            }
+            parts.append("")
+        }
+
+        if let citations = response.content?.legalCitations, !citations.isEmpty {
+            parts.append("LEGAL CITATIONS:")
+            for citation in citations {
+                parts.append("- \(citation)")
+            }
+            parts.append("")
+        }
+
+        if let deadline = response.content?.responseDeadline, !deadline.isEmpty {
+            parts.append("RESPONSE DEADLINE: \(deadline)")
+            parts.append("")
+        }
+
+        if let closing = response.content?.closingStatement, !closing.isEmpty {
+            parts.append(closing)
+        }
+
+        return parts.joined(separator: "\n")
+    }
+
     private func emailLetter() {
-        // TODO: Implement email functionality
-        print("Emailing letter")
+        guard let letter = generatedLetter else { return }
+        ShareUtility.presentShareSheet(items: [letter])
     }
 
     private func saveToFiles() {
-        // TODO: Implement save to files
-        print("Saving to files")
+        guard let letter = generatedLetter,
+              let data = letter.data(using: .utf8) else { return }
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DisputeLetter.txt")
+        try? data.write(to: tempURL)
+        ShareUtility.saveToFiles(tempURL)
     }
 
     private func printLetter() {
-        // TODO: Implement print functionality
-        print("Printing letter")
+        guard let letter = generatedLetter,
+              let data = letter.data(using: .utf8) else { return }
+        ShareUtility.printData(data, jobName: "Dispute Letter - \(issue.title)")
     }
 
     private func formatCurrency(_ amount: Double) -> String {
@@ -329,6 +421,20 @@ enum LetterType: String, CaseIterable {
     case demandLetter = "Demand Letter"
 
     var displayName: String { rawValue }
+
+    /// Map the UI letter type to the backend's expected string key.
+    var backendKey: String {
+        switch self {
+        case .noticeOfError:
+            return "notice_of_error"
+        case .qualifiedWrittenRequest:
+            return "qualified_written_request"
+        case .complaintLetter:
+            return "notice_of_error"
+        case .demandLetter:
+            return "notice_of_error"
+        }
+    }
 
     var description: String {
         switch self {
@@ -539,9 +645,22 @@ struct LetterPreviewView: View {
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
-                        Button("Email") { }
-                        Button("Print") { }
-                        Button("Save to Files") { }
+                        Button("Email") {
+                            ShareUtility.presentShareSheet(items: [letterContent])
+                        }
+                        Button("Print") {
+                            if let data = letterContent.data(using: .utf8) {
+                                ShareUtility.printData(data, jobName: "Dispute Letter - \(issue.title)")
+                            }
+                        }
+                        Button("Save to Files") {
+                            if let data = letterContent.data(using: .utf8) {
+                                let tempURL = FileManager.default.temporaryDirectory
+                                    .appendingPathComponent("DisputeLetter.txt")
+                                try? data.write(to: tempURL)
+                                ShareUtility.saveToFiles(tempURL)
+                            }
+                        }
                         Button("Copy to Clipboard") {
                             UIPasteboard.general.string = letterContent
                         }
@@ -564,5 +683,5 @@ extension DateFormatter {
 }
 
 #Preview {
-    IssueLetterGeneratorView(issue: AuditResult.sampleResult())
+    IssueLetterGeneratorView(issue: AuditResult.sampleResult(), caseId: nil)
 }
