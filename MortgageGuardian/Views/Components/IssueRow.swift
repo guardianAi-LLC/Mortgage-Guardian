@@ -55,7 +55,7 @@ struct IssueRow: View {
                             .padding(.vertical, 2)
                             .background(
                                 Capsule()
-                                    .fill(auditResult.severity.color.opacity(0.2))
+                                    .fill(auditResult.severity.color.opacity(0.15))
                             )
                             .foregroundColor(auditResult.severity.color)
 
