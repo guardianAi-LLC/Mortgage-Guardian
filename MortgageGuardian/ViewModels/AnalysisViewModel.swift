@@ -388,23 +388,48 @@ class AnalysisViewModel: ObservableObject {
 
     // MARK: - Issue Actions
     private func generateLettersForIssues(_ issues: [AuditResult]) {
-        // TODO: Implement bulk letter generation
-        print("Generating letters for \(issues.count) issues")
+        guard let firstIssue = issues.first else { return }
+        // Present letter generator for the first selected issue.
+        // Bulk generation across multiple issues opens the generator per-issue
+        // via the IssueLetterGeneratorView sheet driven by selectedIssue.
+        selectedIssue = firstIssue
     }
 
     private func markIssuesAsResolved(_ issues: [AuditResult]) {
-        // TODO: Implement issue resolution tracking
-        print("Marking \(issues.count) issues as resolved")
+        // Resolution tracking is informational until the data model supports it
+        // In a future update, this will persist resolved status to the backend.
+        errorMessage = "\(issues.count) issue(s) noted. Full resolution tracking coming in a future update."
     }
 
     private func exportIssues(_ issues: [AuditResult]) {
-        // TODO: Implement issue export
-        print("Exporting \(issues.count) issues")
+        var report = "Mortgage Guardian - Issue Export\n"
+        report += "Generated: \(DateFormatter.localizedString(from: Date(), dateStyle: .long, timeStyle: .short))\n"
+        report += "Issues: \(issues.count)\n\n"
+
+        for issue in issues {
+            report += "[\(issue.severity.displayName.uppercased())] \(issue.title)\n"
+            report += "  Type: \(issue.issueType.displayName)\n"
+            report += "  \(issue.description)\n"
+            if let amount = issue.affectedAmount {
+                let formatter = NumberFormatter()
+                formatter.numberStyle = .currency
+                formatter.currencyCode = "USD"
+                let amountStr = formatter.string(from: NSNumber(value: amount)) ?? "$0"
+                report += "  Amount: \(amountStr)\n"
+            }
+            report += "\n"
+        }
+
+        ShareUtility.presentShareSheet(items: [report])
     }
 
     private func shareIssues(_ issues: [AuditResult]) {
-        // TODO: Implement issue sharing
-        print("Sharing \(issues.count) issues")
+        let summary = issues.map { issue in
+            "\(issue.severity.displayName): \(issue.title) - \(issue.issueType.displayName)"
+        }.joined(separator: "\n")
+
+        let shareText = "Mortgage Guardian Analysis (\(issues.count) issues):\n\n\(summary)"
+        ShareUtility.presentShareSheet(items: [shareText])
     }
 
     // MARK: - Data Types

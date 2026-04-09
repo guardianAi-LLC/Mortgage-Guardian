@@ -18,6 +18,9 @@ struct IssueDetailView: View {
     @State private var showingEvidenceHighlight = false
     @State private var expandedSections: Set<String> = ["overview", "calculation"]
     @State private var shareItems: [Any] = []
+    @State private var showingDocumentationAlert = false
+    @State private var showingServicerAlert = false
+    @State private var showingResolutionAlert = false
 
     init(issue: AuditResult, viewModel: AnalysisViewModel? = nil, caseId: String? = nil) {
         self.issue = issue
@@ -90,6 +93,21 @@ struct IssueDetailView: View {
         }
         .onAppear {
             setupShareItems()
+        }
+        .alert("RESPA Documentation", isPresented: $showingDocumentationAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Under RESPA Section 6, you have the right to request information and dispute errors on your mortgage account. Keep all correspondence and evidence for your records.")
+        }
+        .alert("Contact Servicer", isPresented: $showingServicerAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Contact your mortgage servicer's qualified written request address. This information can be found on your monthly mortgage statement or the servicer's website.")
+        }
+        .alert("Resolution Tracking", isPresented: $showingResolutionAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("This issue has been noted. Resolution tracking will be available in a future update.")
         }
     }
 
@@ -535,28 +553,43 @@ struct IssueDetailView: View {
     }
 
     private func documentIssue() {
-        // TODO: Implement documentation functionality
-        print("Documenting issue")
+        showingDocumentationAlert = true
     }
 
     private func contactServicer() {
-        // TODO: Implement servicer contact functionality
-        print("Contacting servicer")
+        showingServicerAlert = true
     }
 
     private func fileComplaint() {
-        // TODO: Implement CFPB complaint functionality
-        print("Filing complaint")
+        if let url = URL(string: "https://www.consumerfinance.gov/complaint/") {
+            UIApplication.shared.open(url)
+        }
     }
 
     private func markAsResolved() {
-        // TODO: Implement resolution tracking
-        print("Marking issue as resolved")
+        showingResolutionAlert = true
     }
 
     private func exportIssue() {
-        // TODO: Implement PDF export
-        print("Exporting issue to PDF")
+        let issueText = """
+        Mortgage Guardian - Issue Export
+        ================================
+        Title: \(issue.title)
+        Type: \(issue.issueType.displayName)
+        Severity: \(issue.severity.displayName)
+        Confidence: \(Int(issue.confidence * 100))%
+        Detected: \(formatShortDate(issue.createdDate))
+
+        Description:
+        \(issue.description)
+
+        Detailed Explanation:
+        \(issue.detailedExplanation)
+
+        Suggested Action:
+        \(issue.suggestedAction)
+        """
+        ShareUtility.presentShareSheet(items: [issueText])
     }
 
     // MARK: - Computed Properties

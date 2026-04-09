@@ -8,6 +8,8 @@ struct AnalysisView: View {
     @State private var showingFilterSheet = false
     @State private var selectedIssue: AuditResult?
     @State private var showingLetterGenerator = false
+    @State private var letterIssue: AuditResult?
+    @State private var showingUploadAlert = false
 
     private var filteredIssues: [AuditResult] {
         var issues = userStore.auditResults
@@ -81,6 +83,7 @@ struct AnalysisView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
+                            .accessibilityLabel("More options")
                     }
                 }
             }
@@ -100,6 +103,14 @@ struct AnalysisView: View {
             .refreshable {
                 userStore.refreshData()
             }
+            .sheet(item: $letterIssue) { issue in
+                IssueLetterGeneratorView(issue: issue, caseId: nil)
+            }
+            .alert("Upload Documents", isPresented: $showingUploadAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Upload documents from the Documents tab to begin analysis.")
+            }
         }
     }
 
@@ -110,6 +121,7 @@ struct AnalysisView: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
+                    .accessibilityHidden(true)
 
                 TextField("Search issues...", text: $searchText)
                     .textFieldStyle(PlainTextFieldStyle())
@@ -156,6 +168,7 @@ struct AnalysisView: View {
                 } label: {
                     Image(systemName: "slider.horizontal.3")
                         .foregroundColor(.blue)
+                        .accessibilityLabel("Filter options")
                 }
             }
         }
@@ -176,7 +189,7 @@ struct AnalysisView: View {
                     message: "Great news! We haven't detected any issues in your mortgage documents. Upload more documents for comprehensive analysis.",
                     actionTitle: "Upload Documents",
                     action: {
-                        // TODO: Navigate to documents tab
+                        showingUploadAlert = true
                     }
                 )
             } else {
@@ -243,23 +256,53 @@ struct AnalysisView: View {
 
     // MARK: - Actions
     private func exportReport() {
-        // TODO: Implement report export
-        print("Exporting analysis report")
+        let issues = userStore.auditResults
+        var report = "Mortgage Guardian Analysis Report\n"
+        report += "Generated: \(DateFormatter.localizedString(from: Date(), dateStyle: .long, timeStyle: .short))\n\n"
+        report += "Total Issues: \(issues.count)\n"
+        report += "Critical: \(userStore.criticalIssuesCount())\n"
+        report += "High: \(userStore.highIssuesCount())\n"
+        report += "Potential Savings: \(formatReportCurrency(userStore.totalPotentialSavings()))\n\n"
+
+        for issue in issues {
+            report += "[\(issue.severity.displayName.uppercased())] \(issue.title)\n"
+            report += "  Type: \(issue.issueType.displayName)\n"
+            report += "  \(issue.description)\n"
+            if let amount = issue.affectedAmount {
+                report += "  Amount: \(formatReportCurrency(amount))\n"
+            }
+            report += "\n"
+        }
+
+        ShareUtility.presentShareSheet(items: [report])
     }
 
     private func shareAnalysis() {
-        // TODO: Implement analysis sharing
-        print("Sharing analysis")
+        let summary = "Mortgage Guardian Analysis: \(userStore.auditResults.count) issues found, \(userStore.criticalIssuesCount()) critical. Potential savings: \(formatReportCurrency(userStore.totalPotentialSavings()))."
+        ShareUtility.presentShareSheet(items: [summary])
     }
 
     private func generateLetterForIssue(_ issue: AuditResult) {
-        // TODO: Implement letter generation for specific issue
-        print("Generating letter for issue: \(issue.title)")
+        letterIssue = issue
     }
 
     private func shareIssue(_ issue: AuditResult) {
-        // TODO: Implement issue sharing
-        print("Sharing issue: \(issue.title)")
+        let issueText = """
+        Issue: \(issue.title)
+        Type: \(issue.issueType.displayName)
+        Severity: \(issue.severity.displayName)
+        Description: \(issue.description)
+        Suggested Action: \(issue.suggestedAction)
+        """
+        ShareUtility.presentShareSheet(items: [issueText])
+    }
+
+    private func formatReportCurrency(_ amount: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
+        formatter.maximumFractionDigits = 0
+        return formatter.string(from: NSNumber(value: amount)) ?? "$0"
     }
 }
 
@@ -338,6 +381,7 @@ struct SeverityCountView: View {
             Image(systemName: icon)
                 .foregroundColor(severity.color)
                 .font(.subheadline)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(count)")
@@ -363,6 +407,7 @@ struct SeveritySectionHeader: View {
             Circle()
                 .fill(severity.color)
                 .frame(width: 8, height: 8)
+                .accessibilityHidden(true)
 
             Text(severity.displayName.uppercased())
                 .font(.caption)
@@ -452,6 +497,7 @@ struct IssueDetailView: View {
                             Image(systemName: issue.issueType.icon)
                                 .foregroundColor(issue.severity.color)
                                 .font(.title2)
+                                .accessibilityHidden(true)
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(issue.title)
@@ -637,52 +683,67 @@ struct IssueDetailView: View {
     }
 }
 
-// MARK: - Letter Generator View (Placeholder)
+// MARK: - Letter Generator View
+/// Presents a list of issues to choose from for letter generation.
+/// Once an issue is selected, the full IssueLetterGeneratorView is presented.
 struct LetterGeneratorView: View {
+    @EnvironmentObject var userStore: UserStore
     @Environment(\.dismiss) private var dismiss
+    @State private var selectedLetterIssue: AuditResult?
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
-                Image(systemName: "doc.text.fill")
-                    .font(.system(size: 64))
-                    .foregroundColor(.blue)
+            Group {
+                if userStore.auditResults.isEmpty {
+                    VStack(spacing: 20) {
+                        Image(systemName: "doc.text.fill")
+                            .font(.system(size: 64))
+                            .foregroundColor(.blue)
+                            .accessibilityLabel("Letter generator")
 
-                Text("Letter Generator")
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                        Text("No Issues Available")
+                            .font(.title2)
+                            .fontWeight(.semibold)
 
-                Text("Generate a formal Notice of Error letter to send to your mortgage servicer regarding the identified issues.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
+                        Text("Upload and analyze mortgage documents first to generate dispute letters for identified issues.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
 
-                VStack(spacing: 12) {
-                    Button("Generate Letter") {
-                        // TODO: Implement letter generation
-                        dismiss()
+                        Spacer()
                     }
-                    .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                } else {
+                    List {
+                        Section {
+                            Text("Select an issue to generate a formal dispute letter.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
 
+                        ForEach(userStore.auditResults) { issue in
+                            Button {
+                                selectedLetterIssue = issue
+                            } label: {
+                                IssueRow(auditResult: issue)
+                            }
+                        }
+                    }
+                    .listStyle(InsetGroupedListStyle())
+                }
+            }
+            .navigationTitle("Generate Letter")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Cancel") {
                         dismiss()
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.gray.opacity(0.2))
-                    .foregroundColor(.primary)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
-
-                Spacer()
             }
-            .padding()
-            .navigationTitle("Generate Letter")
-            .navigationBarTitleDisplayMode(.inline)
+            .sheet(item: $selectedLetterIssue) { issue in
+                IssueLetterGeneratorView(issue: issue, caseId: nil)
+            }
         }
     }
 }
