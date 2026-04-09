@@ -96,6 +96,17 @@ class UserStore: ObservableObject {
         objectWillChange.send()
     }
 
+    // MARK: - Reset
+    func resetToDefaults() {
+        user = User.sampleUser
+        documents.removeAll()
+        auditResults.removeAll()
+        transactions.removeAll()
+        plaidAccounts.removeAll()
+        errorMessage = nil
+        objectWillChange.send()
+    }
+
     // MARK: - Plaid Integration
     func connectPlaidAccount(_ account: PlaidAccount) {
         plaidAccounts.append(account)

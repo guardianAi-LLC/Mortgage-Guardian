@@ -1,4 +1,5 @@
 import SwiftUI
+import LocalAuthentication
 
 struct SettingsView: View {
     @EnvironmentObject var userStore: UserStore
@@ -7,6 +8,8 @@ struct SettingsView: View {
     @State private var showingAccountManagement = false
     @State private var showingAppInfo = false
     @State private var showingRetentionPicker = false
+    @State private var showingDeleteConfirmation = false
+    @State private var isExporting = false
 
     var body: some View {
         NavigationView {
@@ -182,7 +185,7 @@ struct SettingsView: View {
                         subtitle: "Permanently delete your account",
                         color: .red
                     ) {
-                        // TODO: Show delete account confirmation
+                        showingDeleteConfirmation = true
                     }
                 }
 
@@ -244,13 +247,118 @@ struct SettingsView: View {
             .sheet(isPresented: $showingRetentionPicker) {
                 DocumentRetentionView()
             }
+            .alert("Delete Account", isPresented: $showingDeleteConfirmation) {
+                Button("Delete", role: .destructive) {
+                    deleteAccount()
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("This will permanently delete all your data including documents, analysis results, and account information. This cannot be undone.")
+            }
         }
     }
 
     // MARK: - Actions
     private func exportUserData() {
-        // TODO: Implement data export
-        print("Exporting user data")
+        guard !isExporting else { return }
+        isExporting = true
+
+        let performExport = {
+            let exportData: [String: Any] = [
+                "exportDate": ISO8601DateFormatter().string(from: Date()),
+                "profile": [
+                    "firstName": self.userStore.user.firstName,
+                    "lastName": self.userStore.user.lastName,
+                    "email": self.userStore.user.email,
+                    "phoneNumber": self.userStore.user.phoneNumber ?? "",
+                    "createdDate": ISO8601DateFormatter().string(from: self.userStore.user.createdDate)
+                ],
+                "mortgageAccounts": self.userStore.user.mortgageAccounts.map { account in
+                    [
+                        "loanNumber": account.loanNumber,
+                        "servicerName": account.servicerName,
+                        "propertyAddress": account.propertyAddress,
+                        "originalLoanAmount": account.originalLoanAmount,
+                        "currentBalance": account.currentBalance ?? 0,
+                        "interestRate": account.interestRate,
+                        "monthlyPayment": account.monthlyPayment
+                    ] as [String: Any]
+                },
+                "auditResults": self.userStore.auditResults.map { result in
+                    [
+                        "title": result.title,
+                        "description": result.description,
+                        "severity": result.severity.rawValue,
+                        "affectedAmount": result.affectedAmount ?? 0,
+                        "confidence": result.confidence,
+                        "createdDate": ISO8601DateFormatter().string(from: result.createdDate)
+                    ] as [String: Any]
+                },
+                "documents": self.userStore.documents.map { doc in
+                    [
+                        "fileName": doc.fileName,
+                        "documentType": doc.documentType.rawValue,
+                        "uploadDate": ISO8601DateFormatter().string(from: doc.uploadDate),
+                        "isAnalyzed": doc.isAnalyzed
+                    ] as [String: Any]
+                }
+            ]
+
+            do {
+                let jsonData = try JSONSerialization.data(withJSONObject: exportData, options: .prettyPrinted)
+                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("mortgage_guardian_export.json")
+                try jsonData.write(to: tempURL)
+                ShareUtility.presentShareSheet(items: [tempURL])
+            } catch {
+                print("Export error: \(error.localizedDescription)")
+            }
+            self.isExporting = false
+        }
+
+        if userStore.user.securitySettings.requireAuthForExport {
+            let context = LAContext()
+            var error: NSError?
+            if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
+                context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: "Authenticate to export your data") { success, _ in
+                    DispatchQueue.main.async {
+                        if success {
+                            performExport()
+                        } else {
+                            self.isExporting = false
+                        }
+                    }
+                }
+            } else {
+                // Biometrics unavailable, proceed without
+                performExport()
+            }
+        } else {
+            performExport()
+        }
+    }
+
+    private func deleteAccount() {
+        // Clear SwiftData
+        do {
+            try DataManager().clearAllData()
+        } catch {
+            print("Failed to clear SwiftData: \(error.localizedDescription)")
+        }
+
+        // Clear keychain credentials (Plaid tokens)
+        Task {
+            for key in CredentialManager.CredentialKey.allCases {
+                try? await CredentialManager.shared.deleteCredential(key)
+            }
+        }
+
+        // Reset UserStore to defaults
+        userStore.resetToDefaults()
+
+        // Sign out via Clerk
+        Task {
+            try? await AuthManager().signOut()
+        }
     }
 
     private func contactSupport() {
