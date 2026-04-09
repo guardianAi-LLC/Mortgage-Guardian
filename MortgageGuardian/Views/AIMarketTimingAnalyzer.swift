@@ -6,6 +6,8 @@ struct AIMarketTimingAnalyzer: View {
     @State private var selectedTimeframe: TimeFrame = .threeMonths
     @State private var marketPrediction: MarketPrediction?
     @State private var isAnalyzing = false
+    @State private var errorMessage: String?
+    @State private var showingError = false
     
     enum TimeFrame: String, CaseIterable {
         case oneMonth = "1 Month"
@@ -126,6 +128,11 @@ struct AIMarketTimingAnalyzer: View {
                     .background(.ultraThinMaterial)
                     .cornerRadius(10)
             }
+        }
+        .alert("Analysis Error", isPresented: $showingError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage ?? "An unexpected error occurred.")
         }
     }
     
@@ -461,31 +468,36 @@ struct AIMarketTimingAnalyzer: View {
     private func analyzeMarket() async {
         isAnalyzing = true
         defer { isAnalyzing = false }
-        
-        await marketDataService.refreshMarketData()
-        
-        // Simulate AI market analysis
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-        
-        marketPrediction = MarketPrediction(
-            buySignal: determineSignal(),
-            predictedPriceChange: Double.random(in: -0.05...0.10),
-            marketMomentum: Double.random(in: -1...1),
-            bestTimeFrame: "Next 2-3 months",
-            confidence: Double.random(in: 0.7...0.95),
-            risks: [
-                "Interest rates may rise further",
-                "Limited inventory in desired areas",
-                "Economic uncertainty ahead"
-            ],
-            opportunities: [
-                "Sellers becoming more negotiable",
-                "New construction entering market",
-                "Seasonal buying advantage"
-            ]
-        )
+
+        do {
+            await marketDataService.refreshMarketData()
+
+            // Simulate AI market analysis
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+
+            marketPrediction = MarketPrediction(
+                buySignal: determineSignal(),
+                predictedPriceChange: Double.random(in: -0.05...0.10),
+                marketMomentum: Double.random(in: -1...1),
+                bestTimeFrame: "Next 2-3 months",
+                confidence: Double.random(in: 0.7...0.95),
+                risks: [
+                    "Interest rates may rise further",
+                    "Limited inventory in desired areas",
+                    "Economic uncertainty ahead"
+                ],
+                opportunities: [
+                    "Sellers becoming more negotiable",
+                    "New construction entering market",
+                    "Seasonal buying advantage"
+                ]
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+            showingError = true
+        }
     }
-    
+
     private func refreshMarketData() async {
         await marketDataService.refreshMarketData()
         await analyzeMarket()

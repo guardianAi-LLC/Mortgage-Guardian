@@ -5,6 +5,7 @@ struct ProfileView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var documentManager: DocumentManager
     @Environment(\.colorScheme) var colorScheme
+    @State private var showingSignOutError = false
 
     var body: some View {
         NavigationView {
@@ -26,6 +27,11 @@ struct ProfileView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Profile")
+            .alert("Sign Out Failed", isPresented: $showingSignOutError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Sign out failed. Please try again.")
+            }
         }
     }
 
@@ -151,7 +157,11 @@ struct ProfileView: View {
     private var signOutButton: some View {
         Button(action: {
             Task {
-                try? await authManager.signOut()
+                do {
+                    try await authManager.signOut()
+                } catch {
+                    showingSignOutError = true
+                }
             }
         }) {
             HStack {
