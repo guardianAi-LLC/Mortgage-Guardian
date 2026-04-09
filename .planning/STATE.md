@@ -8,12 +8,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 **Current focus:** v6.0 iOS App Completion
 ## Current Position
 
-Phase: 36 of 40 (Plaid Bank Integration Rewiring) — COMPLETE
-Plan: 03 complete (phase done)
-Status: Phase 36 complete, ready for Phase 37
-Last activity: 2026-04-08 - Phase 36 complete (all Plaid iOS code wired to Express backend)
+Phase: 37 of 40 (Letter Generation & Export Features)
+Plan: 01 of 03 complete
+Status: Plan 37-01 complete, ready for 37-02
+Last activity: 2026-04-09 - APIClient+Reports extension and backend letter generation wiring
 
-Progress: ██████████ 100%
+Progress: █████████░ 33%
 
 ## Performance Metrics
 
@@ -88,6 +88,7 @@ v6.0 Phase 35-03: SupportingDocument+HighlightRegion added to AuditResult (defau
 v6.0 Phase 36-01: PlaidLinkService rewired from raw URLRequest to APIClient+Plaid typed methods. deletePlaidItem added. plaidAccessToken keychain storage. Removed 228 lines of raw networking/duplicate code.
 v6.0 Phase 36-02: EnhancedPlaidService rewired from 5 nonexistent endpoints to typed APIClient calls. Mortgage keyword transaction filtering. UNUserNotificationCenter replaces stub. SecurityService stubs replaced with SecureKeyManager+UserDefaults.
 v6.0 Phase 36-03: PlaidSecurityExtensions 4 placeholders completed (keychain token count, UserDefaults date tracking). Date tracking wired into link and sync flows. Phase 36 complete.
+v6.0 Phase 37-01: APIClient+Reports.swift with generateDisputeLetter() and getConsolidatedReport(). IssueLetterGeneratorView wired to Express backend with local LetterGenerator fallback when caseId nil. ShareUtility wired for all export actions. CaseId plumbed through AnalysisView→IssueDetailView→IssueLetterGeneratorView.
 
 ### Deferred Issues
 
@@ -116,6 +117,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-08
-Stopped at: Phase 36 complete, ready for Phase 37
+Last session: 2026-04-09
+Stopped at: Phase 37, plan 01 complete, ready for 37-02
 Resume file: None
