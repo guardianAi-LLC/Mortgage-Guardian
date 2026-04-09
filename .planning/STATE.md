@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 37 of 40 (Letter Generation & Export Features)
-Plan: 02 of 03 complete
-Status: Plan 37-02 complete, ready for 37-03
-Last activity: 2026-04-09 - PDFGenerator bug fix and PDF export pipeline for letter views
+Plan: 03 of 03 complete
+Status: Phase 37 complete, ready for Phase 38
+Last activity: 2026-04-09 - Bulk letter generation, combined PDF export, Phase 37 complete
 
-Progress: ██████████████░ 67%
+Progress: ███████████████ 100%
 
 ## Performance Metrics
 
@@ -90,6 +90,7 @@ v6.0 Phase 36-02: EnhancedPlaidService rewired from 5 nonexistent endpoints to t
 v6.0 Phase 36-03: PlaidSecurityExtensions 4 placeholders completed (keychain token count, UserDefaults date tracking). Date tracking wired into link and sync flows. Phase 36 complete.
 v6.0 Phase 37-01: APIClient+Reports.swift with generateDisputeLetter() and getConsolidatedReport(). IssueLetterGeneratorView wired to Express backend with local LetterGenerator fallback when caseId nil. ShareUtility wired for all export actions. CaseId plumbed through AnalysisView→IssueDetailView→IssueLetterGeneratorView.
 v6.0 Phase 37-02: Fixed PDFGenerator closure parameter shadowing bug (userContext undefined). Added generateLetterPDFFromText() for backend letter text→PDF. IssueLetterGeneratorView generates PDF after letter creation, all share/save/print actions prefer PDF with text fallback. LetterPreviewView accepts pdfData parameter.
+v6.0 Phase 37-03: generateBackendLetterSeries() bulk API calls, exportLetterSeriesAsPDF() combined PDF. AuditReportView dispute letter section with NOE/QWR toggles. getRecommendedLetterType returns tuple with backend type string. Phase 37 complete.
 
 ### Deferred Issues
 
@@ -119,5 +120,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-09
-Stopped at: Phase 37, plan 02 complete, ready for 37-03
+Stopped at: Phase 37 complete, ready for Phase 38
 Resume file: None

@@ -302,7 +302,7 @@ Plans:
 Plans:
 - [x] 37-01: APIClient+Reports & wire IssueLetterGeneratorView to backend — 2026-04-09
 - [x] 37-02: Fix PDFGenerator bug & add PDF export for letters — 2026-04-09
-- [ ] 37-03: Bulk letter series generation & build verification
+- [x] 37-03: Bulk letter series generation & build verification — 2026-04-09
 
 #### Phase 38: Settings, Account Management & Persistence
 
