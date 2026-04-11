@@ -57,18 +57,25 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
-      # Tests are skipped until test targets are added to the scheme.
-      # Uncomment when MortgageGuardianTests target exists:
-      # - name: Run tests
-      #   run: |
-      #     xcodebuild test \
-      #       -project MortgageGuardian.xcodeproj \
-      #       -scheme MortgageGuardian \
-      #       -sdk iphonesimulator \
-      #       -destination "platform=iOS Simulator,name=iPhone 16,OS=latest" \
-      #       CODE_SIGN_IDENTITY="" \
-      #       CODE_SIGNING_REQUIRED=NO \
-      #       CODE_SIGNING_ALLOWED=NO
+      - name: Run tests
+        continue-on-error: true
+        run: |
+          xcodebuild test \
+            -project MortgageGuardian.xcodeproj \
+            -scheme MortgageGuardian \
+            -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,name=iPhone 16,OS=latest" \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults.xcresult
 
       - name: Upload build artifacts
         if: failure()
