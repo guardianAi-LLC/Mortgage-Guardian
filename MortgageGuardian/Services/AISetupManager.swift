@@ -32,13 +32,16 @@ class AISetupManager {
         ]
 
         for (service, key) in apiKeys {
-            try secureKeyManager.saveAPIKey(key, forService: service.rawValue)
+            try await MainActor.run {
+                try secureKeyManager.saveAPIKey(key, forService: service)
+            }
         }
     }
 
     private func setupTrainingData() async throws {
         trainingDataManager = try TrainingDataManager()
-        let (trainingData, validationData) = try await trainingDataManager?.prepareTrainingData() ?? (MLDataTable(), MLDataTable())
+        guard let manager = trainingDataManager else { return }
+        let (trainingData, validationData) = try await manager.prepareTrainingData()
 
         print("Training data prepared:")
         print("- Training samples: \(trainingData.rows.count)")
@@ -46,9 +49,10 @@ class AISetupManager {
     }
 
     private func trainInitialModels() async throws {
+        guard let manager = trainingDataManager else { return }
         let trainer = MLModelTrainer(
-            trainingDataPath: trainingDataManager?.trainingDataURL.path ?? "",
-            validationDataPath: trainingDataManager?.validationDataURL.path ?? "",
+            trainingDataPath: manager.trainingDataPath,
+            validationDataPath: manager.validationDataPath,
             modelOutputPath: Bundle.main.bundlePath + "/PropertyValuePredictor.mlmodel"
         )
 

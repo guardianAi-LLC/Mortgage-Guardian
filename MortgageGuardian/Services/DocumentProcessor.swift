@@ -408,6 +408,36 @@ public final class DocumentProcessor: ObservableObject {
         }
     }
 
+    /// Process multiple documents in batch
+    func processBatch(
+        documents: [(data: Data, fileName: String)],
+        configuration: OCRConfiguration = .default
+    ) async throws -> [MortgageDocument] {
+        guard !isProcessing else {
+            throw ProcessingError.ocrProcessingFailed(NSError(domain: "DocumentProcessor", code: -1, userInfo: [NSLocalizedDescriptionKey: "Processing already in progress"]))
+        }
+
+        isProcessing = true
+        defer { isProcessing = false }
+
+        var processedDocuments: [MortgageDocument] = []
+
+        for (index, document) in documents.enumerated() {
+            updateProgress(.ocrProcessing, percentComplete: Double(index) / Double(documents.count) * 100, message: "Processing document \(index + 1) of \(documents.count)")
+
+            do {
+                let processed = try await processDocument(from: document.data, fileName: document.fileName, configuration: configuration)
+                processedDocuments.append(processed)
+            } catch {
+                logger.error("Failed to process document \(document.fileName): \(error.localizedDescription)")
+                // Continue with next document instead of failing entire batch
+            }
+        }
+
+        updateProgress(.completion, percentComplete: 100, message: "Batch processing complete")
+        return processedDocuments
+    }
+
     #if ZERO_TOLERANCE_INTEGRATION_ENABLED
     /// Process document with integrated tiered error detection
     func processDocumentWithTieredAnalysis(
@@ -513,36 +543,6 @@ public final class DocumentProcessor: ObservableObject {
             logger.error("Document processing with tiered analysis failed: \(error.localizedDescription)")
             throw error
         }
-    }
-
-    /// Process multiple documents in batch
-    func processBatch(
-        documents: [(data: Data, fileName: String)],
-        configuration: OCRConfiguration = .default
-    ) async throws -> [MortgageDocument] {
-        guard !isProcessing else {
-            throw ProcessingError.ocrProcessingFailed(NSError(domain: "DocumentProcessor", code: -1, userInfo: [NSLocalizedDescriptionKey: "Processing already in progress"]))
-        }
-
-        isProcessing = true
-        defer { isProcessing = false }
-
-        var processedDocuments: [MortgageDocument] = []
-
-        for (index, document) in documents.enumerated() {
-            updateProgress(.ocrProcessing, percentComplete: Double(index) / Double(documents.count) * 100, message: "Processing document \(index + 1) of \(documents.count)")
-
-            do {
-                let processed = try await processDocument(from: document.data, fileName: document.fileName, configuration: configuration)
-                processedDocuments.append(processed)
-            } catch {
-                logger.error("Failed to process document \(document.fileName): \(error.localizedDescription)")
-                // Continue with next document instead of failing entire batch
-            }
-        }
-
-        updateProgress(.completion, percentComplete: 100, message: "Batch processing complete")
-        return processedDocuments
     }
 
     /// Process batch with tiered error detection

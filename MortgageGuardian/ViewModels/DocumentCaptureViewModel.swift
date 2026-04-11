@@ -685,7 +685,7 @@ class DocumentCaptureViewModel: ObservableObject {
                 switch apiError {
                 case .networkError:
                     processingMessage = "No internet connection. Document saved locally."
-                case .authenticationError:
+                case .authenticationRequired:
                     processingMessage = "Session expired. Please sign in again."
                 default:
                     processingMessage = "Upload failed. Please try again."

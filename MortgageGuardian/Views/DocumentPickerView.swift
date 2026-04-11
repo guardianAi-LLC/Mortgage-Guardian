@@ -21,110 +21,11 @@ struct DocumentPickerView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
-                    // Header
-                    VStack(spacing: 8) {
-                        Image(systemName: "doc.text.fill")
-                            .font(.system(size: 50))
-                            .foregroundColor(.blue)
-
-                        Text("Upload Document")
-                            .font(.title2)
-                            .fontWeight(.bold)
-
-                        Text("Choose how you'd like to add your mortgage document")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(.top)
-
-                    // Upload Options
-                    VStack(spacing: 16) {
-                        // Photo Library
-                        Button {
-                            // PhotosPicker will be triggered by the sheet
-                        } label: {
-                            UploadOptionCard(
-                                icon: "photo.on.rectangle",
-                                title: "Photo Library",
-                                description: "Select from your photos"
-                            )
-                        }
-                        .photosPicker(isPresented: .constant(true), selection: $selectedItem, matching: .images)
-
-                        // Camera
-                        Button {
-                            showingCamera = true
-                        } label: {
-                            UploadOptionCard(
-                                icon: "camera",
-                                title: "Take Photo",
-                                description: "Capture document with camera"
-                            )
-                        }
-
-                        // File Import
-                        Button {
-                            showingFileImporter = true
-                        } label: {
-                            UploadOptionCard(
-                                icon: "folder",
-                                title: "Browse Files",
-                                description: "Import PDF or image files"
-                            )
-                        }
-                    }
-
-                    // Document Type Selection
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Document Type")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-
-                        LazyVGrid(columns: [
-                            GridItem(.flexible()),
-                            GridItem(.flexible())
-                        ], spacing: 12) {
-                            ForEach(MortgageDocument.DocumentType.allCases, id: \.self) { type in
-                                DocumentTypeCard(
-                                    type: type,
-                                    isSelected: documentType == type
-                                ) {
-                                    documentType = type
-                                }
-                            }
-                        }
-                    }
-
-                    // Custom File Name
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("File Name (Optional)")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-
-                        TextField("Enter custom name...", text: $fileName)
-                            .textFieldStyle(.roundedBorder)
-                            .autocapitalization(.none)
-                            .disableAutocorrection(true)
-                    }
-
-                    // Upload Progress
-                    if isUploading {
-                        VStack(spacing: 12) {
-                            ProgressView(value: uploadProgress)
-                                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
-
-                            Text("Uploading document...")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.systemGray6))
-                        )
-                    }
-
+                    headerSection
+                    uploadOptionsSection
+                    documentTypeSection
+                    fileNameSection
+                    uploadProgressSection
                     Spacer(minLength: 100)
                 }
                 .padding()
@@ -139,8 +40,10 @@ struct DocumentPickerView: View {
                 }
             }
             .sheet(isPresented: $showingCamera) {
-                CameraView { image in
-                    processImage(image, fileName: "Camera_\(Date().timeIntervalSince1970)")
+                PickerCameraView { image in
+                    Task {
+                        await processImage(image, fileName: "Camera_\(Date().timeIntervalSince1970)")
+                    }
                 }
             }
             .fileImporter(
@@ -160,6 +63,117 @@ struct DocumentPickerView: View {
             } message: {
                 Text(errorMessage ?? "An unknown error occurred")
             }
+        }
+    }
+
+    // MARK: - Body Subsections
+
+    @ViewBuilder
+    private var headerSection: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "doc.text.fill")
+                .font(.system(size: 50))
+                .foregroundColor(.blue)
+
+            Text("Upload Document")
+                .font(.title2)
+                .fontWeight(.bold)
+
+            Text("Choose how you'd like to add your mortgage document")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.top)
+    }
+
+    @ViewBuilder
+    private var uploadOptionsSection: some View {
+        VStack(spacing: 16) {
+            Button {
+                // PhotosPicker will be triggered by the sheet
+            } label: {
+                UploadOptionCard(
+                    icon: "photo.on.rectangle",
+                    title: "Photo Library",
+                    description: "Select from your photos"
+                )
+            }
+            .photosPicker(isPresented: .constant(true), selection: $selectedItem, matching: .images)
+
+            Button {
+                showingCamera = true
+            } label: {
+                UploadOptionCard(
+                    icon: "camera",
+                    title: "Take Photo",
+                    description: "Capture document with camera"
+                )
+            }
+
+            Button {
+                showingFileImporter = true
+            } label: {
+                UploadOptionCard(
+                    icon: "folder",
+                    title: "Browse Files",
+                    description: "Import PDF or image files"
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var documentTypeSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Document Type")
+                .font(.headline)
+                .fontWeight(.semibold)
+
+            let columns = [GridItem(.flexible()), GridItem(.flexible())]
+            LazyVGrid(columns: columns, spacing: 12) {
+                ForEach(MortgageDocument.DocumentType.allCases, id: \.self) { type in
+                    DocumentTypeCard(
+                        type: type,
+                        isSelected: documentType == type
+                    ) {
+                        documentType = type
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var fileNameSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("File Name (Optional)")
+                .font(.subheadline)
+                .fontWeight(.medium)
+
+            TextField("Enter custom name...", text: $fileName)
+                .textFieldStyle(.roundedBorder)
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
+        }
+    }
+
+    @ViewBuilder
+    private var uploadProgressSection: some View {
+        if isUploading {
+            VStack(spacing: 12) {
+                ProgressView(value: uploadProgress)
+                    .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+
+                Text("Uploading document...")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray6))
+            )
         }
     }
 
@@ -203,8 +217,12 @@ struct DocumentPickerView: View {
             // Create mortgage document
             let document = MortgageDocument(
                 fileName: fileName,
+                documentType: documentType,
+                uploadDate: Date(),
                 originalText: extractedText,
-                documentType: documentType
+                extractedData: nil,
+                analysisResults: [],
+                isAnalyzed: false
             )
 
             uploadProgress = 0.8
@@ -255,8 +273,12 @@ struct DocumentPickerView: View {
                 // Create mortgage document
                 let document = MortgageDocument(
                     fileName: fileName,
+                    documentType: documentType,
+                    uploadDate: Date(),
                     originalText: extractedText,
-                    documentType: documentType
+                    extractedData: nil,
+                    analysisResults: [],
+                    isAnalyzed: false
                 )
 
                 uploadProgress = 0.9
@@ -407,9 +429,9 @@ struct PickerCameraView: UIViewControllerRepresentable {
     }
 
     class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: CameraView
+        let parent: PickerCameraView
 
-        init(_ parent: CameraView) {
+        init(_ parent: PickerCameraView) {
             self.parent = parent
         }
 
@@ -417,11 +439,11 @@ struct PickerCameraView: UIViewControllerRepresentable {
             if let image = info[.originalImage] as? UIImage {
                 parent.onImageCaptured(image)
             }
-            parent.dismiss()
+            picker.dismiss(animated: true)
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
+            picker.dismiss(animated: true)
         }
     }
 }
