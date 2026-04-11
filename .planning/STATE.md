@@ -9,9 +9,9 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 40 of 40 (E2E Testing & TestFlight)
-Plan: 01 of 03 complete
+Plan: 02 of 03 complete
 Status: Executing Phase 40
-Last activity: 2026-04-11 - Test target registration, build fixes, test suite verification
+Last activity: 2026-04-11 - E2E flow tests, CI test enablement
 
 Progress: ███████████████ 100%
 
@@ -101,6 +101,7 @@ v6.0 Phase 39-03: Added 112 accessibility labels across 20 Swift files. SF Symbo
 v6.0 Phase 39-04: Error display in AIMarketTimingAnalyzer, AIScenarioAnalyzer, ProfileView. Service TODO stubs documented. Calculator scenario saving wired.
 v6.0 Phase 39-05: App Store metadata created. Visual consistency audit — shadow/opacity harmonized. Phase 39 complete.
 v6.0 Phase 40-01: Test target registered in Xcode project/scheme. Fixed 47 Swift files for main target compilation. Test target MockData/MockServices need data model alignment. Main target builds cleanly.
+v6.0 Phase 40-02: EndToEndFlowTests.swift with 25 integration tests (app launch, document flow, analysis flow, settings flow). CI workflow test step enabled with continue-on-error and result artifact upload.
 
 ### Deferred Issues
 
@@ -130,5 +131,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-11
-Stopped at: Phase 40-01 complete, ready for 40-02
+Stopped at: Phase 40-02 complete, ready for 40-03
 Resume file: None
