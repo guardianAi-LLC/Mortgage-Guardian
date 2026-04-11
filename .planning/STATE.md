@@ -8,10 +8,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 **Current focus:** v6.0 iOS App Completion
 ## Current Position
 
-Phase: 39 of 40 (UI/UX Polish & App Store Assets)
-Plan: 05 of 05 complete
-Status: Phase 39 complete, ready for Phase 40
-Last activity: 2026-04-09 - Duplicate cleanup, TODO wiring, accessibility labels, error states, App Store metadata
+Phase: 40 of 40 (E2E Testing & TestFlight)
+Plan: 01 of 03 complete
+Status: Executing Phase 40
+Last activity: 2026-04-11 - Test target registration, build fixes, test suite verification
 
 Progress: ███████████████ 100%
 
@@ -100,6 +100,7 @@ v6.0 Phase 39-02: Wired DashboardView quick actions (Plaid, camera, file picker)
 v6.0 Phase 39-03: Added 112 accessibility labels across 20 Swift files. SF Symbols, buttons, status indicators all labeled.
 v6.0 Phase 39-04: Error display in AIMarketTimingAnalyzer, AIScenarioAnalyzer, ProfileView. Service TODO stubs documented. Calculator scenario saving wired.
 v6.0 Phase 39-05: App Store metadata created. Visual consistency audit — shadow/opacity harmonized. Phase 39 complete.
+v6.0 Phase 40-01: Test target registered in Xcode project/scheme. Fixed 47 Swift files for main target compilation. Test target MockData/MockServices need data model alignment. Main target builds cleanly.
 
 ### Deferred Issues
 
@@ -128,6 +129,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-09
-Stopped at: Phase 39 complete, ready for Phase 40
+Last session: 2026-04-11
+Stopped at: Phase 40-01 complete, ready for 40-02
 Resume file: None
