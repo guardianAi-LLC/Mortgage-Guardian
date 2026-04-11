@@ -380,14 +380,16 @@ private class SecureURLSessionDelegate: NSObject, URLSessionDelegate {
             return
         }
 
-        do {
-            try securityService.validateServerCertificate(
-                for: challenge.protectionSpace.host,
-                certificate: serverCertificate
-            )
-            completionHandler(.useCredential, URLCredential(trust: serverTrust))
-        } catch {
-            completionHandler(.cancelAuthenticationChallenge, nil)
+        Task { @MainActor in
+            do {
+                try securityService.validateServerCertificate(
+                    for: challenge.protectionSpace.host,
+                    certificate: serverCertificate
+                )
+                completionHandler(.useCredential, URLCredential(trust: serverTrust))
+            } catch {
+                completionHandler(.cancelAuthenticationChallenge, nil)
+            }
         }
     }
 }

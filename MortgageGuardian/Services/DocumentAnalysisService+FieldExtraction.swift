@@ -803,7 +803,7 @@ extension DocumentAnalysisService {
         // OCR quality assessment
         if !observations.isEmpty {
             let ocrConfidences = observations.compactMap { $0.topCandidates(1).first?.confidence }
-            scores["ocr_quality"] = ocrConfidences.reduce(0.0, +) / Double(ocrConfidences.count)
+            scores["ocr_quality"] = ocrConfidences.reduce(0.0) { $0 + Double($1) } / Double(ocrConfidences.count)
         } else {
             scores["ocr_quality"] = 0.8 // Default for text-based analysis
         }
@@ -1075,7 +1075,7 @@ extension DocumentAnalysisService {
     private func assessTextClarity(rawText: String, observations: [VNRecognizedTextObservation]) -> Double {
         if !observations.isEmpty {
             let confidences = observations.compactMap { $0.topCandidates(1).first?.confidence }
-            return confidences.reduce(0.0, +) / Double(confidences.count)
+            return confidences.reduce(0.0) { $0 + Double($1) } / Double(confidences.count)
         }
 
         // Text-based quality assessment

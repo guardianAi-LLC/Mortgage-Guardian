@@ -1,6 +1,7 @@
 import Foundation
 import Security
 import CryptoKit
+import CoreData
 import LocalAuthentication
 
 /// Vendor-neutral financial-grade security manager
@@ -189,11 +190,11 @@ public final class VendorNeutralSecurityManager: ObservableObject {
         }
 
         func encryptCoreDataStore(at url: URL) throws {
-            let options = [
+            let options: [String: Any] = [
                 NSPersistentStoreFileProtectionKey: FileProtectionType.completeUnlessOpen,
-                NSPersistentHistoryTrackingKey: true,
-                NSMigratePersistentStoresAutomaticallyOption: true,
-                NSInferMappingModelAutomaticallyOption: true,
+                NSPersistentHistoryTrackingKey: true as NSNumber,
+                NSMigratePersistentStoresAutomaticallyOption: true as NSNumber,
+                NSInferMappingModelAutomaticallyOption: true as NSNumber,
                 // Custom encryption transformer
                 "EncryptionKey": encryptionKey
             ]

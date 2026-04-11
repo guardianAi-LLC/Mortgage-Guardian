@@ -8,25 +8,7 @@ import os.log
 /// Provides common testing patterns, assertions, mocks, and test data
 
 // MARK: - Test Configuration
-
-public enum TestConfiguration {
-    public static let timeout: TimeInterval = 30.0
-    public static let shortTimeout: TimeInterval = 5.0
-    public static let performanceIterations = 10
-    public static let coverageThreshold = 0.90 // 90%
-
-    public static var isRunningInCI: Bool {
-        ProcessInfo.processInfo.environment["CI"] != nil
-    }
-
-    public static var isRunningDebugBuild: Bool {
-        #if DEBUG
-        return true
-        #else
-        return false
-        #endif
-    }
-}
+// TestConfiguration is defined in TestConfiguration.swift
 
 // MARK: - Async Testing Utilities
 

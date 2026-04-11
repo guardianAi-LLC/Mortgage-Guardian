@@ -291,23 +291,7 @@ struct IssueLetterGeneratorView: View {
 
     // MARK: - Computed Properties
     private var availableTemplates: [LetterTemplate] {
-        // Mock templates - in real app, would load from TemplateLoader
-        [
-            LetterTemplate(
-                id: "notice_of_error_formal",
-                name: "Formal Notice of Error",
-                description: "Professional template citing RESPA regulations",
-                category: .noticeOfError,
-                content: "Mock template content"
-            ),
-            LetterTemplate(
-                id: "notice_of_error_detailed",
-                name: "Detailed Notice of Error",
-                description: "Comprehensive template with evidence sections",
-                category: .noticeOfError,
-                content: "Mock template content"
-            )
-        ]
+        LetterTemplate.defaultTemplates()
     }
 
     // MARK: - Actions
@@ -603,7 +587,7 @@ struct TemplateRow: View {
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
 
-                    Text(template.description)
+                    Text(template.templateType.description)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

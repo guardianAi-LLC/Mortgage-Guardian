@@ -1,6 +1,8 @@
 import Foundation
 import os.log
 
+private typealias PaymentRecord = ExtractedData.PaymentRecord
+
 /// Comprehensive Error Detection Algorithms for Zero-Tolerance Mortgage Auditing
 /// Implements exhaustive validation covering all possible mortgage servicing violations
 public final class ComprehensiveErrorDetectionAlgorithms {
@@ -211,7 +213,7 @@ private class PaymentValidationAlgorithms {
             let calculatedTotal = (payment.principalApplied ?? 0) +
                                 (payment.interestApplied ?? 0) +
                                 (payment.escrowApplied ?? 0) +
-                                (payment.feesPaid ?? 0)
+                                (payment.lateFeesApplied ?? 0)
 
             let tolerance = configuration.toleranceThreshold
             let difference = abs(calculatedTotal - payment.amount)
@@ -230,7 +232,7 @@ private class PaymentValidationAlgorithms {
                             sourceData: "Payment: \(payment.amount), Calculated: \(calculatedTotal)",
                             expectedValue: "\(payment.amount)",
                             actualValue: "\(calculatedTotal)",
-                            calculationDetails: "Principal: \(payment.principalApplied ?? 0) + Interest: \(payment.interestApplied ?? 0) + Escrow: \(payment.escrowApplied ?? 0) + Fees: \(payment.feesPaid ?? 0) = \(calculatedTotal)",
+                            calculationDetails: "Principal: \(payment.principalApplied ?? 0) + Interest: \(payment.interestApplied ?? 0) + Escrow: \(payment.escrowApplied ?? 0) + Fees: \(payment.lateFeesApplied ?? 0) =\(calculatedTotal)",
                             supportingDocuments: ["Payment Record \(payment.id)"],
                             timestamp: Date(),
                             digitalSignature: createDigitalSignature(for: payment),
@@ -301,7 +303,7 @@ private class PaymentValidationAlgorithms {
 
         // Cross-reference payments with bank transactions
         for payment in extractedData.paymentHistory {
-            guard let paymentDate = payment.paymentDate else { continue }
+            let paymentDate = payment.paymentDate
 
             // Find matching bank transaction within 3 days
             let matchingTransactions = bankTransactions.filter { transaction in
@@ -392,9 +394,8 @@ private class PaymentValidationAlgorithms {
 
         var errors: [ZeroToleranceAuditEngine.ZeroToleranceError] = []
 
-        let sortedPayments = extractedData.paymentHistory.compactMap { payment in
-            guard let date = payment.paymentDate else { return nil }
-            return (payment, date)
+        let sortedPayments = extractedData.paymentHistory.map { payment in
+            (payment, payment.paymentDate)
         }.sorted { $0.1 < $1.1 }
 
         for i in 1..<sortedPayments.count {
@@ -402,12 +403,12 @@ private class PaymentValidationAlgorithms {
             let currentPayment = sortedPayments[i]
 
             // Check for payments applied out of chronological order
-            if let previousEffectiveDate = previousPayment.0.effectiveDate,
-               let currentEffectiveDate = currentPayment.0.effectiveDate,
-               previousEffectiveDate > currentEffectiveDate {
+            let previousEffectiveDate = previousPayment.0.paymentDate
+            let currentEffectiveDate = currentPayment.0.paymentDate
+            if previousEffectiveDate > currentEffectiveDate {
 
                 let error = ZeroToleranceAuditEngine.ZeroToleranceError(
-                    category: .paymentTiming,
+                    category: .paymentMisallocation,
                     severity: .medium,
                     detectionLayers: [.ruleBased],
                     title: "Payment Applied Out of Order",
@@ -491,7 +492,7 @@ private class PaymentValidationAlgorithms {
         var paymentGroups: [String: [PaymentRecord]] = [:]
 
         for payment in extractedData.paymentHistory {
-            guard let paymentDate = payment.paymentDate else { continue }
+            let paymentDate = payment.paymentDate
 
             let key = "\(payment.amount)_\(Calendar.current.dateComponents([.year, .month, .day], from: paymentDate))"
             paymentGroups[key, default: []].append(payment)
@@ -673,7 +674,7 @@ private class PaymentValidationAlgorithms {
     // MARK: - Helper Methods
 
     private func createDigitalSignature(for payment: PaymentRecord) -> String {
-        let signatureData = "\(payment.id):\(payment.amount):\(payment.paymentDate?.timeIntervalSince1970 ?? 0)"
+        let signatureData = "\(payment.id):\(payment.amount):\(payment.paymentDate.timeIntervalSince1970)"
         return String(signatureData.hashValue)
     }
 

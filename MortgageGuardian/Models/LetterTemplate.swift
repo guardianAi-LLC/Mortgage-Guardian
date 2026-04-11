@@ -218,7 +218,7 @@ struct LetterGenerationContext {
 
 // MARK: - Generated Letter
 struct GeneratedLetter: Identifiable {
-    let id = UUID()
+    let id: UUID
     let template: LetterTemplate
     let context: LetterGenerationContext
     let content: String
@@ -227,6 +227,28 @@ struct GeneratedLetter: Identifiable {
     let generatedDate: Date
     let status: LetterStatus
     let trackingInfo: TrackingInfo?
+
+    init(
+        id: UUID = UUID(),
+        template: LetterTemplate,
+        context: LetterGenerationContext,
+        content: String,
+        formattedContent: NSAttributedString,
+        pdfData: Data?,
+        generatedDate: Date,
+        status: LetterStatus,
+        trackingInfo: TrackingInfo? = nil
+    ) {
+        self.id = id
+        self.template = template
+        self.context = context
+        self.content = content
+        self.formattedContent = formattedContent
+        self.pdfData = pdfData
+        self.generatedDate = generatedDate
+        self.status = status
+        self.trackingInfo = trackingInfo
+    }
 
     enum LetterStatus: String, CaseIterable, Codable {
         case draft = "draft"

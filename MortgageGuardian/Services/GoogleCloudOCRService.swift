@@ -34,8 +34,8 @@ class GoogleCloudOCRService {
         // Convert CGImage to JPEG data
         let jpegData: Data
         #if canImport(UIKit)
-        guard let uiImage = UIImage(cgImage: image),
-              let d = uiImage.jpegData(compressionQuality: 0.8) else {
+        let uiImage = UIImage(cgImage: image)
+        guard let d = uiImage.jpegData(compressionQuality: 0.8) else {
             throw GoogleOCRError.encodingFailed
         }
         jpegData = d
@@ -61,7 +61,7 @@ class GoogleCloudOCRService {
         ]
 
         // Prefer a token server (recommended): if a token server URL is stored in Keychain, fetch a token from it
-        if let tokenServerURL = try? SecureKeyManager.shared.getAPIKey(forService: tokenServerService) {
+        if let tokenServerURL = try? await SecureKeyManager.shared.getAPIKey(forService: tokenServerService) {
             if let token = try await fetchTokenFromTokenServer(urlString: tokenServerURL) {
                 return try await callVisionAnnotate(withRequestBody: requestBody, authorizationToken: token)
             }
@@ -69,7 +69,7 @@ class GoogleCloudOCRService {
         }
 
         // Try service account -> OAuth flow next (device-side minting). Use only for testing or controlled environments.
-        if let serviceAccountJSON = try? SecureKeyManager.shared.getAPIKey(forService: serviceAccountService) {
+        if let serviceAccountJSON = try? await SecureKeyManager.shared.getAPIKey(forService: serviceAccountService) {
             if let token = try await getAccessToken(fromServiceAccountJSON: serviceAccountJSON) {
                 // Use OAuth token in Authorization header
                 return try await callVisionAnnotate(withRequestBody: requestBody, authorizationToken: token)
@@ -78,7 +78,7 @@ class GoogleCloudOCRService {
         }
 
         // Fallback: API key path
-        if let apiKey = try? SecureKeyManager.shared.getAPIKey(forService: apiKeyService) {
+        if let apiKey = try? await SecureKeyManager.shared.getAPIKey(forService: apiKeyService) {
             return try await callVisionAnnotate(withRequestBody: requestBody, apiKey: apiKey)
         }
 

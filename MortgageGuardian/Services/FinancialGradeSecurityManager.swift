@@ -173,7 +173,7 @@ public final class FinancialGradeSecurityManager: ObservableObject {
 
             // Verify security level
             guard encrypted.securityLevel <= requiredLevel else {
-                throw SecurityError.insufficientPrivileges
+                throw FinancialSecurityError.insufficientPrivileges
             }
 
             // Decrypt based on security level
@@ -215,22 +215,22 @@ public final class FinancialGradeSecurityManager: ObservableObject {
 
             // 1. Verify user identity
             guard try await verifyUserIdentity(user, context: context) else {
-                throw SecurityError.identityVerificationFailed
+                throw FinancialSecurityError.identityVerificationFailed
             }
 
             // 2. Check device trust
             guard try await verifyDeviceTrust(context.deviceId) else {
-                throw SecurityError.untrustedDevice
+                throw FinancialSecurityError.untrustedDevice
             }
 
             // 3. Verify network location
             guard try await verifyNetworkSecurity(context.ipAddress) else {
-                throw SecurityError.unsecureNetwork
+                throw FinancialSecurityError.unsecureNetwork
             }
 
             // 4. Check behavioral analytics
             guard try await checkBehavioralAnalytics(user, action: action) else {
-                throw SecurityError.anomalousActivity
+                throw FinancialSecurityError.anomalousActivity
             }
 
             // 5. Apply principle of least privilege
@@ -689,7 +689,7 @@ public final class FinancialGradeSecurityManager: ObservableObject {
             action: "retrieve",
             context: context
         ) else {
-            throw SecurityError.accessDenied
+            throw FinancialSecurityError.accessDenied
         }
 
         // Retrieve from vault
@@ -709,7 +709,7 @@ public final class FinancialGradeSecurityManager: ObservableObject {
         switch riskScore.recommendation {
         case .block:
             await logSecurityEvent(.suspiciousActivity, key: "transaction-\(transaction.id)", level: .critical)
-            throw SecurityError.transactionBlocked(reason: "High risk score: \(riskScore.score)")
+            throw FinancialSecurityError.transactionBlocked(reason: "High risk score: \(riskScore.score)")
 
         case .alertSecurityTeam:
             await alertSecurityTeam(transaction: transaction, riskScore: riskScore)
@@ -770,7 +770,7 @@ public final class FinancialGradeSecurityManager: ObservableObject {
 
 // MARK: - Supporting Types
 
-enum SecurityError: LocalizedError {
+enum FinancialSecurityError: LocalizedError {
     case insufficientPrivileges
     case identityVerificationFailed
     case untrustedDevice

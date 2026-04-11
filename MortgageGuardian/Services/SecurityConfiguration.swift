@@ -343,7 +343,11 @@ public struct SecurityConfiguration {
 
         case .secureEnclave:
             // Check for Secure Enclave availability (A7 chip and later)
-            return TARGET_OS_SIMULATOR == 0 // Secure Enclave not available in simulator
+            #if targetEnvironment(simulator)
+            return false // Secure Enclave not available in simulator
+            #else
+            return true
+            #endif
 
         case .biometricAuthentication:
             let context = LAContext()

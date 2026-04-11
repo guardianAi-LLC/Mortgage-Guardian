@@ -597,66 +597,90 @@ public struct MockTransactions {
 
     public static let mortgagePayments = [
         Transaction(
-            id: "TXN001",
             accountId: "ACC123",
+            transactionId: "TXN001",
             amount: -1725.45,
             date: Date.testDate(year: 2024, month: 11, day: 1),
             description: "MORTGAGE PAYMENT - EXAMPLE MORTGAGE CORP",
-            category: "Mortgage Payment",
+            category: .mortgagePayment,
+            isRecurring: true,
             merchantName: "Example Mortgage Corp",
+            confidence: 0.95,
+            plaidTransactionId: nil,
+            isVerified: true,
             relatedMortgagePayment: true
         ),
         Transaction(
-            id: "TXN002",
             accountId: "ACC123",
+            transactionId: "TXN002",
             amount: -1725.45,
             date: Date.testDate(year: 2024, month: 10, day: 1),
             description: "AUTOMATIC PAYMENT - MORTGAGE",
-            category: "Mortgage Payment",
+            category: .mortgagePayment,
+            isRecurring: true,
             merchantName: "Example Mortgage Corp",
+            confidence: 0.95,
+            plaidTransactionId: nil,
+            isVerified: true,
             relatedMortgagePayment: true
         ),
         Transaction(
-            id: "TXN003",
             accountId: "ACC123",
+            transactionId: "TXN003",
             amount: -1725.45,
             date: Date.testDate(year: 2024, month: 9, day: 1),
             description: "ONLINE PAYMENT - MORTGAGE CORP",
-            category: "Mortgage Payment",
+            category: .mortgagePayment,
+            isRecurring: true,
             merchantName: "Example Mortgage Corp",
+            confidence: 0.95,
+            plaidTransactionId: nil,
+            isVerified: true,
             relatedMortgagePayment: true
         )
     ]
 
     public static let mixedTransactions = [
         Transaction(
-            id: "TXN004",
             accountId: "ACC123",
+            transactionId: "TXN004",
             amount: -1725.45,
             date: Date.testDate(year: 2024, month: 8, day: 1),
             description: "MORTGAGE PAYMENT",
-            category: "Mortgage Payment",
+            category: .mortgagePayment,
+            isRecurring: true,
             merchantName: "Example Mortgage Corp",
+            confidence: 0.95,
+            plaidTransactionId: nil,
+            isVerified: true,
             relatedMortgagePayment: true
         ),
         Transaction(
-            id: "TXN005",
             accountId: "ACC123",
+            transactionId: "TXN005",
             amount: -2500.00,
             date: Date.testDate(year: 2024, month: 8, day: 5),
             description: "RENT PAYMENT",
-            category: "Rent",
+            category: .other,
+            isRecurring: true,
             merchantName: "Property Management Co",
+            confidence: 0.80,
+            plaidTransactionId: nil,
+            isVerified: false,
             relatedMortgagePayment: false
         ),
         Transaction(
-            id: "TXN006",
             accountId: "ACC123",
+            transactionId: "TXN006",
             amount: 3500.00,
             date: Date.testDate(year: 2024, month: 8, day: 15),
             description: "PAYROLL DEPOSIT",
-            category: "Income",
+            category: .other,
+            isRecurring: true,
             merchantName: "Employer Corp",
+            confidence: 0.80,
+            plaidTransactionId: nil,
+            isVerified: false,
             relatedMortgagePayment: false
         )
     ]

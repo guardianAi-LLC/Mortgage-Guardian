@@ -618,7 +618,8 @@ struct InstructionsView: View {
                         Text("How to obtain your API key:")
                             .font(.headline)
 
-                        ForEach(getInstructions(for: service), id: \.self) { instruction in
+                        let instructions = getInstructions(for: service)
+                        ForEach(Array(instructions.enumerated()), id: \.offset) { _, instruction in
                             HStack(alignment: .top, spacing: 12) {
                                 Text("\(instruction.index).")
                                     .font(.system(.body, design: .rounded))
@@ -681,7 +682,7 @@ struct InstructionsView: View {
                 (5, "Copy the generated API key immediately (it won't be shown again)"),
                 (6, "Paste the key in this app's configuration")
             ]
-        case .plaidClientId, .plaidSecret:
+        case .plaidClientId, .plaidSecret, .plaidAccessToken:
             return [
                 (1, "Go to dashboard.plaid.com and log in"),
                 (2, "Navigate to Team Settings > Keys"),
@@ -718,7 +719,7 @@ struct InstructionsView: View {
         switch service {
         case .claude:
             return URL(string: "https://docs.anthropic.com/claude/reference/getting-started-with-the-api")
-        case .plaidClientId, .plaidSecret:
+        case .plaidClientId, .plaidSecret, .plaidAccessToken:
             return URL(string: "https://plaid.com/docs/api/")
         case .marketData:
             return URL(string: "https://marketdata.com/docs")

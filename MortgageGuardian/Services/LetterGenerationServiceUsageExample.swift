@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 
 /// Example usage of LetterGenerationService with integration to existing app services
+@MainActor
 class LetterGenerationServiceUsageExample: ObservableObject {
 
     private let letterService = LetterGenerationService.shared

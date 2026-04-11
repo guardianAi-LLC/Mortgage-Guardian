@@ -9,18 +9,18 @@ struct PropertyValuePrediction: Codable {
     let timeframe: TimeInterval
 }
 
-struct MortgageRiskAssessment {
+struct MortgageRiskAssessment: Codable {
     let riskScore: Double // 0-100
     let confidenceLevel: Double
     let riskFactors: [RiskFactor]
-    
-    struct RiskFactor {
+
+    struct RiskFactor: Codable {
         let type: RiskFactorType
         let severity: Double // 0-1
         let description: String
     }
-    
-    enum RiskFactorType {
+
+    enum RiskFactorType: String, Codable {
         case debtToIncome
         case propertyMarket
         case interestRateVolatility
@@ -53,7 +53,7 @@ enum MLPredictorError: LocalizedError {
     }
 }
 
-struct MortgageRecommendation {
+struct MortgageRecommendation: Codable {
     let recommendedLoanTerm: Int
     let recommendedDownPayment: Double
     let recommendedInterestRate: Double

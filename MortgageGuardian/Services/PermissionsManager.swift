@@ -2,6 +2,7 @@ import Foundation
 import AVFoundation
 import Photos
 import UIKit
+import SwiftUI
 import os.log
 
 /// Comprehensive permissions manager for camera, photo library, and file access
@@ -446,7 +447,7 @@ struct PermissionSetupView: View {
 }
 
 struct PermissionRow: View {
-    let permission: PermissionInfo
+    let permission: PermissionsManager.PermissionInfo
 
     var body: some View {
         HStack(spacing: 16) {

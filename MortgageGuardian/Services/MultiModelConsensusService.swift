@@ -546,7 +546,7 @@ public final class MultiModelConsensusService: ObservableObject {
                     modelAgreement: modelResults.mapValues { results in
                         results.contains { $0.category == category }
                     },
-                    confidenceSpread: calculateConfidenceSpread(modelFindings: Array(modelFindings.values)),
+                    confidenceSpread: calculateConfidenceSpread(Array(modelFindings.values.flatMap { $0 })),
                     requiresArbitration: agreementRatio < 0.5,
                     resolutionStrategy: determineResolutionStrategy(agreementRatio: agreementRatio)
                 )

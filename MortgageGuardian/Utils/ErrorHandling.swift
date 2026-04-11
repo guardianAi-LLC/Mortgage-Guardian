@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import UIKit
 import os.log
 
 /// Comprehensive error handling system for Mortgage Guardian app
@@ -620,7 +621,7 @@ public final class ErrorHandler: ObservableObject {
     private func mapNSError(_ error: NSError) -> AppError {
         switch error.domain {
         case NSURLErrorDomain:
-            return mapURLError(URLError(URLError.Code(rawValue: error.code)!))
+            return mapURLError(URLError(URLError.Code(rawValue: error.code)))
         default:
             return DataProcessingError.parsingError(error)
         }
@@ -683,15 +684,15 @@ extension Result where Failure == Error {
 
 // MARK: - Async Extensions
 
-extension Task where Failure == Error {
+extension Task where Failure == Never {
     /// Create a task with automatic error handling
     @MainActor
     public static func withErrorHandling(
         context: String? = nil,
         priority: TaskPriority? = nil,
         operation: @escaping @Sendable () async throws -> Success
-    ) -> Task<Success?, Never> {
-        Task(priority: priority) {
+    ) -> Task<Success?, Never> where Success: Sendable {
+        Task<Success?, Never>(priority: priority) {
             do {
                 return try await operation()
             } catch {

@@ -71,7 +71,8 @@ class MortgageAICoordinator: ObservableObject {
             // Perform comprehensive AI analysis using MLPredictor
 
             // 1. Property Value Prediction (if property info available)
-            if let propertyValue = scenario.principalAmount + scenario.downPayment {
+            let propertyValue = scenario.principalAmount + scenario.downPayment
+            if propertyValue > 0 {
                 let propertyPrediction = try await mlPredictor.predictPropertyValue(
                     currentValue: propertyValue,
                     location: userProfile.location,

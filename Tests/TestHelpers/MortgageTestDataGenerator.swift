@@ -898,14 +898,18 @@ class MortgageTestDataGenerator {
             }
 
             transactions.append(Transaction(
-                account_id: "test_account_id",
+                accountId: "test_account_id",
+                transactionId: "txn_\(index)_\(UUID().uuidString)",
                 amount: payment.amount,
-                authorized_date: payment.date,
-                category: ["Transfer", "Deposit"],
                 date: payment.date,
-                name: "MORTGAGE PAYMENT - \(extractedData.contactInformation.servicerName)",
-                account_owner: "Test Owner",
-                transaction_id: "txn_\(index)_\(UUID().uuidString)"
+                description: "MORTGAGE PAYMENT - \(extractedData.contactInformation.servicerName)",
+                category: .mortgagePayment,
+                isRecurring: true,
+                merchantName: extractedData.contactInformation.servicerName,
+                confidence: 0.95,
+                plaidTransactionId: nil,
+                isVerified: false,
+                relatedMortgagePayment: true
             ))
         }
 

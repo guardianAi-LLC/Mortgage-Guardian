@@ -568,7 +568,8 @@ struct DocumentPreviewView: View {
                 var enhancedImage = ciImage
 
                 // Auto-enhance filters
-                if let autoAdjustmentFilters = ciImage.autoAdjustmentFilters() {
+                let autoAdjustmentFilters = ciImage.autoAdjustmentFilters()
+                if !autoAdjustmentFilters.isEmpty {
                     for filter in autoAdjustmentFilters {
                         filter.setValue(enhancedImage, forKey: kCIInputImageKey)
                         if let output = filter.outputImage {

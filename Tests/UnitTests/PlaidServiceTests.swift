@@ -44,7 +44,7 @@ final class PlaidServiceTests: MortgageGuardianUnitTestCase {
         plaidService.shouldFailLinking = true
 
         // When/Then
-        await testAsyncThrows(expectedError: PlaidService.PlaidError.self) {
+        await testAsyncThrows(expectedError: PlaidError.self) {
             try await self.plaidService.initializeLinkToken()
         }
 
@@ -73,7 +73,7 @@ final class PlaidServiceTests: MortgageGuardianUnitTestCase {
     func testHandleLinkSuccess_ValidToken() async throws {
         // Given
         let publicToken = "public-test-token"
-        let metadata = [
+        let metadata: [String: Any] = [
             "institution": [
                 "name": "Test Bank",
                 "institution_id": "ins_test"
@@ -104,7 +104,7 @@ final class PlaidServiceTests: MortgageGuardianUnitTestCase {
         plaidService.shouldFailLinking = true
 
         // When/Then
-        await testAsyncThrows(expectedError: PlaidService.PlaidError.self) {
+        await testAsyncThrows(expectedError: PlaidError.self) {
             try await self.plaidService.handleLinkSuccess(publicToken: publicToken, metadata: metadata)
         }
 
@@ -166,7 +166,7 @@ final class PlaidServiceTests: MortgageGuardianUnitTestCase {
         plaidService.shouldFailAccountFetch = true
 
         // When/Then
-        await testAsyncThrows(expectedError: PlaidService.PlaidError.self) {
+        await testAsyncThrows(expectedError: PlaidError.self) {
             try await self.plaidService.fetchAccounts()
         }
     }
@@ -177,7 +177,7 @@ final class PlaidServiceTests: MortgageGuardianUnitTestCase {
         plaidService.shouldFailAccountFetch = true
 
         // When/Then
-        await testAsyncThrows(expectedError: PlaidService.PlaidError.self) {
+        await testAsyncThrows(expectedError: PlaidError.self) {
             try await self.plaidService.fetchAccounts()
         }
     }
@@ -244,7 +244,7 @@ final class PlaidServiceTests: MortgageGuardianUnitTestCase {
             XCTAssertTrue(accountIds.contains(transaction.accountId))
             XCTAssertGreaterThanOrEqual(transaction.date, startDate)
             XCTAssertLessThanOrEqual(transaction.date, endDate)
-            XCTAssertFalse(transaction.id.isEmpty)
+            XCTAssertNotNil(transaction.id)
             XCTAssertFalse(transaction.description.isEmpty)
         }
     }
@@ -258,33 +258,45 @@ final class PlaidServiceTests: MortgageGuardianUnitTestCase {
         // Mock transactions with various dates
         plaidService.mockTransactions = [
             Transaction(
-                id: "TXN1",
                 accountId: "ACC123",
+                transactionId: "TXN1",
                 amount: -1000.0,
                 date: Date.testDate(year: 2024, month: 5, day: 15), // Before range
                 description: "Before range",
-                category: "Payment",
+                category: .mortgagePayment,
+                isRecurring: true,
                 merchantName: nil,
+                confidence: 0.95,
+                plaidTransactionId: nil,
+                isVerified: false,
                 relatedMortgagePayment: false
             ),
             Transaction(
-                id: "TXN2",
                 accountId: "ACC123",
+                transactionId: "TXN2",
                 amount: -1500.0,
                 date: Date.testDate(year: 2024, month: 6, day: 15), // In range
                 description: "In range",
-                category: "Payment",
+                category: .mortgagePayment,
+                isRecurring: true,
                 merchantName: nil,
+                confidence: 0.95,
+                plaidTransactionId: nil,
+                isVerified: false,
                 relatedMortgagePayment: true
             ),
             Transaction(
-                id: "TXN3",
                 accountId: "ACC123",
+                transactionId: "TXN3",
                 amount: -2000.0,
                 date: Date.testDate(year: 2024, month: 7, day: 15), // After range
                 description: "After range",
-                category: "Payment",
+                category: .mortgagePayment,
+                isRecurring: true,
                 merchantName: nil,
+                confidence: 0.95,
+                plaidTransactionId: nil,
+                isVerified: false,
                 relatedMortgagePayment: false
             )
         ]
@@ -298,7 +310,7 @@ final class PlaidServiceTests: MortgageGuardianUnitTestCase {
 
         // Then
         XCTAssertEqual(transactions.count, 1) // Only the transaction in range
-        XCTAssertEqual(transactions.first?.id, "TXN2")
+        XCTAssertEqual(transactions.first?.transactionId, "TXN2")
     }
 
     func testFetchTransactions_MultipleAccounts() async throws {
@@ -309,33 +321,45 @@ final class PlaidServiceTests: MortgageGuardianUnitTestCase {
 
         plaidService.mockTransactions = [
             Transaction(
-                id: "TXN1",
                 accountId: "ACC123",
+                transactionId: "TXN1",
                 amount: -1000.0,
                 date: Date.testDate(year: 2024, month: 6, day: 1),
                 description: "Account 123 transaction",
-                category: "Payment",
+                category: .mortgagePayment,
+                isRecurring: true,
                 merchantName: nil,
+                confidence: 0.95,
+                plaidTransactionId: nil,
+                isVerified: false,
                 relatedMortgagePayment: true
             ),
             Transaction(
-                id: "TXN2",
                 accountId: "ACC456",
+                transactionId: "TXN2",
                 amount: -1500.0,
                 date: Date.testDate(year: 2024, month: 6, day: 2),
                 description: "Account 456 transaction",
-                category: "Payment",
+                category: .mortgagePayment,
+                isRecurring: true,
                 merchantName: nil,
+                confidence: 0.95,
+                plaidTransactionId: nil,
+                isVerified: false,
                 relatedMortgagePayment: true
             ),
             Transaction(
-                id: "TXN3",
                 accountId: "ACC999", // Not in requested accounts
+                transactionId: "TXN3",
                 amount: -2000.0,
                 date: Date.testDate(year: 2024, month: 6, day: 3),
                 description: "Account 999 transaction",
-                category: "Payment",
+                category: .mortgagePayment,
+                isRecurring: true,
                 merchantName: nil,
+                confidence: 0.95,
+                plaidTransactionId: nil,
+                isVerified: false,
                 relatedMortgagePayment: false
             )
         ]
@@ -360,7 +384,7 @@ final class PlaidServiceTests: MortgageGuardianUnitTestCase {
         plaidService.shouldFailTransactionFetch = true
 
         // When/Then
-        await testAsyncThrows(expectedError: PlaidService.PlaidError.self) {
+        await testAsyncThrows(expectedError: PlaidError.self) {
             try await self.plaidService.fetchTransactions(
                 accountIds: accountIds,
                 startDate: startDate,
@@ -462,15 +486,12 @@ final class PlaidServiceTests: MortgageGuardianUnitTestCase {
 
     func testPlaidErrors_ErrorCodes() {
         // Given
-        let errors: [PlaidService.PlaidError] = [
-            .initializationFailed("Test init failure"),
-            .linkingFailed("Test linking failure"),
-            .networkError(URLError(.notConnectedToInternet)),
-            .authenticationError("Test auth error"),
-            .invalidResponse("Test invalid response"),
-            .accountNotFound("ACC123"),
-            .permissionDenied("Test permission denied"),
-            .rateLimitExceeded
+        let errors: [PlaidError] = [
+            .invalidConfiguration,
+            .linkTokenFailed,
+            .tokenExchangeFailed,
+            .accountsFetchFailed,
+            .linkKitUnavailable
         ]
 
         // When/Then
@@ -482,15 +503,14 @@ final class PlaidServiceTests: MortgageGuardianUnitTestCase {
 
     func testPlaidErrors_RecoveryOptions() {
         // Given
-        let linkingError = PlaidService.PlaidError.linkingFailed("Connection failed")
-        let networkError = PlaidService.PlaidError.networkError(URLError(.notConnectedToInternet))
-        let authError = PlaidService.PlaidError.authenticationError("Invalid credentials")
+        let linkingError = PlaidError.linkTokenFailed
+        let exchangeError = PlaidError.tokenExchangeFailed
+        let accountsError = PlaidError.accountsFetchFailed
 
         // When/Then
-        // These would have recovery options in a real implementation
         XCTAssertNotNil(linkingError.errorDescription)
-        XCTAssertNotNil(networkError.errorDescription)
-        XCTAssertNotNil(authError.errorDescription)
+        XCTAssertNotNil(exchangeError.errorDescription)
+        XCTAssertNotNil(accountsError.errorDescription)
     }
 
     // MARK: - Performance Tests

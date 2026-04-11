@@ -44,7 +44,7 @@ struct IssueDetailView: View {
                         // Content Sections
                         if horizontalSizeClass == .regular {
                             // iPad: Side-by-side layout
-                            HSplitView {
+                            HStack(spacing: 0) {
                                 leftColumnContent
                                     .frame(minWidth: 400)
                                 rightColumnContent

@@ -1,3 +1,5 @@
+// NOTE: Usage example code excluded from compilation until service APIs stabilize.
+#if USAGE_EXAMPLES_ENABLED
 import SwiftUI
 import Foundation
 
@@ -451,3 +453,4 @@ class UserManager: ObservableObject {
         // Save to persistent storage
     }
 }
+#endif // USAGE_EXAMPLES_ENABLED

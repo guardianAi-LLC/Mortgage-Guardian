@@ -325,7 +325,7 @@ struct AnalysisChartsView: View {
     @ViewBuilder
     private var detectionMethodsChart: some View {
         let methodData = viewModel.analysisMetrics.detectionMethodDistribution.map { method, count in
-            ChartDataPoint(name: method.displayName, value: Double(count), color: methodColor(for: method))
+            AnalysisViewModel.ChartDataPoint(name: method.displayName, value: Double(count), color: methodColor(for: method))
         }
 
         Chart(methodData, id: \.name) { dataPoint in

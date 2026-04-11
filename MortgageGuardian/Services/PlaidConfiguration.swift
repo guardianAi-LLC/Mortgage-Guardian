@@ -140,34 +140,14 @@ public class PlaidConfiguration {
     }
     #endif
 
-    #if canImport(LinkKit)
-    // MARK: - Account Type Configuration
-
-    /// Account types relevant for mortgage tracking
+    // NOTE: PLKAccountType/PLKAccountSubtype API disabled - incompatible with LinkKit 4.x
+    // TODO: Update to use LinkKit 4.x account filtering API
+    #if PLAID_LEGACY_API
+    // MARK: - Account Type Configuration (requires LinkKit 3.x API)
     public struct AccountTypeConfig {
-        static let relevantTypes: Set<AnyHashable> = [
-            PLKAccountType.depository, // Checking, savings accounts
-            PLKAccountType.credit      // Credit cards (for balance transfers, etc.)
-        ]
-
-        static let relevantSubtypes: Set<AnyHashable> = [
-            PLKAccountSubtype.checking,
-            PLKAccountSubtype.savings,
-            PLKAccountSubtype.moneyMarket,
-            PLKAccountSubtype.cd, // Certificate of deposit
-            PLKAccountSubtype.creditCard
-        ]
-
-        /// Check if account type is relevant for mortgage auditing
-        public static func isRelevantAccount(type: PLKAccountType, subtype: PLKAccountSubtype?) -> Bool {
-            guard relevantTypes.contains(AnyHashable(type)) else { return false }
-
-            if let subtype = subtype {
-                return relevantSubtypes.contains(AnyHashable(subtype))
-            }
-
-            return true
-        }
+        static let relevantTypes: Set<AnyHashable> = []
+        static let relevantSubtypes: Set<AnyHashable> = []
+        public static func isRelevantAccount(type: Any, subtype: Any?) -> Bool { return true }
     }
     #endif
 
@@ -481,12 +461,8 @@ public class PlaidConfiguration {
             errors.append("PLAID_SANDBOX_SECRET environment variable not set")
         }
 
-        #if canImport(LinkKit)
-        // Check LinkKit framework availability
-        if !LinkKit.isAvailable {
-            errors.append("LinkKit framework not available")
-        }
-        #else
+        // LinkKit 4.x availability check - framework presence confirmed by SPM dependency
+        #if !canImport(LinkKit)
         errors.append("LinkKit framework not available (not imported)")
         #endif
 
@@ -522,71 +498,16 @@ public class PlaidConfiguration {
     }
 }
 
-#if canImport(LinkKit)
-// MARK: - Extensions
-
+// NOTE: PLKProduct/PLKAccountType/PLKAccountSubtype extensions disabled - incompatible with LinkKit 4.x
+// TODO: Update when LinkKit account type API is clarified
+#if PLAID_LEGACY_API
 extension PLKProduct {
-    var displayName: String {
-        switch self {
-        case .transactions:
-            return "Transactions"
-        case .auth:
-            return "Account Authentication"
-        case .identity:
-            return "Identity Verification"
-        case .assets:
-            return "Asset Verification"
-        case .liabilities:
-            return "Liabilities"
-        case .investments:
-            return "Investments"
-        case .creditDetails:
-            return "Credit Details"
-        @unknown default:
-            return "Unknown Product"
-        }
-    }
+    var displayName: String { return "Unknown" }
 }
-
 extension PLKAccountType {
-    var displayName: String {
-        switch self {
-        case .depository:
-            return "Depository"
-        case .credit:
-            return "Credit"
-        case .loan:
-            return "Loan"
-        case .investment:
-            return "Investment"
-        case .other:
-            return "Other"
-        @unknown default:
-            return "Unknown"
-        }
-    }
+    var displayName: String { return "Unknown" }
 }
-
 extension PLKAccountSubtype {
-    var displayName: String {
-        switch self {
-        case .checking:
-            return "Checking"
-        case .savings:
-            return "Savings"
-        case .moneyMarket:
-            return "Money Market"
-        case .cd:
-            return "Certificate of Deposit"
-        case .creditCard:
-            return "Credit Card"
-        case .mortgage:
-            return "Mortgage"
-        case .lineOfCredit:
-            return "Line of Credit"
-        default:
-            return "Other"
-        }
-    }
+    var displayName: String { return "Unknown" }
 }
 #endif

@@ -71,7 +71,7 @@ struct EnhancedAnalysisView: View {
                 // Results Content
                 if horizontalSizeClass == .regular {
                     // iPad Layout - Side by side
-                    HSplitView {
+                    HStack(spacing: 0) {
                         resultsListView
                             .frame(minWidth: 400)
 

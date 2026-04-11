@@ -155,6 +155,17 @@ public final class AIAnalysisService: ObservableObject {
             retryAttempts: 2,
             concurrentAnalysisLimit: 5
         )
+
+        static let focused = AIConfiguration(
+            model: .claude35Sonnet,
+            maxTokens: 4096,
+            temperature: 0.05,
+            confidenceThreshold: 0.8,
+            timeoutInterval: 90,
+            enableStreamingResponse: false,
+            retryAttempts: 2,
+            concurrentAnalysisLimit: 2
+        )
     }
 
     /// AI Analysis result structure
@@ -531,13 +542,13 @@ public final class AIAnalysisService: ObservableObject {
     func analyzeComplexPatterns(
         context: AIAnalysisContext,
         focusAreas: [AIFocusArea]
-    ) async throws -> [AIAnalysisResult] {
+    ) async throws -> [TieredAnalysisResult] {
 
         guard !isAnalyzing else {
             throw AIAnalysisError.analysisTimeout
         }
 
-        await updateProgress(.aiAnalysis, 0.0, "Initializing AI complex pattern analysis")
+        updateProgress(.aiAnalysis, percentComplete: 0.0, message: "Initializing AI complex pattern analysis")
 
         do {
             // Build focused prompt for second-tier analysis
@@ -546,7 +557,7 @@ public final class AIAnalysisService: ObservableObject {
                 focusAreas: focusAreas
             )
 
-            await updateProgress(.aiAnalysis, 0.3, "Sending complex pattern analysis request to Claude")
+            updateProgress(.aiAnalysis, percentComplete: 0.3, message: "Sending complex pattern analysis request to Claude")
 
             // Use optimized configuration for second-tier analysis
             let analysisResult = try await performClaudeAnalysis(
@@ -555,7 +566,7 @@ public final class AIAnalysisService: ObservableObject {
                 taskId: UUID()
             )
 
-            await updateProgress(.aiAnalysis, 0.7, "Processing AI response for complex patterns")
+            updateProgress(.aiAnalysis, percentComplete: 0.7, message: "Processing AI response for complex patterns")
 
             // Parse and validate AI findings
             let findings = try parseComplexPatternFindings(
@@ -563,7 +574,7 @@ public final class AIAnalysisService: ObservableObject {
                 context: context
             )
 
-            await updateProgress(.aiAnalysis, 1.0, "Complex pattern analysis complete")
+            updateProgress(.aiAnalysis, percentComplete: 1.0, message: "Complex pattern analysis complete")
 
             logger.info("AI complex pattern analysis complete: \(findings.count) complex patterns identified")
 
@@ -596,7 +607,7 @@ public final class AIAnalysisService: ObservableObject {
             throw AIAnalysisError.quotaExceeded
         }
 
-        await updateProgress(.aiAnalysis, 0.0, "Starting cost-conscious AI analysis")
+        updateProgress(.aiAnalysis, percentComplete: 0.0, message: "Starting cost-conscious AI analysis")
 
         // Create focused analysis context based on rule-based gaps
         let context = createSecondTierContext(
@@ -1079,7 +1090,7 @@ public final class AIAnalysisService: ObservableObject {
                     "description": "Mock analysis suggests reviewing escrow calculations.",
                     "detailedExplanation": "This is a simulated finding. Real AI analysis would provide detailed escrow analysis.",
                     "suggestedAction": "Configure Claude API key for comprehensive escrow analysis.",
-                    "affectedAmount": null,
+                    "affectedAmount": NSNull(),
                     "confidence": 0.5,
                     "evidenceText": "Mock evidence for escrow analysis",
                     "reasoning": "Simulated analysis for demonstration."
@@ -1094,7 +1105,7 @@ public final class AIAnalysisService: ObservableObject {
                     "description": "Mock analysis suggests manual review.",
                     "detailedExplanation": "This is a mock finding. Configure Claude API key for detailed AI analysis.",
                     "suggestedAction": "Set up Claude API key in Settings for full analysis capabilities.",
-                    "affectedAmount": null,
+                    "affectedAmount": NSNull(),
                     "confidence": 0.5,
                     "evidenceText": "Mock analysis placeholder",
                     "reasoning": "Demo analysis - requires API configuration."
@@ -1364,6 +1375,7 @@ private class ResponseParser {
 }
 
 /// Letter generation for RESPA compliance documents
+@MainActor
 private class AILetterGenerator {
 
     func generateLetter(
@@ -1698,10 +1710,13 @@ private class RateLimitTracker {
         tokenHistory.append((date: now, tokens: tokenUsage))
         dailyUsage[today] = (dailyUsage[today] ?? 0) + 1
     }
+}
 
-    // MARK: - Second-Tier AI Analysis Support Methods
+// MARK: - Second-Tier AI Analysis Support Methods
 
-    private func buildSecondTierAnalysisPrompt(
+extension AIAnalysisService {
+
+    func buildSecondTierAnalysisPrompt(
         context: AIAnalysisContext,
         focusAreas: [AIFocusArea]
     ) -> String {
@@ -1767,7 +1782,7 @@ private class RateLimitTracker {
     private func parseComplexPatternFindings(
         response: String,
         context: AIAnalysisContext
-    ) throws -> [AIAnalysisResult] {
+    ) throws -> [TieredAnalysisResult] {
 
         // Parse JSON response from Claude
         guard let data = response.data(using: .utf8) else {
@@ -1791,7 +1806,7 @@ private class RateLimitTracker {
                     return nil
                 }
 
-                return AIAnalysisResult(
+                return TieredAnalysisResult(
                     category: category,
                     severity: severity,
                     title: title,
@@ -1887,7 +1902,7 @@ private class RateLimitTracker {
     }
 
     private func convertAIResultToAuditResult(
-        _ aiResult: AIAnalysisResult,
+        _ aiResult: TieredAnalysisResult,
         detectionMethod: AuditResult.DetectionMethod
     ) -> AuditResult? {
 
@@ -1930,7 +1945,7 @@ private class RateLimitTracker {
         )
     }
 
-    private func generateSuggestedAction(for aiResult: AIAnalysisResult) -> String {
+    private func generateSuggestedAction(for aiResult: TieredAnalysisResult) -> String {
         switch aiResult.category {
         case "complex_pattern":
             return "Investigate pattern with servicer and request detailed explanation"
@@ -2026,7 +2041,7 @@ enum AIFocusArea {
 }
 
 /// AI Analysis Result structure for tiered analysis
-struct AIAnalysisResult {
+struct TieredAnalysisResult {
     let category: String
     let severity: String
     let title: String
@@ -2038,6 +2053,29 @@ struct AIAnalysisResult {
     let regulatoryReference: String?
 }
 
-// MARK: - Extensions
-// DateFormatter extensions moved to Utils/ErrorHandling.swift to avoid redeclaration
+// MARK: - DateFormatter Extensions
+
+extension DateFormatter {
+    static let iso8601: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+
+    static let fullDate: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .full
+        formatter.timeStyle = .none
+        return formatter
+    }()
+
+    static let dateOnly: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+
+}
 

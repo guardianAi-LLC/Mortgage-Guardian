@@ -249,8 +249,12 @@ public final class DocumentStorageService: ObservableObject {
 
             let document = MortgageDocument(
                 fileName: fileName,
+                documentType: documentType,
+                uploadDate: Date(),
                 originalText: content,
-                documentType: documentType
+                extractedData: nil,
+                analysisResults: [],
+                isAnalyzed: false
             )
 
             logger.info("Document downloaded successfully: \(documentId)")
@@ -394,17 +398,34 @@ public final class DocumentStorageService: ObservableObject {
     }
 }
 
+// MARK: - Backend API Service Stub
+
+/// Stub for backend API service - to be replaced with actual implementation
+class BackendAPIService {
+    static let shared = BackendAPIService()
+    private let session = URLSession.shared
+    private init() {}
+
+    private func buildURL(for path: String) -> URL? {
+        URL(string: APIConfiguration.baseURL + path)
+    }
+
+    private func defaultHeaders() -> [String: String] {
+        ["Content-Type": "application/json", "Accept": "application/json"]
+    }
+}
+
 // MARK: - Backend API Extensions
 
 extension BackendAPIService {
     func uploadDocument(data: Data) async throws -> Data {
-        guard let url = APIConfiguration.buildURL(for: "/v1/documents/upload") else {
+        guard let url = buildURL(for: "/v1/documents/upload") else {
             throw URLError(.badURL)
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.allHTTPHeaderFields = APIConfiguration.defaultHeaders()
+        request.allHTTPHeaderFields = defaultHeaders()
         request.httpBody = data
 
         let (responseData, response) = try await session.data(for: request)
@@ -418,13 +439,13 @@ extension BackendAPIService {
     }
 
     func getDocuments(userId: String) async throws -> Data {
-        guard let url = APIConfiguration.buildURL(for: "/v1/documents?userId=\(userId)") else {
+        guard let url = buildURL(for: "/v1/documents?userId=\(userId)") else {
             throw URLError(.badURL)
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.allHTTPHeaderFields = APIConfiguration.defaultHeaders()
+        request.allHTTPHeaderFields = defaultHeaders()
 
         let (responseData, response) = try await session.data(for: request)
 
@@ -437,13 +458,13 @@ extension BackendAPIService {
     }
 
     func getDocument(documentId: String) async throws -> Data {
-        guard let url = APIConfiguration.buildURL(for: "/v1/documents/\(documentId)") else {
+        guard let url = buildURL(for: "/v1/documents/\(documentId)") else {
             throw URLError(.badURL)
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.allHTTPHeaderFields = APIConfiguration.defaultHeaders()
+        request.allHTTPHeaderFields = defaultHeaders()
 
         let (responseData, response) = try await session.data(for: request)
 
@@ -456,13 +477,13 @@ extension BackendAPIService {
     }
 
     func deleteDocument(documentId: String) async throws -> Data {
-        guard let url = APIConfiguration.buildURL(for: "/v1/documents/\(documentId)") else {
+        guard let url = buildURL(for: "/v1/documents/\(documentId)") else {
             throw URLError(.badURL)
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
-        request.allHTTPHeaderFields = APIConfiguration.defaultHeaders()
+        request.allHTTPHeaderFields = defaultHeaders()
 
         let (responseData, response) = try await session.data(for: request)
 
@@ -479,10 +500,4 @@ extension BackendAPIService {
 
 extension DocumentStorageService.StorageSettings: Codable {}
 
-extension AuditResult: Codable {
-    enum CodingKeys: String, CodingKey {
-        case issueType, severity, title, description, detailedExplanation
-        case suggestedAction, affectedAmount, detectionMethod, confidence
-        case evidenceText, calculationDetails, createdDate
-    }
-}
+// AuditResult already conforms to Codable in AuditResult.swift

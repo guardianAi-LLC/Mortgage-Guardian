@@ -325,7 +325,7 @@ final class SecurityServiceTests: MortgageGuardianUnitTestCase {
         // When/Then
         await measureAsync {
             for data in bulkData {
-                try? await self.securityService.encryptData(data, with: self.testKey)
+                let _ = try? await self.securityService.encryptData(data, with: self.testKey)
             }
         }
     }
@@ -599,3 +599,4 @@ final class SecurityServiceTests: MortgageGuardianUnitTestCase {
         }
     }
 }
+

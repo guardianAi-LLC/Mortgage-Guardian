@@ -10,6 +10,8 @@ public final class ZeroToleranceAuditEngine: ObservableObject {
 
     // MARK: - Types
 
+    typealias RecommendedAction = MortgageErrorDetectionService.AnalysisResult.RecommendedAction
+
     /// Triple redundancy validation result
     public struct TripleValidationResult {
         let ruleBasedResult: ValidationResult
@@ -700,12 +702,12 @@ public final class ZeroToleranceAuditEngine: ObservableObject {
     ) throws -> String {
 
         let combinedData = [
-            extractedData.description,
-            bankTransactions.description,
-            loanDetails?.description ?? ""
+            String(describing: extractedData),
+            String(describing: bankTransactions),
+            loanDetails.map { String(describing: $0) } ?? ""
         ].joined()
 
-        let data = combinedData.data(using: .utf8) ?? Data()
+        let data = Data(combinedData.utf8)
         let hash = SHA256.hash(data: data)
         return hash.compactMap { String(format: "%02x", $0) }.joined()
     }

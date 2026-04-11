@@ -72,7 +72,7 @@ struct AIInsightCard: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
 }

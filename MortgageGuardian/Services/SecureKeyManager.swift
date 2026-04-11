@@ -61,9 +61,13 @@ class SecureKeyManager: ObservableObject {
     // MARK: - Retrieve API Keys
 
     func getAPIKey(forService service: APIService) throws -> String {
+        try getAPIKey(forService: service.rawValue)
+    }
+
+    func getAPIKey(forService serviceIdentifier: String) throws -> String {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service.rawValue,
+            kSecAttrService as String: serviceIdentifier,
             kSecAttrAccount as String: "MortgageGuardian",
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne
@@ -162,7 +166,8 @@ class SecureKeyManager: ObservableObject {
 
 // MARK: - API Service Enum
 
-enum APIService: String, CaseIterable {
+enum APIService: String, CaseIterable, Identifiable {
+    var id: String { rawValue }
     // Core Services
     case claude = "com.mortgageguardian.api.claude"
     case plaidClientId = "com.mortgageguardian.api.plaid.client"

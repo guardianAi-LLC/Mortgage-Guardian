@@ -342,7 +342,7 @@ public final class DocumentProcessor: ObservableObject {
     }
 
     /// Process document from PDF
-    func processDocument(
+    func processPDFDocument(
         from pdfData: Data,
         fileName: String,
         configuration: OCRConfiguration = .default
@@ -408,6 +408,7 @@ public final class DocumentProcessor: ObservableObject {
         }
     }
 
+    #if ZERO_TOLERANCE_INTEGRATION_ENABLED
     /// Process document with integrated tiered error detection
     func processDocumentWithTieredAnalysis(
         from imageData: Data,
@@ -573,10 +574,12 @@ public final class DocumentProcessor: ObservableObject {
                 adjustedConfig = MortgageErrorDetectionService.DetectionConfiguration(
                     enableRuleBasedDetection: adjustedConfig.enableRuleBasedDetection,
                     enableAIAnalysis: adjustedConfig.enableAIAnalysis && adjustedBudget > 0.05, // Disable AI if budget too low
+                    enableZeroToleranceMode: adjustedConfig.enableZeroToleranceMode,
                     aiAnalysisThreshold: adjustedConfig.aiAnalysisThreshold,
                     maxConcurrentAnalyses: adjustedConfig.maxConcurrentAnalyses,
                     ruleBasedTimeout: adjustedConfig.ruleBasedTimeout,
                     aiAnalysisTimeout: adjustedConfig.aiAnalysisTimeout,
+                    zeroToleranceTimeout: adjustedConfig.zeroToleranceTimeout,
                     costBudgetPerDocument: adjustedBudget
                 )
 
@@ -609,6 +612,7 @@ public final class DocumentProcessor: ObservableObject {
 
         return results
     }
+    #endif // ZERO_TOLERANCE_INTEGRATION_ENABLED
 
     // MARK: - Private Methods
 
@@ -701,7 +705,7 @@ public final class DocumentProcessor: ObservableObject {
         // 4. Reduce noise
         if let noiseFilter = CIFilter(name: "CINoiseReduction") {
             noiseFilter.setValue(enhancedImage, forKey: kCIInputImageKey)
-            noiseFilter.setValue(0.02, forKey: kCIInputNoiseLevel)
+            noiseFilter.setValue(0.02, forKey: "inputNoiseLevel")
             if let output = noiseFilter.outputImage {
                 enhancedImage = output
             }
@@ -2338,7 +2342,7 @@ public final class DocumentProcessor: ObservableObject {
 
 // MARK: - Extensions
 
-private extension DateFormatter {
+extension DateFormatter {
     func apply(_ closure: (DateFormatter) -> Void) -> DateFormatter {
         closure(self)
         return self
@@ -2352,6 +2356,7 @@ private extension DateFormatter {
 
     // MARK: - Tiered Error Detection Integration Helpers
 
+    #if ZERO_TOLERANCE_INTEGRATION_ENABLED
     /// Calculate extraction confidence based on data completeness and consistency
     private func calculateExtractionConfidence(_ extractedData: ExtractedData) -> Double {
         var confidence: Double = 1.0
@@ -2443,6 +2448,8 @@ private extension DateFormatter {
             return .aiAnalysis
         case .hybrid:
             return .combinedAnalysis
+        case .zeroTolerance:
+            return .combinedAnalysis
         }
     }
 
@@ -2450,10 +2457,12 @@ private extension DateFormatter {
     private var startTime: TimeInterval {
         return Date().timeIntervalSinceReferenceDate
     }
+    #endif // ZERO_TOLERANCE_INTEGRATION_ENABLED
 }
 
 // MARK: - Supporting Types for Tiered Analysis
 
+#if ZERO_TOLERANCE_INTEGRATION_ENABLED
 /// Comprehensive result structure for document analysis with tiered error detection
 public struct DocumentAnalysisResult {
     let document: MortgageDocument
@@ -2513,7 +2522,7 @@ public struct DocumentAnalysisResult {
 }
 
 /// Processing metrics for performance tracking
-public struct ProcessingMetrics {
+struct ProcessingMetrics {
     let ocrConfidence: Double
     let extractionConfidence: Double
     let processingTime: TimeInterval
@@ -2544,13 +2553,14 @@ public struct ProcessingMetrics {
         }
     }
 }
+#endif // ZERO_TOLERANCE_INTEGRATION_ENABLED
 
 // MARK: - Progress Tracking Enhancement
 
-extension DocumentProcessor.ProcessingStep {
-    static let initialization = DocumentProcessor.ProcessingStep(rawValue: "initialization") ?? .preprocessing
-    static let analysis = DocumentProcessor.ProcessingStep(rawValue: "analysis") ?? .dataExtraction
-    static let resultValidation = DocumentProcessor.ProcessingStep(rawValue: "result_validation") ?? .completion
+extension DocumentProcessor.ProcessingProgress.ProcessingStep {
+    static let initialization = DocumentProcessor.ProcessingProgress.ProcessingStep(rawValue: "initialization") ?? .preprocessing
+    static let analysis = DocumentProcessor.ProcessingProgress.ProcessingStep(rawValue: "analysis") ?? .dataExtraction
+    static let resultValidation = DocumentProcessor.ProcessingProgress.ProcessingStep(rawValue: "result_validation") ?? .completion
 }
 
 // MARK: - SecurityService Extension

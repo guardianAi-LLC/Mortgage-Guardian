@@ -562,9 +562,9 @@ public final class QualityAssuranceWorkflowEngine: ObservableObject {
         let requiredExpertise = determineRequiredExpertise(triggers: triggers, findings: findings)
 
         return HumanReviewRequest.ReviewContext(
-            documentId: extractedData.documentId ?? "unknown",
-            customerAccount: extractedData.accountNumber ?? "unknown",
-            loanType: extractedData.loanType?.rawValue ?? "unknown",
+            documentId: extractedData.loanNumber ?? "unknown",
+            customerAccount: extractedData.loanNumber ?? "unknown",
+            loanType: "mortgage",
             riskLevel: riskLevel,
             previousReviews: [],
             systemRecommendations: generateSystemRecommendations(findings: findings),
@@ -729,7 +729,7 @@ public final class QualityAssuranceWorkflowEngine: ObservableObject {
         result: HumanReviewResult
     ) async throws {
 
-        await escalationManager.escalateReview(
+        try await escalationManager.escalateReview(
             request: reviewRequest,
             reason: "Human reviewer recommended escalation",
             escalatedBy: result.reviewerId
@@ -777,14 +777,14 @@ public final class QualityAssuranceWorkflowEngine: ObservableObject {
         // Update reviewer productivity metrics
         qualityMetrics.updateWorkflowMetrics(&workflowMetrics)
 
-        logger.info("Workflow metrics updated - Completion rate: \(String(format: "%.1f", workflowMetrics.completionRate * 100))%")
+        logger.info("Workflow metrics updated - Completion rate: \(String(format: "%.1f", self.workflowMetrics.completionRate * 100))%")
     }
 }
 
 // MARK: - Supporting Classes
 
 /// Manages reviewer assignments and capacity
-private class ReviewerPoolManager {
+class ReviewerPoolManager {
     func assignReviewer(
         for priority: QualityAssuranceWorkflowEngine.HumanReviewRequest.ReviewPriority,
         requiredExpertise: [QualityAssuranceWorkflowEngine.HumanReviewRequest.ReviewContext.ExpertiseArea],
@@ -796,7 +796,7 @@ private class ReviewerPoolManager {
 }
 
 /// Handles review escalations
-private class EscalationManager {
+class EscalationManager {
     func escalateReview(
         request: QualityAssuranceWorkflowEngine.HumanReviewRequest,
         reason: String,
@@ -807,7 +807,7 @@ private class EscalationManager {
 }
 
 /// Tracks quality metrics and reviewer performance
-private class QualityMetricsTracker {
+class QualityMetricsTracker {
     func updateReviewerMetrics(reviewerId: String, reviewTime: TimeInterval, qualityScore: Double) {
         // Implementation would track individual reviewer performance
     }
@@ -818,7 +818,7 @@ private class QualityMetricsTracker {
 }
 
 /// Sends notifications for review events
-private class ReviewNotificationService {
+class ReviewNotificationService {
     func notifyReviewRequested(_ request: QualityAssuranceWorkflowEngine.HumanReviewRequest) async {
         // Implementation would send notifications via email, Slack, etc.
     }

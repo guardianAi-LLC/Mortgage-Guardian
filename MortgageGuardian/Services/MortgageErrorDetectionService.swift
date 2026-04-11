@@ -245,8 +245,14 @@ public final class MortgageErrorDetectionService: ObservableObject {
         )
     }
 
+    private func setupSubscriptions() {
+        // AI progress monitoring - placeholder until AIAnalysisService exposes progress publisher
+        // TODO: Re-enable when AIAnalysisService adds @Published analysisProgress property
+    }
+
     // MARK: - Public Methods
 
+    #if ZERO_TOLERANCE_INTEGRATION_ENABLED
     /// Perform tiered error detection analysis on mortgage document
     func analyzeDocument(
         extractedData: ExtractedData,
@@ -390,21 +396,6 @@ public final class MortgageErrorDetectionService: ObservableObject {
     }
 
     // MARK: - Private Methods
-
-    private func setupSubscriptions() {
-        // Monitor AI service progress if available
-        aiAnalysisService.$analysisProgress
-            .sink { [weak self] progress in
-                if self?.isAnalyzing == true {
-                    Task { @MainActor in
-                        // Map AI progress to our overall progress (70-90% range)
-                        let mappedProgress = 0.7 + (progress.percentComplete / 100.0 * 0.2)
-                        self?.analysisProgress = mappedProgress
-                    }
-                }
-            }
-            .store(in: &cancellables)
-    }
 
     private func performRuleBasedDetection(
         extractedData: ExtractedData,
@@ -987,6 +978,8 @@ public final class MortgageErrorDetectionService: ObservableObject {
 
         return actions
     }
+
+    #endif // ZERO_TOLERANCE_INTEGRATION_ENABLED
 }
 
 // MARK: - Supporting Types

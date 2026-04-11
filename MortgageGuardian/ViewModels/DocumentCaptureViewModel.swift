@@ -20,7 +20,7 @@ class DocumentCaptureViewModel: ObservableObject {
         case dragAndDrop
     }
 
-    enum ProcessingState {
+    enum ProcessingState: Equatable {
         case idle
         case capturing
         case importing
@@ -28,6 +28,18 @@ class DocumentCaptureViewModel: ObservableObject {
         case enhancing
         case completed
         case failed(Error)
+
+        static func == (lhs: ProcessingState, rhs: ProcessingState) -> Bool {
+            switch (lhs, rhs) {
+            case (.idle, .idle), (.capturing, .capturing), (.importing, .importing),
+                 (.processing, .processing), (.enhancing, .enhancing), (.completed, .completed):
+                return true
+            case (.failed, .failed):
+                return true
+            default:
+                return false
+            }
+        }
     }
 
     enum UploadProgress {

@@ -91,17 +91,17 @@ public final class SecurityService: ObservableObject {
 
     public static let shared = SecurityService()
 
-    @Published public private(set) var sessionState: SessionState = .unauthenticated
+    @Published public internal(set) var sessionState: SessionState = .unauthenticated
     @Published public private(set) var isDeviceSecure: Bool = false
     @Published public private(set) var lastSecurityCheck: Date?
 
     private let keychain = SecurityKeychain()
     private let encryptionManager = EncryptionManager()
     private let certificatePinner = CertificatePinner()
-    private let auditLogger = SecurityAuditLogger()
+    let auditLogger = SecurityAuditLogger()
     private let sessionManager = SessionManager()
 
-    private var securitySettings: User.SecuritySettings?
+    var securitySettings: User.SecuritySettings?
     private var autoLockTimer: Timer?
     private let networkMonitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "NetworkMonitor")
@@ -464,7 +464,8 @@ public final class SecurityService: ObservableObject {
     // MARK: - Cleanup
 
     deinit {
-        invalidateAutoLockTimer()
+        autoLockTimer?.invalidate()
+        autoLockTimer = nil
         networkMonitor.cancel()
     }
 }
@@ -479,7 +480,7 @@ private class SecurityKeychain {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: key,
             kSecValueData as String: data,
-            kSecAttrAccessible as String: requireBiometric ? kSecAttrAccessibleBiometryAny : kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            kSecAttrAccessible as String: requireBiometric ? kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly : kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
 
         // Delete existing item first
@@ -594,7 +595,7 @@ private class CertificatePinner {
         // For now, we'll implement basic certificate validation
 
         let certificateData = SecCertificateCopyData(certificate)
-        let data = Data(CFDataGetBytePtr(certificateData), count: CFDataGetLength(certificateData))
+        let data = Data(bytes: CFDataGetBytePtr(certificateData), count: CFDataGetLength(certificateData))
 
         // Validate certificate chain and check against pinned certificates
         if let pinnedData = pinnedCertificates[host] {
@@ -608,7 +609,7 @@ private class CertificatePinner {
 }
 
 /// Security audit logging
-private class SecurityAuditLogger {
+class SecurityAuditLogger {
     private let logQueue = DispatchQueue(label: "SecurityAuditLogger", qos: .utility)
 
     func log(_ event: SecurityService.AuditEvent) {

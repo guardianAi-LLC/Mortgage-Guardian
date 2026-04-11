@@ -332,18 +332,18 @@ extension SecurityService {
         // Verify timestamp is not too old
         let maxAge: TimeInterval = 365 * 24 * 3600 // 1 year
         if Date().timeIntervalSince(container.metadata.timestamp) > maxAge {
-            throw SecurityError.dataDecryptionFailed("Data too old")
+            throw SecurityError.decryptionFailed("Data too old")
         }
 
         // Verify context matches
         if container.metadata.context != expectedContext.rawValue {
-            throw SecurityError.dataDecryptionFailed("Context mismatch")
+            throw SecurityError.decryptionFailed("Context mismatch")
         }
 
         // Verify checksum
         let computedChecksum = calculateChecksum(container.data)
         if computedChecksum != container.metadata.checksum {
-            throw SecurityError.dataDecryptionFailed("Checksum mismatch")
+            throw SecurityError.decryptionFailed("Checksum mismatch")
         }
     }
 

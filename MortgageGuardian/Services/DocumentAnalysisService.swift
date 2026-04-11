@@ -317,14 +317,14 @@ class DocumentAnalysisService: ObservableObject {
             let (_, response) = try await URLSession.shared.data(for: request)
 
             if let httpResponse = response as? HTTPURLResponse {
-                isOnline = (200...299).contains(httpResponse.statusCode)
-                logger.info("Network connectivity check: \(isOnline ? "connected" : "disconnected") (status: \(httpResponse.statusCode))")
+                self.isOnline = (200...299).contains(httpResponse.statusCode)
+                logger.info("Network connectivity check: \(self.isOnline ? "connected" : "disconnected") (status: \(httpResponse.statusCode))")
             } else {
-                isOnline = false
+                self.isOnline = false
                 logger.warning("Network connectivity check failed: invalid response")
             }
         } catch {
-            isOnline = false
+            self.isOnline = false
             logger.warning("Network connectivity check failed: \(error.localizedDescription)")
         }
     }
@@ -844,7 +844,7 @@ class DocumentAnalysisService: ObservableObject {
     
     private func calculateConfidence(_ observations: [VNRecognizedTextObservation]) -> Double {
         let confidences = observations.compactMap { $0.topCandidates(1).first?.confidence }
-        return confidences.reduce(0.0, +) / Double(confidences.count)
+        return confidences.reduce(0.0) { $0 + Double($1) } / Double(confidences.count)
     }
 
     // MARK: - Simple text extraction helpers
@@ -926,7 +926,7 @@ class DocumentAnalysisService: ObservableObject {
         documentType: DocumentType
     ) async -> MLAnalysisResult? {
         do {
-            logger.info("Performing ML analysis for document type: \(documentType)")
+            logger.info("Performing ML analysis for document type: \(documentType.rawValue)")
 
             // Perform NLP analysis
             let nlpInsights = await performNLPAnalysis(text: rawText)
@@ -1488,7 +1488,7 @@ class DocumentAnalysisService: ObservableObject {
                     retryConfig.maxDelay
                 )
 
-                logger.warning("AWS call failed (attempt \(attempt)/\(retryConfig.maxRetries + 1)), retrying in \(delay)s: \(analysisError.localizedDescription)")
+                logger.warning("AWS call failed (attempt \(attempt)/\(self.retryConfig.maxRetries + 1)), retrying in \(delay)s: \(analysisError.localizedDescription)")
 
                 try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
             }

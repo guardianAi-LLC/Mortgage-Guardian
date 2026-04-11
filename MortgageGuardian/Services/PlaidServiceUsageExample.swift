@@ -1,3 +1,6 @@
+// NOTE: Usage example code excluded from compilation until PlaidService API stabilizes.
+// Uncomment when ready to validate against final PlaidService implementation.
+#if USAGE_EXAMPLES_ENABLED
 import Foundation
 import SwiftUI
 import UIKit
@@ -809,4 +812,5 @@ extension PlaidServiceUsageExample {
         ]
     }
 }
-#endif
+#endif // DEBUG
+#endif // USAGE_EXAMPLES_ENABLED

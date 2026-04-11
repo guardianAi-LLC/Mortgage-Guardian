@@ -23,7 +23,7 @@ struct DetailTextSection: View {
                 .fontWeight(.semibold)
 
             Text(content)
-                .font(Font(style))
+                .font(.system(style))
                 .foregroundColor(.primary)
                 .fixedSize(horizontal: false, vertical: true)
         }

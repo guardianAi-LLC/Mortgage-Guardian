@@ -75,6 +75,7 @@ struct MortgageDocument: Identifiable, Codable {
         case loanDocuments = "loan_documents"
         case taxStatement = "tax_statement"
         case insuranceStatement = "insurance_statement"
+        case mortgageInterestStatement = "mortgage_interest_statement"
         case other = "other"
 
         var displayName: String {
@@ -91,6 +92,8 @@ struct MortgageDocument: Identifiable, Codable {
                 return "Tax Statement"
             case .insuranceStatement:
                 return "Insurance Statement"
+            case .mortgageInterestStatement:
+                return "Mortgage Interest Statement (1098)"
             case .other:
                 return "Other"
             }
@@ -110,6 +113,8 @@ struct MortgageDocument: Identifiable, Codable {
                 return "percent"
             case .insuranceStatement:
                 return "umbrella.fill"
+            case .mortgageInterestStatement:
+                return "dollarsign.circle.fill"
             case .other:
                 return "doc.fill"
             }

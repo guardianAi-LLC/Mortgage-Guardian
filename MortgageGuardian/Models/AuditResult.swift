@@ -191,7 +191,7 @@ struct AuditResult: Identifiable, Codable {
         }
     }
 
-    enum DetectionMethod: String, Codable {
+    enum DetectionMethod: String, Codable, CaseIterable {
         case aiAnalysis = "ai_analysis"
         case manualCalculation = "manual_calculation"
         case plaidVerification = "plaid_verification"

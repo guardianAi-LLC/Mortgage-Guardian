@@ -412,7 +412,7 @@ class PDFGenerator: ObservableObject {
         configuration: PDFConfiguration
     ) async throws -> Data {
 
-        let pdfMetaData = [
+        let pdfMetaData: [CFString: Any] = [
             kCGPDFContextCreator: "Mortgage Guardian",
             kCGPDFContextAuthor: context.user.fullName,
             kCGPDFContextTitle: template.title,
