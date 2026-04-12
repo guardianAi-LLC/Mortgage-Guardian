@@ -93,5 +93,7 @@ export const api = {
 
   health: {
     check: () => fetch('/health').then(r => r.json()),
+    live: () => fetch('/health/live').then(r => r.json()),
+    ready: () => fetch('/health/ready').then(r => r.json()),
   },
 }
