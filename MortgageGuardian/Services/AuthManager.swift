@@ -105,6 +105,31 @@ class AuthManager: ObservableObject {
         }
     }
 
+    func sendPasswordReset(email: String) async throws {
+        let signIn = try await SignIn.create(
+            strategy: .identifier(email)
+        )
+        _ = try await signIn.prepareFirstFactor(
+            strategy: .resetPasswordEmailCode()
+        )
+    }
+
+    func resetPassword(code: String, newPassword: String) async throws {
+        guard let signIn = Clerk.shared.client?.signIn else {
+            throw NSError(domain: "AuthManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "No pending password reset found."])
+        }
+        let result = try await signIn.attemptFirstFactor(
+            strategy: .resetPasswordEmailCode(code: code)
+        )
+        if result.status == .needsNewPassword {
+            _ = try await result.resetPassword(.init(password: newPassword))
+            updateUserInfo()
+            self.isSignedIn = true
+            await refreshToken()
+            startPeriodicTokenRefresh()
+        }
+    }
+
     func signOut() async throws {
         stopPeriodicTokenRefresh()
         try await Clerk.shared.signOut()

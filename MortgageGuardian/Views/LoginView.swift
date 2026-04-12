@@ -13,11 +13,16 @@ struct LoginView: View {
     @State private var verificationCode = ""
     @State private var successMessage = ""
     @State private var showingSuccess = false
+    @State private var showingForgotPassword = false
+    @State private var resetCode = ""
+    @State private var newPassword = ""
 
     var body: some View {
         NavigationView {
             VStack(spacing: 32) {
-                if showingVerification {
+                if showingForgotPassword {
+                    forgotPasswordView
+                } else if showingVerification {
                     verificationView
                 } else {
                     loginFormView
@@ -167,6 +172,21 @@ struct LoginView: View {
                     Text(isSignUpMode ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
                         .foregroundColor(.blue)
                 }
+
+                if !isSignUpMode {
+                    Button {
+                        guard !email.isEmpty else {
+                            errorMessage = "Enter your email address first, then tap Forgot Password."
+                            showingError = true
+                            return
+                        }
+                        forgotPassword()
+                    } label: {
+                        Text("Forgot Password?")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
             .disabled(isLoading)
 
@@ -176,6 +196,65 @@ struct LoginView: View {
             Text("Secure, private, and RESPA-compliant")
                 .font(.caption)
                 .foregroundColor(.secondary)
+        }
+    }
+
+    // MARK: - Forgot Password View
+
+    private var forgotPasswordView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "key.fill")
+                .font(.system(size: 50))
+                .foregroundColor(.blue)
+                .accessibilityLabel("Reset password")
+
+            Text("Reset Password")
+                .font(.title2)
+                .fontWeight(.bold)
+
+            Text("Enter the 6-digit code sent to \(email) and your new password.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+
+            TextField("Reset Code", text: $resetCode)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.center)
+                .font(.title3)
+
+            SecureField("New Password", text: $newPassword)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .textContentType(.newPassword)
+
+            Button {
+                resetPassword()
+            } label: {
+                HStack {
+                    if isLoading {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(0.8)
+                    }
+                    Text("Reset Password")
+                }
+                .font(.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue)
+                .cornerRadius(12)
+            }
+            .disabled(isLoading || resetCode.isEmpty || newPassword.isEmpty)
+
+            Button("Back to Sign In") {
+                showingForgotPassword = false
+                resetCode = ""
+                newPassword = ""
+            }
+            .foregroundColor(.blue)
+
+            Spacer()
         }
     }
 
@@ -225,6 +304,40 @@ struct LoginView: View {
             } catch {
                 await MainActor.run {
                     errorMessage = "Invalid verification code. Please try again."
+                    showingError = true
+                    isLoading = false
+                }
+            }
+        }
+    }
+
+    private func forgotPassword() {
+        isLoading = true
+        Task {
+            do {
+                try await authManager.sendPasswordReset(email: email)
+                await MainActor.run {
+                    showingForgotPassword = true
+                    isLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Unable to send reset code. Check your email and try again."
+                    showingError = true
+                    isLoading = false
+                }
+            }
+        }
+    }
+
+    private func resetPassword() {
+        isLoading = true
+        Task {
+            do {
+                try await authManager.resetPassword(code: resetCode, newPassword: newPassword)
+            } catch {
+                await MainActor.run {
+                    errorMessage = userFriendlyError(error)
                     showingError = true
                     isLoading = false
                 }
