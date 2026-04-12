@@ -110,12 +110,7 @@ None.
 
 ### Pending Todos
 
-5 todos in `.planning/todos/pending/`:
-- Build web dashboard frontend (ui)
-- Close branch coverage gap to 90% (testing)
-- Complete iOS app TODOs (general)
-- Production deployment dry run (tooling)
-- Codify Supabase database migrations (database)
+None — all todos resolved. Web dashboard frontend already exists in this repo (Next.js 15 + Clerk + React Query).
 
 ### Blockers/Concerns Carried Forward
 
