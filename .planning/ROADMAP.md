@@ -11,6 +11,7 @@ Mortgage Guardian 2.0 roadmap tracking milestones from MVP hardening through for
 - ✅ [v4.0 Bug Fix & Stability Sprint](milestones/v4.0-ROADMAP.md) (Phases 18-21, 20 plans) — SHIPPED 2026-03-30
 - ✅ **v5.0 Production Readiness** (Phases 22-31, 24 plans) — SHIPPED 2026-04-07
 - ✅ **v6.0 iOS App Completion** (Phases 32-40, ~35 plans) — SHIPPED 2026-04-12
+- 🚧 **v7.0 Web Dashboard** — Phases 41-50 (in progress)
 
 ## Completed Milestones
 
@@ -347,6 +348,125 @@ Plans:
 
 ---
 
+### 🚧 v7.0 Web Dashboard (In Progress)
+
+**Milestone Goal:** Complete the Next.js web dashboard as the browser counterpart to the iOS app — wire existing UI components to the Express backend, add analytics visualizations, Plaid bank linking, and deploy to production.
+
+**Constraints:**
+- Frontend already has working pages: dashboard, cases, documents, analysis, reports, letters
+- API client (`lib/api.ts`) and React Query hooks (`lib/hooks.ts`) already implemented
+- Clerk auth already integrated
+- Must work against same Express backend as iOS app
+- Recharts already imported but unused — wire up for analytics
+- Next.js 16 + React 19 + Tailwind v4 stack
+
+#### Phase 41: API Proxy & End-to-End Wiring
+
+**Goal**: Wire Next.js frontend to Express backend — API proxy routes, CORS configuration, verify all existing hooks work end-to-end with real data
+**Depends on**: v6.0 milestone complete
+**Research**: Likely (Next.js 16 rewrites/middleware proxy patterns)
+**Research topics**: Next.js 16 API route proxying, middleware-based auth forwarding, Clerk JWT in server components
+**Plans**: TBD
+
+Plans:
+- [ ] 41-01: TBD (run /gsd:plan-phase 41 to break down)
+
+#### Phase 42: Document Library & Management
+
+**Goal**: Standalone documents page with pagination, search/filter by type and status, batch operations (delete, re-analyze), document detail view
+**Depends on**: Phase 41
+**Research**: Unlikely (internal patterns, existing document components)
+**Plans**: TBD
+
+Plans:
+- [ ] 42-01: TBD
+
+#### Phase 43: Analytics Dashboard & Visualizations
+
+**Goal**: Recharts integration — case trend charts, risk distribution, finding severity breakdown, portfolio-level stats, confidence score histograms
+**Depends on**: Phase 41
+**Research**: Unlikely (Recharts already in dependencies, standard chart patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 43-01: TBD
+
+#### Phase 44: Plaid Bank Integration UI
+
+**Goal**: Bank account linking flow (Plaid Link web SDK), transaction display, cross-reference verification results, account management
+**Depends on**: Phase 41
+**Research**: Likely (Plaid Link web SDK, react-plaid-link integration)
+**Research topics**: react-plaid-link current API, Link token flow in Next.js, transaction display patterns
+**Plans**: TBD
+
+Plans:
+- [ ] 44-01: TBD
+
+#### Phase 45: Real-Time Pipeline & Notifications
+
+**Goal**: Live document processing status updates (polling or SSE), toast notifications for pipeline completion, auto-refresh on analysis ready
+**Depends on**: Phase 42
+**Research**: Likely (SSE vs polling trade-offs in Next.js, toast notification libraries)
+**Research topics**: Server-Sent Events in Express + Next.js, sonner/react-hot-toast integration
+**Plans**: TBD
+
+Plans:
+- [ ] 45-01: TBD
+
+#### Phase 46: Advanced Search & Filtering
+
+**Goal**: Global search across cases and documents, case status filters, date range filters, finding severity filters, saved filter presets
+**Depends on**: Phase 42
+**Research**: Unlikely (internal patterns, standard search/filter UI)
+**Plans**: TBD
+
+Plans:
+- [ ] 46-01: TBD
+
+#### Phase 47: Settings, Profile & Account Management
+
+**Goal**: User profile page, notification preferences, data export (cases/documents/reports), account deletion, API key management
+**Depends on**: Phase 41
+**Research**: Unlikely (Clerk user management, internal patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 47-01: TBD
+
+#### Phase 48: Responsive Polish & Accessibility
+
+**Goal**: Mobile-first responsive refinement, WCAG 2.1 AA compliance, keyboard navigation, screen reader support, dark/light theme toggle
+**Depends on**: Phase 47
+**Research**: Unlikely (established accessibility patterns, existing dark theme)
+**Plans**: TBD
+
+Plans:
+- [ ] 48-01: TBD
+
+#### Phase 49: E2E Testing & Quality Assurance
+
+**Goal**: Playwright E2E tests for all critical flows, error boundary coverage, loading/empty state verification, cross-browser testing
+**Depends on**: Phase 48
+**Research**: Likely (Playwright setup with Clerk auth, Next.js testing patterns)
+**Research topics**: Playwright with Clerk test tokens, Next.js E2E testing best practices
+**Plans**: TBD
+
+Plans:
+- [ ] 49-01: TBD
+
+#### Phase 50: Production Build & Deployment
+
+**Goal**: Vercel production deployment, SEO optimization, performance tuning (Core Web Vitals), monitoring verification, go-live checklist
+**Depends on**: Phase 49
+**Research**: Likely (Vercel deployment config for Next.js 16, SEO for SPA-like dashboard)
+**Research topics**: Vercel project configuration, Next.js 16 production optimizations, Sentry source maps on Vercel
+**Plans**: TBD
+
+Plans:
+- [ ] 50-01: TBD
+
+---
+
 ### v4.0 Bug Fix & Stability Sprint — SHIPPED 2026-03-30
 
 **Milestone Goal:** Comprehensive bug fixing across backend, frontend, and analysis pipeline to improve reliability, accuracy, and usability. Bug fixes only — no new features.
@@ -453,5 +573,15 @@ Plans:
 | 38. Settings, Account Management & Persistence | v6.0 | 4/4 | Complete | 2026-04-09 |
 | 39. UI/UX Polish & App Store Assets | v6.0 | 5/5 | Complete | 2026-04-09 |
 | 40. End-to-End Testing & TestFlight Prep | v6.0 | 3/3 | Complete | 2026-04-12 |
+| 41. API Proxy & End-to-End Wiring | v7.0 | 0/? | Not started | - |
+| 42. Document Library & Management | v7.0 | 0/? | Not started | - |
+| 43. Analytics Dashboard & Visualizations | v7.0 | 0/? | Not started | - |
+| 44. Plaid Bank Integration UI | v7.0 | 0/? | Not started | - |
+| 45. Real-Time Pipeline & Notifications | v7.0 | 0/? | Not started | - |
+| 46. Advanced Search & Filtering | v7.0 | 0/? | Not started | - |
+| 47. Settings, Profile & Account Management | v7.0 | 0/? | Not started | - |
+| 48. Responsive Polish & Accessibility | v7.0 | 0/? | Not started | - |
+| 49. E2E Testing & Quality Assurance | v7.0 | 0/? | Not started | - |
+| 50. Production Build & Deployment | v7.0 | 0/? | Not started | - |
 
-**Total Plans:** 32 plans across 9 phases (v2.0) — ALL COMPLETE | 42 plans across 8 phases (v3.0) — ALL COMPLETE | 20 plans across 4 phases (v4.0) — ALL COMPLETE | 24 plans across 10 phases (v5.0) — ALL COMPLETE | ~35 plans across 9 phases (v6.0) — ALL COMPLETE
+**Total Plans:** 32 plans across 9 phases (v2.0) — ALL COMPLETE | 42 plans across 8 phases (v3.0) — ALL COMPLETE | 20 plans across 4 phases (v4.0) — ALL COMPLETE | 24 plans across 10 phases (v5.0) — ALL COMPLETE | ~35 plans across 9 phases (v6.0) — ALL COMPLETE | v7.0 in progress (10 phases)
