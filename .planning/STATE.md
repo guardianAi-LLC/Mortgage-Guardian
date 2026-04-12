@@ -9,9 +9,9 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 40 of 40 (E2E Testing & TestFlight)
-Plan: 02 of 03 complete
-Status: Executing Phase 40
-Last activity: 2026-04-11 - E2E flow tests, CI test enablement
+Plan: 03 of 03 complete
+Status: v6.0 MILESTONE COMPLETE
+Last activity: 2026-04-12 - Archive build verified, forgot password added, TestFlight checklist finalized
 
 Progress: ███████████████ 100%
 
@@ -102,6 +102,7 @@ v6.0 Phase 39-04: Error display in AIMarketTimingAnalyzer, AIScenarioAnalyzer, P
 v6.0 Phase 39-05: App Store metadata created. Visual consistency audit — shadow/opacity harmonized. Phase 39 complete.
 v6.0 Phase 40-01: Test target registered in Xcode project/scheme. Fixed 47 Swift files for main target compilation. Test target MockData/MockServices need data model alignment. Main target builds cleanly.
 v6.0 Phase 40-02: EndToEndFlowTests.swift with 25 integration tests (app launch, document flow, analysis flow, settings flow). CI workflow test step enabled with continue-on-error and result artifact upload.
+v6.0 Phase 40-03: Archive build verified (ARCHIVE SUCCEEDED). Fixed 3 compilation errors (MainActor isolation, #if guard, CameraView init). Added forgot password flow (Clerk resetPasswordEmailCode). TestFlight checklist finalized. Phase 40 complete — v6.0 milestone complete.
 
 ### Deferred Issues
 
@@ -126,10 +127,10 @@ None.
 - Milestone v3.0 shipped: 2026-03-15 (Phases 10-17, 42 plans)
 - Milestone v4.0 shipped: 2026-03-30 (Phases 18-21, 20 plans) — Bug Fix & Stability Sprint
 - Milestone v5.0 shipped: 2026-04-07 (Phases 22-31, 24 plans) — Production Readiness
-- Milestone v6.0 created: 2026-04-07 — iOS App Completion, 9 phases (Phase 32-40)
+- Milestone v6.0 shipped: 2026-04-12 (Phases 32-40, ~35 plans) — iOS App Completion
 
 ## Session Continuity
 
-Last session: 2026-04-11
-Stopped at: Phase 40-02 complete, ready for 40-03
+Last session: 2026-04-12
+Stopped at: v6.0 milestone complete — all 40 phases, ~35 v6.0 plans shipped
 Resume file: None

@@ -10,7 +10,7 @@ Mortgage Guardian 2.0 roadmap tracking milestones from MVP hardening through for
 - ✅ [v3.0 Forensic Analysis Engine](milestones/v3.0-ROADMAP.md) (Phases 10-17, 42 plans) — SHIPPED 2026-03-15
 - ✅ [v4.0 Bug Fix & Stability Sprint](milestones/v4.0-ROADMAP.md) (Phases 18-21, 20 plans) — SHIPPED 2026-03-30
 - ✅ **v5.0 Production Readiness** (Phases 22-31, 24 plans) — SHIPPED 2026-04-07
-- 🚧 **v6.0 iOS App Completion** — Phases 32-40 (in progress)
+- ✅ **v6.0 iOS App Completion** (Phases 32-40, ~35 plans) — SHIPPED 2026-04-12
 
 ## Completed Milestones
 
@@ -215,7 +215,7 @@ Plans:
 
 ---
 
-### 🚧 v6.0 iOS App Completion (In Progress)
+### v6.0 iOS App Completion — SHIPPED 2026-04-12
 
 **Milestone Goal:** Transform the iOS app from a sophisticated prototype with 60+ TODOs into an App Store-ready product backed by the Express API — single backend for web + mobile.
 
@@ -343,7 +343,7 @@ Plans:
 Plans:
 - [x] 40-01: Test Suite Verification & Fixes (test target registration, 47 Swift file build fixes, main target compiles) — 2026-04-11
 - [x] 40-02: E2E Flow Tests & CI Enablement -- 2026-04-11
-- [ ] 40-03: TestFlight Archive & Submission Prep
+- [x] 40-03: TestFlight Archive & Submission Prep (archive verified, forgot password, checklist) — 2026-04-12
 
 ---
 
@@ -452,6 +452,6 @@ Plans:
 | 37. Letter Generation & Export Features | v6.0 | 3/3 | Complete | 2026-04-09 |
 | 38. Settings, Account Management & Persistence | v6.0 | 4/4 | Complete | 2026-04-09 |
 | 39. UI/UX Polish & App Store Assets | v6.0 | 5/5 | Complete | 2026-04-09 |
-| 40. End-to-End Testing & TestFlight Prep | v6.0 | 2/3 | In progress | - |
+| 40. End-to-End Testing & TestFlight Prep | v6.0 | 3/3 | Complete | 2026-04-12 |
 
-**Total Plans:** 32 plans across 9 phases (v2.0) — ALL COMPLETE | 42 plans across 8 phases (v3.0) — ALL COMPLETE | 20 plans across 4 phases (v4.0) — ALL COMPLETE | 24 plans across 10 phases (v5.0) — ALL COMPLETE | v6.0 in progress
+**Total Plans:** 32 plans across 9 phases (v2.0) — ALL COMPLETE | 42 plans across 8 phases (v3.0) — ALL COMPLETE | 20 plans across 4 phases (v4.0) — ALL COMPLETE | 24 plans across 10 phases (v5.0) — ALL COMPLETE | ~35 plans across 9 phases (v6.0) — ALL COMPLETE
