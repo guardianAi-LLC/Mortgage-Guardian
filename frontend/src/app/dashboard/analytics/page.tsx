@@ -17,6 +17,8 @@ import {
   Pie,
   Cell,
   ResponsiveContainer,
+  AreaChart,
+  Area,
 } from 'recharts'
 import {
   BarChart3,
@@ -183,6 +185,67 @@ function RiskDistributionChart({ data }: { data: Record<string, number> }) {
   )
 }
 
+function CaseTrendChart({ data }: { data: Array<{ month: string; count: number }> }) {
+  const hasData = data.length > 0 && data.some((d) => d.count > 0)
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 min-h-[300px] flex flex-col">
+      <h3 className="text-white font-semibold text-lg mb-4">Case Trend</h3>
+      {!hasData ? (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-gray-500">No data</p>
+        </div>
+      ) : (
+        <div className="flex-1">
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+              <defs>
+                <linearGradient id="caseTrendFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.15} />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
+              <XAxis
+                dataKey="month"
+                tick={{ fill: '#a1a1aa', fontSize: 12 }}
+                axisLine={{ stroke: '#3f3f46' }}
+                tickLine={false}
+              />
+              <YAxis
+                allowDecimals={false}
+                tick={{ fill: '#a1a1aa', fontSize: 12 }}
+                axisLine={{ stroke: '#3f3f46' }}
+                tickLine={false}
+              />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null
+                  return (
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm shadow-lg">
+                      <p className="text-white font-medium">{label}</p>
+                      <p className="text-gray-400">{payload[0].value} cases</p>
+                    </div>
+                  )
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="count"
+                stroke="#3b82f6"
+                strokeWidth={2}
+                fill="url(#caseTrendFill)"
+                dot={{ fill: '#3b82f6', strokeWidth: 0, r: 4 }}
+                activeDot={{ fill: '#3b82f6', strokeWidth: 2, stroke: '#fff', r: 5 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function LoadingSkeleton() {
   return (
     <div className="space-y-6">
@@ -290,7 +353,7 @@ export default function AnalyticsPage() {
 
           {/* Fourth row: Case Trend + Confidence Distribution */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ChartPlaceholder title="Case Trend" />
+            <CaseTrendChart data={data.casesByMonth} />
             <ChartPlaceholder title="Confidence Distribution" />
           </div>
         </div>
