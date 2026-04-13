@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FolderOpen, FileText } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, FileText, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Cases', href: '/dashboard/cases', icon: FolderOpen },
   { label: 'Documents', href: '/dashboard/documents', icon: FileText },
+  { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
 ]
 
 interface SidebarProps {
