@@ -20,6 +20,7 @@ export interface Document {
   document_type: string
   analysis_report?: AnalysisReport
   created_at: string
+  pipeline_status?: string
 }
 
 export interface AnalysisReport {

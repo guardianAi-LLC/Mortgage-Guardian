@@ -66,6 +66,8 @@ export const api = {
       fetchWithAuth(`/documents/${id}/complete`, token, { method: 'POST' }),
     retry: (token: string, id: string) =>
       fetchWithAuth(`/documents/${id}/retry`, token, { method: 'POST' }),
+    delete: (token: string, id: string) =>
+      fetchWithAuth(`/documents/${id}`, token, { method: 'DELETE' }),
   },
 
   forensic: {

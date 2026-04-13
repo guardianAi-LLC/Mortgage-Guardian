@@ -4,7 +4,7 @@ import { useAuth } from '@clerk/nextjs'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { api } from './api'
-import type { Case, ConsolidatedReport, PipelineStatus } from './types'
+import type { Case, ConsolidatedReport, Document, PipelineStatus } from './types'
 
 // Backend returns snake_case from Supabase; frontend uses camelCase
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -167,6 +167,74 @@ export function useAddDocumentToCase() {
     },
     onSuccess: (_, { caseId }) => {
       queryClient.invalidateQueries({ queryKey: ['cases', caseId] })
+    },
+  })
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapDocument(raw: any): Document {
+  return {
+    document_id: raw.document_id ?? raw.documentId,
+    file_name: raw.file_name ?? raw.fileName,
+    document_type: raw.document_type ?? raw.documentType,
+    analysis_report: raw.analysis_report ?? raw.analysisReport,
+    created_at: raw.created_at ?? raw.createdAt,
+    pipeline_status: raw.pipeline_status ?? raw.pipelineStatus,
+  }
+}
+
+export function useDocuments(params?: { limit?: number; offset?: number }) {
+  const getToken = useApiToken()
+  return useQuery<{ documents: Document[]; total: number }>({
+    queryKey: ['documents', params],
+    queryFn: async () => {
+      const token = await getToken()
+      const res = await api.documents.list(token, params)
+      const list = res.documents ?? res
+      const documents = Array.isArray(list) ? list.map(mapDocument) : []
+      return { documents, total: res.total ?? documents.length }
+    },
+  })
+}
+
+export function useDocument(documentId: string) {
+  const getToken = useApiToken()
+  return useQuery<Document>({
+    queryKey: ['documents', documentId],
+    queryFn: async () => {
+      const token = await getToken()
+      const raw = await api.documents.get(token, documentId)
+      return mapDocument(raw)
+    },
+    enabled: !!documentId,
+  })
+}
+
+export function useDeleteDocument() {
+  const getToken = useApiToken()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (documentId: string) => {
+      const token = await getToken()
+      return api.documents.delete(token, documentId)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+    },
+  })
+}
+
+export function useRetryDocument() {
+  const getToken = useApiToken()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (documentId: string) => {
+      const token = await getToken()
+      return api.documents.retry(token, documentId)
+    },
+    onSuccess: (_, documentId) => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+      queryClient.invalidateQueries({ queryKey: ['document-status', documentId] })
     },
   })
 }
