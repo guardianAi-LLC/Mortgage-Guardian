@@ -1,12 +1,21 @@
 'use client'
 
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { FileText } from 'lucide-react'
-import { useDocuments } from '@/lib/hooks'
+import { useDocuments, useDeleteDocument, useRetryDocument } from '@/lib/hooks'
 import { DocumentFilters } from '@/components/document-filters'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog'
 import {
   Table,
   TableHeader,
@@ -76,6 +85,12 @@ export default function DocumentsPage() {
   const [sortBy, setSortBy] = useState('newest')
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [batchStatus, setBatchStatus] = useState('')
+  const batchStatusTimer = useRef<ReturnType<typeof setTimeout>>(null)
+
+  const deleteDoc = useDeleteDocument()
+  const retryDoc = useRetryDocument()
 
   const { data, isLoading } = useDocuments({ limit: 500, offset: 0 })
 
@@ -165,6 +180,69 @@ export default function DocumentsPage() {
   const pageAllSelected = documents.length > 0 && documents.every(d => selectedIds.has(d.document_id))
   const pageSomeSelected = documents.some(d => selectedIds.has(d.document_id)) && !pageAllSelected
 
+  const clearBatchStatusAfterDelay = useCallback(() => {
+    if (batchStatusTimer.current) clearTimeout(batchStatusTimer.current)
+    batchStatusTimer.current = setTimeout(() => setBatchStatus(''), 3000)
+  }, [])
+
+  const handleBatchDelete = useCallback(async () => {
+    const ids = Array.from(selectedIds)
+    const total = ids.length
+    let successes = 0
+    let failures = 0
+    const failedIds: string[] = []
+
+    setShowDeleteDialog(false)
+
+    for (let i = 0; i < ids.length; i++) {
+      setBatchStatus(`Deleting ${i + 1} of ${total}...`)
+      try {
+        await deleteDoc.mutateAsync(ids[i])
+        successes++
+      } catch {
+        failures++
+        failedIds.push(ids[i])
+      }
+    }
+
+    if (failures > 0) {
+      setSelectedIds(new Set(failedIds))
+      setBatchStatus(`${successes} deleted, ${failures} failed`)
+    } else {
+      setSelectedIds(new Set())
+      setBatchStatus(`${successes} deleted successfully`)
+    }
+    clearBatchStatusAfterDelay()
+  }, [selectedIds, deleteDoc, clearBatchStatusAfterDelay])
+
+  const handleBatchReanalyze = useCallback(async () => {
+    const ids = Array.from(selectedIds)
+    const total = ids.length
+    let successes = 0
+    let failures = 0
+    const failedIds: string[] = []
+
+    for (let i = 0; i < ids.length; i++) {
+      setBatchStatus(`Re-analyzing ${i + 1} of ${total}...`)
+      try {
+        await retryDoc.mutateAsync(ids[i])
+        successes++
+      } catch {
+        failures++
+        failedIds.push(ids[i])
+      }
+    }
+
+    if (failures > 0) {
+      setSelectedIds(new Set(failedIds))
+      setBatchStatus(`${successes} queued, ${failures} failed`)
+    } else {
+      setSelectedIds(new Set())
+      setBatchStatus(`${successes} queued for re-analysis`)
+    }
+    clearBatchStatusAfterDelay()
+  }, [selectedIds, retryDoc, clearBatchStatusAfterDelay])
+
   return (
     <div>
       <div className="flex items-center gap-3">
@@ -189,6 +267,63 @@ export default function DocumentsPage() {
         sortBy={sortBy}
         onSortChange={handleSortChange}
       />
+
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between bg-blue-950/50 border border-blue-800 rounded-lg p-3 mb-4">
+          <div className="flex items-center gap-3 text-sm text-blue-200">
+            <span>{selectedIds.size} document(s) selected</span>
+            {batchStatus && (
+              <span className="text-blue-400">{batchStatus}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+              className="text-gray-300 hover:text-white"
+            >
+              Clear
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBatchReanalyze}
+              disabled={!!batchStatus}
+              className="border-gray-600 text-gray-200 hover:bg-gray-800"
+            >
+              Re-analyze
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+              disabled={!!batchStatus}
+            >
+              Delete
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {selectedIds.size} Document(s)</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. The selected documents and their analysis results will be permanently deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button variant="destructive" onClick={handleBatchDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {isLoading ? (
         <Table>
