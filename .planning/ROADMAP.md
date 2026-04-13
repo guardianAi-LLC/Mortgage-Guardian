@@ -394,7 +394,7 @@ Plans:
 
 Plans:
 - [x] 43-01: Analytics page scaffold, useAnalytics hook, nav link — COMPLETE 2026-04-13
-- [ ] 43-02: Case status pie chart, risk distribution bar chart, case trend line chart
+- [x] 43-02: Case status pie chart, risk distribution bar chart, case trend line chart — COMPLETE 2026-04-13
 - [ ] 43-03: Finding severity bar chart, category breakdown, confidence histogram
 - [ ] 43-04: Portfolio stat cards, layout polish, human verification
 
