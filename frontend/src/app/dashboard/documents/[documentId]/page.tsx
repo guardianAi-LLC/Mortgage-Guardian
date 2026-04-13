@@ -66,7 +66,7 @@ function InfoItem({ icon: Icon, label, value, mono }: { icon: React.ElementType;
 export default function DocumentDetailPage({ params }: { params: Promise<{ documentId: string }> }) {
   const { documentId } = use(params)
   const router = useRouter()
-  const { data: document, isLoading } = useDocument(documentId)
+  const { data: document, isLoading, isError, refetch } = useDocument(documentId)
   const { data: pipelineStatus } = useDocumentStatus(documentId)
   const deleteDocument = useDeleteDocument()
   const retryDocument = useRetryDocument()
@@ -76,7 +76,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
   const isAnalyzed = currentStatus === 'analyzed' || currentStatus === 'complete'
   const isProcessing = currentStatus && !['complete', 'failed', 'analyzed'].includes(currentStatus)
 
-  const { data: analysis } = useDocumentAnalysis(documentId, isAnalyzed)
+  const { data: analysis, isLoading: analysisLoading, isError: analysisError, refetch: refetchAnalysis } = useDocumentAnalysis(documentId, isAnalyzed)
 
   if (isLoading) {
     return (
@@ -85,6 +85,32 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-40 rounded-xl" />
         <Skeleton className="h-60 rounded-xl" />
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="text-center py-16">
+        <div className="mb-4 rounded-full bg-red-900/30 p-4 inline-block">
+          <AlertTriangle className="h-8 w-8 text-red-400" />
+        </div>
+        <h3 className="text-lg font-medium text-white mb-1">Failed to load document</h3>
+        <p className="text-sm text-gray-400 max-w-sm mx-auto mb-6">
+          Something went wrong while fetching this document. Please try again.
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            className="border-gray-700 text-gray-300 hover:bg-gray-800"
+          >
+            Retry
+          </Button>
+          <Link href="/dashboard/documents" className="text-sm text-blue-400 hover:text-blue-300">
+            Back to Documents
+          </Link>
+        </div>
       </div>
     )
   }
@@ -177,7 +203,46 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
       )}
 
       {/* Analysis summary card */}
-      {isAnalyzed && analysis ? (
+      {isAnalyzed && analysisLoading ? (
+        <Card className="bg-gray-900 border-gray-800 mb-6">
+          <CardHeader>
+            <CardTitle className="text-gray-200 flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5" />
+              Analysis Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+            <div className="pt-4 border-t border-gray-800 space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+          </CardContent>
+        </Card>
+      ) : isAnalyzed && analysisError ? (
+        <Card className="bg-gray-900 border-gray-800 mb-6">
+          <CardContent className="py-8 text-center">
+            <AlertTriangle className="h-10 w-10 text-red-400 mx-auto mb-3" />
+            <p className="text-white text-sm font-medium">Could not load analysis</p>
+            <p className="text-gray-500 text-xs mt-1 mb-4">
+              There was a problem fetching the analysis results.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchAnalysis()}
+              className="border-gray-700 text-gray-300 hover:bg-gray-800"
+            >
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      ) : isAnalyzed && analysis ? (
         <Card className="bg-gray-900 border-gray-800 mb-6">
           <CardHeader>
             <CardTitle className="text-gray-200 flex items-center gap-2">

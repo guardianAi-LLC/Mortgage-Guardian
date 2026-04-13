@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { FileText } from 'lucide-react'
+import { FileText, AlertTriangle } from 'lucide-react'
 import { useDocuments, useDeleteDocument, useRetryDocument } from '@/lib/hooks'
 import { DocumentFilters } from '@/components/document-filters'
 import { Button } from '@/components/ui/button'
@@ -92,7 +92,7 @@ export default function DocumentsPage() {
   const deleteDoc = useDeleteDocument()
   const retryDoc = useRetryDocument()
 
-  const { data, isLoading } = useDocuments({ limit: 500, offset: 0 })
+  const { data, isLoading, isError, refetch } = useDocuments({ limit: 500, offset: 0 })
 
   const allDocuments = data?.documents ?? []
 
@@ -341,12 +341,55 @@ export default function DocumentsPage() {
             <LoadingRows />
           </TableBody>
         </Table>
-      ) : documents.length === 0 ? (
+      ) : isError ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="mb-4 rounded-full bg-red-900/30 p-4">
+            <AlertTriangle className="h-8 w-8 text-red-400" />
+          </div>
+          <h3 className="text-lg font-medium text-white mb-1">Failed to load documents</h3>
+          <p className="text-sm text-gray-400 max-w-sm mb-6">
+            Something went wrong while fetching your documents. Please try again.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            className="border-gray-700 text-gray-300 hover:bg-gray-800"
+          >
+            Retry
+          </Button>
+        </div>
+      ) : totalRaw === 0 ? (
         <EmptyState
           icon={FileText}
           title="No documents yet"
-          description="Upload documents to your cases to start the analysis process."
-        />
+          description="Upload documents to a case to start analysis."
+        >
+          <Link href="/dashboard">
+            <Button className="bg-[#2997FF] text-white hover:bg-[#2080E0]">
+              Go to Dashboard
+            </Button>
+          </Link>
+        </EmptyState>
+      ) : documents.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="No documents match your filters"
+          description="Try adjusting your search or filter criteria."
+        >
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSearch('')
+              setTypeFilter('all')
+              setStatusFilter('all')
+              setSortBy('newest')
+              setPage(0)
+            }}
+            className="border-gray-700 text-gray-300 hover:bg-gray-800"
+          >
+            Clear filters
+          </Button>
+        </EmptyState>
       ) : (
         <>
           <Table>
