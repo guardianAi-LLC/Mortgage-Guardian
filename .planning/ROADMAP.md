@@ -383,7 +383,7 @@ Plans:
 - [x] 42-02: Document search, filter, and sort — COMPLETE 2026-04-12
 - [x] 42-03: Batch selection and operations (delete, re-analyze) — COMPLETE 2026-04-12
 - [x] 42-04: Document detail view with info, pipeline status, analysis results — COMPLETE 2026-04-12
-- [ ] 42-05: TBD
+- [x] 42-05: UX polish — loading/empty/error states, human verification — COMPLETE 2026-04-13
 
 #### Phase 43: Analytics Dashboard & Visualizations
 

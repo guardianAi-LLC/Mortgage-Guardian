@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 42 of 50 (Document Library & Management)
-Plan: 04 of 05
-Status: Complete
-Last activity: 2026-04-12 - Plan 42-04 complete (document detail view page)
+Plan: 05 of 05
+Status: Complete — Phase 42 complete
+Last activity: 2026-04-13 - Plan 42-05 complete (UX polish, phase 42 done)
 
-Progress: ███░░░░░░░ 36%
+Progress: ███░░░░░░░ 38%
 
 ## Performance Metrics
 
@@ -108,6 +108,7 @@ v7.0 Phase 42-01: Document query hooks (useDocuments, useDocument, useDeleteDocu
 v7.0 Phase 42-02: DocumentFilters component with debounced search, type/status/sort dropdowns. Client-side filtering pipeline (limit=500 fetch). Processing status maps to ocr/classifying/analyzing. Pagination on filtered results with auto page reset.
 v7.0 Phase 42-03: Checkbox multi-select with select-all/indeterminate. Batch action bar with sequential delete (confirmation dialog) and re-analyze. Partial failure handling keeps failed IDs selected. Selection clears on filter change.
 v7.0 Phase 42-04: Document detail page at /dashboard/documents/[documentId]. Info card, pipeline status (DocumentStatus component), re-analyze/delete actions with confirmation. useDocumentAnalysis hook with conditional fetching. Analysis summary (risk level, completeness, key findings) and severity-sorted anomalies table.
+v7.0 Phase 42-05: Error/empty/loading state polish on both document pages. Filtered-empty vs no-documents distinction. Analysis loading skeleton and error state on detail page. Phase 42 complete — 5 plans shipped.
 
 ### Deferred Issues
 
@@ -132,6 +133,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12
-Stopped at: Phase 42-04 complete, ready for Phase 42-05
+Last session: 2026-04-13
+Stopped at: Phase 42 complete, ready for Phase 43 (Analytics Dashboard)
 Resume file: None
