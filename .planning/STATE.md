@@ -8,12 +8,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 **Current focus:** v7.0 Web Dashboard
 ## Current Position
 
-Phase: 41 of 50 (API Proxy & End-to-End Wiring)
+Phase: 42 of 50 (Document Library & Management)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-04-12 - Milestone v7.0 created
+Last activity: 2026-04-13 - Phase 41 complete (API proxy wiring)
 
-Progress: ░░░░░░░░░░ 0%
+Progress: █░░░░░░░░░ 10%
 
 ## Performance Metrics
 
@@ -103,6 +103,7 @@ v6.0 Phase 39-05: App Store metadata created. Visual consistency audit — shado
 v6.0 Phase 40-01: Test target registered in Xcode project/scheme. Fixed 47 Swift files for main target compilation. Test target MockData/MockServices need data model alignment. Main target builds cleanly.
 v6.0 Phase 40-02: EndToEndFlowTests.swift with 25 integration tests (app launch, document flow, analysis flow, settings flow). CI workflow test step enabled with continue-on-error and result artifact upload.
 v6.0 Phase 40-03: Archive build verified (ARCHIVE SUCCEEDED). Fixed 3 compilation errors (MainActor isolation, #if guard, CameraView init). Added forgot password flow (Clerk resetPasswordEmailCode). TestFlight checklist finalized. Phase 40 complete — v6.0 milestone complete.
+v7.0 Phase 41-01: Health endpoint proxy rewrites, Clerk JWT auth fix (removed Supabase template token), snake_case→camelCase response mapping via mapCase(). Supabase baseline migration pushed (9 tables). End-to-end verified: case CRUD, dashboard, health check. Phase 41 complete.
 
 ### Deferred Issues
 
@@ -127,6 +128,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12
-Stopped at: Milestone v7.0 initialization
+Last session: 2026-04-13
+Stopped at: Phase 41 complete, ready for Phase 42
 Resume file: None

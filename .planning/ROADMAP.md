@@ -366,10 +366,10 @@ Plans:
 **Depends on**: v6.0 milestone complete
 **Research**: Likely (Next.js 16 rewrites/middleware proxy patterns)
 **Research topics**: Next.js 16 API route proxying, middleware-based auth forwarding, Clerk JWT in server components
-**Plans**: TBD
+**Plans**: 1/1 complete
 
 Plans:
-- [ ] 41-01: TBD (run /gsd:plan-phase 41 to break down)
+- [x] 41-01: API proxy config, auth token fix, response mapping — COMPLETE 2026-04-13
 
 #### Phase 42: Document Library & Management
 
