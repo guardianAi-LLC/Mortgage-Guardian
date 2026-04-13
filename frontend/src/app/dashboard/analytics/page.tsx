@@ -6,6 +6,19 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/empty-state'
 import { useAnalytics } from '@/hooks/use-analytics'
 import {
+  BarChart as RechartsBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+} from 'recharts'
+import {
   BarChart3,
   Briefcase,
   FileText,
@@ -22,6 +35,150 @@ function ChartPlaceholder({ title }: { title: string }) {
       <div className="flex-1 flex items-center justify-center">
         <p className="text-gray-500">Chart coming in next plan</p>
       </div>
+    </div>
+  )
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  open: '#3b82f6',
+  in_review: '#f59e0b',
+  complete: '#10b981',
+  archived: '#71717a',
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  open: 'Open',
+  in_review: 'In Review',
+  complete: 'Complete',
+  archived: 'Archived',
+}
+
+function CasesByStatusChart({ data }: { data: Record<string, number> }) {
+  const total = Object.values(data).reduce((sum, v) => sum + v, 0)
+  const chartData = Object.entries(data).map(([name, value]) => ({
+    name: STATUS_LABELS[name] ?? name,
+    value,
+    key: name,
+  }))
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 min-h-[300px] flex flex-col">
+      <h3 className="text-white font-semibold text-lg mb-4">Cases by Status</h3>
+      {total === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-gray-500">No data</p>
+        </div>
+      ) : (
+        <div className="flex-1">
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="45%"
+                innerRadius={60}
+                outerRadius={90}
+                dataKey="value"
+                strokeWidth={0}
+              >
+                {chartData.map((entry) => (
+                  <Cell key={entry.key} fill={STATUS_COLORS[entry.key] ?? '#71717a'} />
+                ))}
+              </Pie>
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null
+                  const item = payload[0]
+                  const pct = total > 0 ? ((item.value as number) / total * 100).toFixed(1) : '0'
+                  return (
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm shadow-lg">
+                      <p className="text-white font-medium">{item.name}</p>
+                      <p className="text-gray-400">{item.value} ({pct}%)</p>
+                    </div>
+                  )
+                }}
+              />
+              <Legend
+                verticalAlign="bottom"
+                iconType="circle"
+                formatter={(value: string) => (
+                  <span className="text-sm text-zinc-400">{value}</span>
+                )}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const RISK_COLORS: Record<string, string> = {
+  critical: '#ef4444',
+  high: '#f97316',
+  medium: '#f59e0b',
+  low: '#10b981',
+  clean: '#3b82f6',
+}
+
+const RISK_LABELS: Record<string, string> = {
+  critical: 'Critical',
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+  clean: 'Clean',
+}
+
+function RiskDistributionChart({ data }: { data: Record<string, number> }) {
+  const total = Object.values(data).reduce((sum, v) => sum + v, 0)
+  const chartData = Object.entries(data).map(([name, value]) => ({
+    name: RISK_LABELS[name] ?? name,
+    value,
+    key: name,
+    fill: RISK_COLORS[name] ?? '#71717a',
+  }))
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 min-h-[300px] flex flex-col">
+      <h3 className="text-white font-semibold text-lg mb-4">Risk Distribution</h3>
+      {total === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-gray-500">No data</p>
+        </div>
+      ) : (
+        <div className="flex-1">
+          <ResponsiveContainer width="100%" height={300}>
+            <RechartsBarChart data={chartData} layout="vertical" margin={{ left: 10, right: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" horizontal={false} />
+              <XAxis type="number" tick={{ fill: '#a1a1aa', fontSize: 12 }} allowDecimals={false} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                tick={{ fill: '#a1a1aa', fontSize: 12 }}
+                width={70}
+              />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null
+                  const item = payload[0]
+                  return (
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm shadow-lg">
+                      <p className="text-white font-medium">{item.payload.name}</p>
+                      <p className="text-gray-400">{item.value} cases</p>
+                    </div>
+                  )
+                }}
+                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+              />
+              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                {chartData.map((entry) => (
+                  <Cell key={entry.key} fill={entry.fill} />
+                ))}
+              </Bar>
+            </RechartsBarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   )
 }
@@ -121,8 +278,8 @@ export default function AnalyticsPage() {
 
           {/* Second row: Cases by Status + Risk Distribution */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ChartPlaceholder title="Cases by Status" />
-            <ChartPlaceholder title="Risk Distribution" />
+            <CasesByStatusChart data={data.casesByStatus} />
+            <RiskDistributionChart data={data.riskDistribution} />
           </div>
 
           {/* Third row: Finding Severity + Top Categories */}
