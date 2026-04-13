@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { FileText } from 'lucide-react'
 import { useDocuments } from '@/lib/hooks'
@@ -56,6 +56,7 @@ function LoadingRows() {
     <>
       {Array.from({ length: 5 }).map((_, i) => (
         <TableRow key={i}>
+          <TableCell><Skeleton className="h-4 w-4" /></TableCell>
           <TableCell><Skeleton className="h-4 w-48" /></TableCell>
           <TableCell><Skeleton className="h-4 w-24" /></TableCell>
           <TableCell><Skeleton className="h-5 w-20" /></TableCell>
@@ -74,6 +75,8 @@ export default function DocumentsPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
   const { data, isLoading } = useDocuments({ limit: 500, offset: 0 })
 
   const allDocuments = data?.documents ?? []
@@ -83,6 +86,10 @@ export default function DocumentsPage() {
   const handleTypeChange = useCallback((v: string) => { setTypeFilter(v); resetPage() }, [resetPage])
   const handleStatusChange = useCallback((v: string) => { setStatusFilter(v); resetPage() }, [resetPage])
   const handleSortChange = useCallback((v: string) => { setSortBy(v); resetPage() }, [resetPage])
+
+  useEffect(() => {
+    setSelectedIds(new Set())
+  }, [search, typeFilter, statusFilter, sortBy])
 
   const filteredDocuments = useMemo(() => {
     let docs = allDocuments
@@ -134,12 +141,43 @@ export default function DocumentsPage() {
   const hasPrev = page > 0
   const hasNext = end < totalFiltered
 
+  const toggleOne = (id: string) => setSelectedIds(prev => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    return next
+  })
+
+  const toggleAll = () => {
+    const pageIds = documents.map(d => d.document_id)
+    const allSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.has(id))
+    if (allSelected) {
+      setSelectedIds(prev => {
+        const next = new Set(prev)
+        pageIds.forEach(id => next.delete(id))
+        return next
+      })
+    } else {
+      setSelectedIds(prev => new Set([...prev, ...pageIds]))
+    }
+  }
+
+  const pageAllSelected = documents.length > 0 && documents.every(d => selectedIds.has(d.document_id))
+  const pageSomeSelected = documents.some(d => selectedIds.has(d.document_id)) && !pageAllSelected
+
   return (
     <div>
-      <PageHeader
-        title="Documents"
-        description="All uploaded mortgage documents across your cases"
-      />
+      <div className="flex items-center gap-3">
+        <PageHeader
+          title="Documents"
+          description="All uploaded mortgage documents across your cases"
+        />
+        {selectedIds.size > 0 && (
+          <span className="ml-auto shrink-0 rounded-md bg-blue-900/60 px-2.5 py-1 text-xs font-medium text-blue-300">
+            {selectedIds.size} selected
+          </span>
+        )}
+      </div>
 
       <DocumentFilters
         search={search}
@@ -156,6 +194,7 @@ export default function DocumentsPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-gray-800 hover:bg-transparent">
+              <TableHead className="w-10"><Skeleton className="h-4 w-4" /></TableHead>
               <TableHead className="text-gray-400">File Name</TableHead>
               <TableHead className="text-gray-400">Type</TableHead>
               <TableHead className="text-gray-400">Status</TableHead>
@@ -178,6 +217,15 @@ export default function DocumentsPage() {
           <Table>
             <TableHeader>
               <TableRow className="border-gray-800 hover:bg-transparent">
+                <TableHead className="w-10">
+                  <input
+                    type="checkbox"
+                    checked={pageAllSelected}
+                    ref={(el) => { if (el) el.indeterminate = pageSomeSelected }}
+                    onChange={toggleAll}
+                    className="accent-blue-500 h-4 w-4 rounded border-gray-600 bg-gray-800"
+                  />
+                </TableHead>
                 <TableHead className="text-gray-400">File Name</TableHead>
                 <TableHead className="text-gray-400">Type</TableHead>
                 <TableHead className="text-gray-400">Status</TableHead>
@@ -193,6 +241,14 @@ export default function DocumentsPage() {
                     key={doc.document_id}
                     className="cursor-pointer border-gray-800 hover:bg-gray-800/50"
                   >
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(doc.document_id)}
+                        onChange={() => toggleOne(doc.document_id)}
+                        className="accent-blue-500 h-4 w-4 rounded border-gray-600 bg-gray-800"
+                      />
+                    </TableCell>
                     <TableCell>
                       <Link
                         href={`/dashboard/documents/${doc.document_id}`}
