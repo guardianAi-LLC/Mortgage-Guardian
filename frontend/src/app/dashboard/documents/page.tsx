@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { FileText } from 'lucide-react'
 import { useDocuments } from '@/lib/hooks'
+import { DocumentFilters } from '@/components/document-filters'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -68,20 +69,87 @@ function LoadingRows() {
 
 export default function DocumentsPage() {
   const [page, setPage] = useState(0)
-  const { data, isLoading } = useDocuments({ limit: PAGE_SIZE, offset: page * PAGE_SIZE })
+  const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [sortBy, setSortBy] = useState('newest')
 
-  const documents = data?.documents ?? []
-  const total = data?.total ?? 0
+  const { data, isLoading } = useDocuments({ limit: 500, offset: 0 })
+
+  const allDocuments = data?.documents ?? []
+
+  const resetPage = useCallback(() => setPage(0), [])
+  const handleSearchChange = useCallback((v: string) => { setSearch(v); resetPage() }, [resetPage])
+  const handleTypeChange = useCallback((v: string) => { setTypeFilter(v); resetPage() }, [resetPage])
+  const handleStatusChange = useCallback((v: string) => { setStatusFilter(v); resetPage() }, [resetPage])
+  const handleSortChange = useCallback((v: string) => { setSortBy(v); resetPage() }, [resetPage])
+
+  const filteredDocuments = useMemo(() => {
+    let docs = allDocuments
+
+    if (search) {
+      const lower = search.toLowerCase()
+      docs = docs.filter((doc) => doc.file_name.toLowerCase().includes(lower))
+    }
+
+    if (typeFilter !== 'all') {
+      docs = docs.filter((doc) => doc.document_type === typeFilter)
+    }
+
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'processing') {
+        docs = docs.filter((doc) =>
+          doc.pipeline_status === 'ocr' ||
+          doc.pipeline_status === 'classifying' ||
+          doc.pipeline_status === 'analyzing'
+        )
+      } else {
+        docs = docs.filter((doc) => doc.pipeline_status === statusFilter)
+      }
+    }
+
+    docs = [...docs].sort((a, b) => {
+      switch (sortBy) {
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        case 'name_asc':
+          return a.file_name.localeCompare(b.file_name)
+        case 'name_desc':
+          return b.file_name.localeCompare(a.file_name)
+        case 'newest':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      }
+    })
+
+    return docs
+  }, [allDocuments, search, typeFilter, statusFilter, sortBy])
+
+  const totalRaw = allDocuments.length
+  const totalFiltered = filteredDocuments.length
+  const isFiltered = search || typeFilter !== 'all' || statusFilter !== 'all'
+  const documents = filteredDocuments.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
   const start = page * PAGE_SIZE + 1
-  const end = Math.min((page + 1) * PAGE_SIZE, total)
+  const end = Math.min((page + 1) * PAGE_SIZE, totalFiltered)
   const hasPrev = page > 0
-  const hasNext = end < total
+  const hasNext = end < totalFiltered
 
   return (
     <div>
       <PageHeader
         title="Documents"
         description="All uploaded mortgage documents across your cases"
+      />
+
+      <DocumentFilters
+        search={search}
+        onSearchChange={handleSearchChange}
+        typeFilter={typeFilter}
+        onTypeChange={handleTypeChange}
+        statusFilter={statusFilter}
+        onStatusChange={handleStatusChange}
+        sortBy={sortBy}
+        onSortChange={handleSortChange}
       />
 
       {isLoading ? (
@@ -151,7 +219,9 @@ export default function DocumentsPage() {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4 px-2">
             <p className="text-sm text-gray-400">
-              Showing {start}–{end} of {total}
+              {isFiltered
+                ? `Showing ${totalFiltered} of ${totalRaw} documents`
+                : `Showing ${start}–${end} of ${totalRaw}`}
             </p>
             <div className="flex gap-2">
               <Button
