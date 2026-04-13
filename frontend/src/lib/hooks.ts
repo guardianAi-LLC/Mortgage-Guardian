@@ -4,7 +4,7 @@ import { useAuth } from '@clerk/nextjs'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { api } from './api'
-import type { Case, ConsolidatedReport, Document, PipelineStatus } from './types'
+import type { AnalysisReport, Case, ConsolidatedReport, Document, PipelineStatus } from './types'
 
 // Backend returns snake_case from Supabase; frontend uses camelCase
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -207,6 +207,18 @@ export function useDocument(documentId: string) {
       return mapDocument(raw)
     },
     enabled: !!documentId,
+  })
+}
+
+export function useDocumentAnalysis(documentId: string, enabled: boolean = false) {
+  const getToken = useApiToken()
+  return useQuery<AnalysisReport>({
+    queryKey: ['document-analysis', documentId],
+    queryFn: async () => {
+      const token = await getToken()
+      return api.documents.analysis(token, documentId)
+    },
+    enabled: !!documentId && enabled,
   })
 }
 

@@ -11,11 +11,23 @@ import {
   Hash,
   RefreshCw,
   Trash2,
+  AlertTriangle,
+  CheckCircle2,
+  ListChecks,
+  ShieldAlert,
 } from 'lucide-react'
-import { useDocument, useDocumentStatus, useDeleteDocument, useRetryDocument } from '@/lib/hooks'
+import { useDocument, useDocumentStatus, useDeleteDocument, useRetryDocument, useDocumentAnalysis } from '@/lib/hooks'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Dialog,
   DialogClose,
@@ -27,7 +39,17 @@ import {
 } from '@/components/ui/dialog'
 import { PageHeader } from '@/components/page-header'
 import { DocumentStatus } from '@/components/document-status'
+import { RiskBadge } from '@/components/risk-badge'
 import { formatRelativeTime } from '@/lib/utils'
+import type { Anomaly } from '@/lib/types'
+
+const SEVERITY_ORDER: Record<string, number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+  info: 4,
+}
 
 function InfoItem({ icon: Icon, label, value, mono }: { icon: React.ElementType; label: string; value?: string; mono?: boolean }) {
   return (
@@ -51,7 +73,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   const currentStatus = pipelineStatus?.status ?? document?.pipeline_status
+  const isAnalyzed = currentStatus === 'analyzed' || currentStatus === 'complete'
   const isProcessing = currentStatus && !['complete', 'failed', 'analyzed'].includes(currentStatus)
+
+  const { data: analysis } = useDocumentAnalysis(documentId, isAnalyzed)
 
   if (isLoading) {
     return (
@@ -87,6 +112,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
   function handleRetry() {
     retryDocument.mutate(documentId)
   }
+
+  const sortedAnomalies = analysis?.anomalies
+    ? [...analysis.anomalies].sort((a: Anomaly, b: Anomaly) => (SEVERITY_ORDER[a.severity] ?? 99) - (SEVERITY_ORDER[b.severity] ?? 99))
+    : []
 
   return (
     <div>
@@ -143,6 +172,113 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
           </CardHeader>
           <CardContent>
             <DocumentStatus documentId={documentId} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Analysis summary card */}
+      {isAnalyzed && analysis ? (
+        <Card className="bg-gray-900 border-gray-800 mb-6">
+          <CardHeader>
+            <CardTitle className="text-gray-200 flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5" />
+              Analysis Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Risk level */}
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-4 w-4 text-gray-500" />
+                <div>
+                  <p className="text-xs text-gray-400">Risk Level</p>
+                  <div className="mt-1">
+                    <RiskBadge level={analysis.summary.riskLevel as 'critical' | 'high' | 'medium' | 'low' | 'clean' | 'info'} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Completeness */}
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-4 w-4 text-gray-500" />
+                <div>
+                  <p className="text-xs text-gray-400">Completeness</p>
+                  <p className="text-sm text-white">
+                    {Math.round(analysis.completeness.score * 100)}%
+                    <span className="text-gray-500 ml-1">
+                      ({analysis.completeness.totalFound}/{analysis.completeness.totalExpected} fields)
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Anomalies count */}
+              <div className="flex items-center gap-3">
+                <ListChecks className="h-4 w-4 text-gray-500" />
+                <div>
+                  <p className="text-xs text-gray-400">Anomalies</p>
+                  <p className="text-sm text-white">{analysis.anomalies.length} found</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Key findings */}
+            {analysis.summary.keyFindings.length > 0 && (
+              <div className="pt-4 border-t border-gray-800">
+                <p className="text-xs text-gray-400 mb-2">Key Findings</p>
+                <ul className="space-y-1.5">
+                  {analysis.summary.keyFindings.map((finding: string, i: number) => (
+                    <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
+                      <span className="text-gray-600 mt-0.5">&#8226;</span>
+                      {finding}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : !isAnalyzed && !isProcessing && currentStatus !== 'failed' ? (
+        <Card className="bg-gray-900 border-gray-800 mb-6">
+          <CardContent className="py-8 text-center">
+            <FileText className="h-10 w-10 text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-400 text-sm">Analysis not yet available.</p>
+            <p className="text-gray-500 text-xs mt-1">
+              Click &ldquo;Re-analyze&rdquo; to start processing this document.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {/* Anomalies table */}
+      {isAnalyzed && analysis && sortedAnomalies.length > 0 && (
+        <Card className="bg-gray-900 border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-gray-200">Anomalies ({sortedAnomalies.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow className="border-gray-800 hover:bg-transparent">
+                  <TableHead className="text-gray-400">Field</TableHead>
+                  <TableHead className="text-gray-400">Type</TableHead>
+                  <TableHead className="text-gray-400">Severity</TableHead>
+                  <TableHead className="text-gray-400">Description</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedAnomalies.map((anomaly: Anomaly) => (
+                  <TableRow key={anomaly.id} className="border-gray-800">
+                    <TableCell className="text-gray-200 font-medium">{anomaly.field}</TableCell>
+                    <TableCell className="text-gray-400">{anomaly.type}</TableCell>
+                    <TableCell>
+                      <RiskBadge level={anomaly.severity} />
+                    </TableCell>
+                    <TableCell className="text-gray-300 max-w-md">{anomaly.description}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}
