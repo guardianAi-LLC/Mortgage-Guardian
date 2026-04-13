@@ -9,9 +9,9 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 42 of 50 (Document Library & Management)
-Plan: 03 of 05
+Plan: 04 of 05
 Status: Complete
-Last activity: 2026-04-12 - Plan 42-03 complete (batch selection & operations)
+Last activity: 2026-04-12 - Plan 42-04 complete (document detail view page)
 
 Progress: ███░░░░░░░ 36%
 
@@ -107,6 +107,7 @@ v7.0 Phase 41-01: Health endpoint proxy rewrites, Clerk JWT auth fix (removed Su
 v7.0 Phase 42-01: Document query hooks (useDocuments, useDocument, useDeleteDocument, useRetryDocument) with mapDocument() snake_case/camelCase normalizer. api.documents.delete added. pipeline_status field on Document type. Paginated /dashboard/documents list page with table, status badges, anomaly counts, loading skeletons, empty state.
 v7.0 Phase 42-02: DocumentFilters component with debounced search, type/status/sort dropdowns. Client-side filtering pipeline (limit=500 fetch). Processing status maps to ocr/classifying/analyzing. Pagination on filtered results with auto page reset.
 v7.0 Phase 42-03: Checkbox multi-select with select-all/indeterminate. Batch action bar with sequential delete (confirmation dialog) and re-analyze. Partial failure handling keeps failed IDs selected. Selection clears on filter change.
+v7.0 Phase 42-04: Document detail page at /dashboard/documents/[documentId]. Info card, pipeline status (DocumentStatus component), re-analyze/delete actions with confirmation. useDocumentAnalysis hook with conditional fetching. Analysis summary (risk level, completeness, key findings) and severity-sorted anomalies table.
 
 ### Deferred Issues
 
@@ -132,5 +133,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-12
-Stopped at: Phase 42-03 complete, ready for Phase 42-04
+Stopped at: Phase 42-04 complete, ready for Phase 42-05
 Resume file: None
