@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 42 of 50 (Document Library & Management)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-04-13 - Phase 41 complete (API proxy wiring)
+Plan: 01 of 05
+Status: Complete
+Last activity: 2026-04-12 - Plan 42-01 complete (document hooks & list page)
 
-Progress: █░░░░░░░░░ 10%
+Progress: █░░░░░░░░░ 12%
 
 ## Performance Metrics
 
@@ -104,6 +104,7 @@ v6.0 Phase 40-01: Test target registered in Xcode project/scheme. Fixed 47 Swift
 v6.0 Phase 40-02: EndToEndFlowTests.swift with 25 integration tests (app launch, document flow, analysis flow, settings flow). CI workflow test step enabled with continue-on-error and result artifact upload.
 v6.0 Phase 40-03: Archive build verified (ARCHIVE SUCCEEDED). Fixed 3 compilation errors (MainActor isolation, #if guard, CameraView init). Added forgot password flow (Clerk resetPasswordEmailCode). TestFlight checklist finalized. Phase 40 complete — v6.0 milestone complete.
 v7.0 Phase 41-01: Health endpoint proxy rewrites, Clerk JWT auth fix (removed Supabase template token), snake_case→camelCase response mapping via mapCase(). Supabase baseline migration pushed (9 tables). End-to-end verified: case CRUD, dashboard, health check. Phase 41 complete.
+v7.0 Phase 42-01: Document query hooks (useDocuments, useDocument, useDeleteDocument, useRetryDocument) with mapDocument() snake_case/camelCase normalizer. api.documents.delete added. pipeline_status field on Document type. Paginated /dashboard/documents list page with table, status badges, anomaly counts, loading skeletons, empty state.
 
 ### Deferred Issues
 
@@ -128,6 +129,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-13
-Stopped at: Phase 41 complete, ready for Phase 42
+Last session: 2026-04-12
+Stopped at: Phase 42-01 complete, ready for Phase 42-02
 Resume file: None
