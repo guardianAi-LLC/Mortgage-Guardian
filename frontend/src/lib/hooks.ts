@@ -6,6 +6,24 @@ import { useCallback } from 'react'
 import { api } from './api'
 import type { Case, ConsolidatedReport, PipelineStatus } from './types'
 
+// Backend returns snake_case from Supabase; frontend uses camelCase
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCase(raw: any): Case {
+  return {
+    id: raw.id,
+    caseName: raw.case_name ?? raw.caseName ?? '',
+    borrowerName: raw.borrower_name ?? raw.borrowerName,
+    propertyAddress: raw.property_address ?? raw.propertyAddress,
+    loanNumber: raw.loan_number ?? raw.loanNumber,
+    servicerName: raw.servicer_name ?? raw.servicerName,
+    status: raw.status ?? 'open',
+    notes: raw.notes,
+    documents: raw.documents,
+    created_at: raw.created_at,
+    updated_at: raw.updated_at,
+  }
+}
+
 // --------------------------------------------------------------------------
 // Auth token hook
 // --------------------------------------------------------------------------
@@ -31,7 +49,10 @@ export function useCases(params?: { status?: string }) {
     queryKey: ['cases', params],
     queryFn: async () => {
       const token = await getToken()
-      return api.cases.list(token, params)
+      const res = await api.cases.list(token, params)
+      // Backend returns { cases: [...], total, userId } — unwrap and map
+      const list = res.cases ?? res
+      return Array.isArray(list) ? list.map(mapCase) : []
     },
   })
 }
@@ -42,7 +63,8 @@ export function useCase(caseId: string) {
     queryKey: ['cases', caseId],
     queryFn: async () => {
       const token = await getToken()
-      return api.cases.get(token, caseId)
+      const raw = await api.cases.get(token, caseId)
+      return mapCase(raw)
     },
     enabled: !!caseId,
   })
