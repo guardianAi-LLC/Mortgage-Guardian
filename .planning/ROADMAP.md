@@ -390,10 +390,13 @@ Plans:
 **Goal**: Recharts integration — case trend charts, risk distribution, finding severity breakdown, portfolio-level stats, confidence score histograms
 **Depends on**: Phase 41
 **Research**: Unlikely (Recharts already in dependencies, standard chart patterns)
-**Plans**: TBD
+**Plans**: 4
 
 Plans:
-- [ ] 43-01: TBD
+- [ ] 43-01: Analytics page scaffold, useAnalytics hook, nav link
+- [ ] 43-02: Case status pie chart, risk distribution bar chart, case trend line chart
+- [ ] 43-03: Finding severity bar chart, category breakdown, confidence histogram
+- [ ] 43-04: Portfolio stat cards, layout polish, human verification
 
 #### Phase 44: Plaid Bank Integration UI
 
