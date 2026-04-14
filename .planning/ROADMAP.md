@@ -404,10 +404,13 @@ Plans:
 **Depends on**: Phase 41
 **Research**: Likely (Plaid Link web SDK, react-plaid-link integration)
 **Research topics**: react-plaid-link current API, Link token flow in Next.js, transaction display patterns
-**Plans**: TBD
+**Plans**: 4
 
 Plans:
-- [ ] 44-01: TBD
+- [ ] 44-01: Plaid API methods, react-plaid-link install, usePlaidLink hook, PlaidLinkButton component
+- [ ] 44-02: Bank accounts page with linked accounts list, link/unlink, expandable detail cards
+- [ ] 44-03: Transaction list with date/amount filters, mortgage highlighting, cross-reference verification
+- [ ] 44-04: UX polish, error states, responsive layout, human verification
 
 #### Phase 45: Real-Time Pipeline & Notifications
 
