@@ -9,9 +9,9 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 43 of 50 (Analytics Dashboard & Visualizations)
-Plan: 02 of 04
+Plan: 03 of 04
 Status: Complete
-Last activity: 2026-04-13 - Plan 43-02 complete (charts: status pie, risk bar, case trend area)
+Last activity: 2026-04-14 - Plan 43-03 complete (charts: severity bar, category breakdown, confidence histogram)
 
 Progress: ███░░░░░░░ 38%
 
@@ -111,6 +111,7 @@ v7.0 Phase 42-04: Document detail page at /dashboard/documents/[documentId]. Inf
 v7.0 Phase 42-05: Error/empty/loading state polish on both document pages. Filtered-empty vs no-documents distinction. Analysis loading skeleton and error state on detail page. Phase 42 complete — 5 plans shipped.
 v7.0 Phase 43-01: useAnalytics hook with 7 aggregated datasets (casesByStatus, casesByMonth, riskDistribution, severityBreakdown, categoryBreakdown, confidenceScores, portfolioStats). Analytics page scaffold at /dashboard/analytics with StatsCards, ChartPlaceholder grid, loading/empty/error states. Sidebar BarChart3 nav link.
 v7.0 Phase 43-02: Three Recharts visualizations — Cases by Status donut chart, Risk Distribution horizontal bar chart, Case Trend area chart. Dark theme styling (zinc-400 text, zinc-700 grid). BarChart aliased as RechartsBarChart to avoid lucide conflict.
+v7.0 Phase 43-03: Three more Recharts charts — Finding Severity vertical bar (per-severity colors via Cell), Top Categories horizontal bar (top 8), Confidence histogram (useMemo bucketing into 5 ranges). ChartPlaceholder removed — all 6 chart sections complete.
 
 ### Deferred Issues
 
@@ -135,6 +136,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-13
-Stopped at: Phase 43 plan 02 complete, ready for plan 03 (finding severity, category breakdown, confidence histogram)
+Last session: 2026-04-14
+Stopped at: Phase 43 plan 03 complete, ready for plan 04 (portfolio stat cards, layout polish, human verification)
 Resume file: None
