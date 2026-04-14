@@ -27,6 +27,7 @@ import {
   FileText,
   AlertTriangle,
   Activity,
+  ShieldAlert,
   AlertCircle,
   RefreshCw,
 } from 'lucide-react'
@@ -432,8 +433,8 @@ function LoadingSkeleton() {
   return (
     <div className="space-y-6">
       {/* Stats row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-24 bg-gray-800 rounded-xl" />
         ))}
       </div>
@@ -497,8 +498,8 @@ export default function AnalyticsPage() {
 
       {!isLoading && !isError && data && data.portfolioStats.totalCases > 0 && (
         <div className="space-y-6">
-          {/* Top row: 4 stat cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Top row: 5 stat cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <StatsCard
               label="Total Cases"
               value={data.portfolioStats.totalCases}
@@ -516,8 +517,13 @@ export default function AnalyticsPage() {
             />
             <StatsCard
               label="Avg Confidence"
-              value={`${data.portfolioStats.avgConfidence}%`}
+              value={`${data.portfolioStats.avgConfidence.toFixed(1)}%`}
               icon={Activity}
+            />
+            <StatsCard
+              label="High Risk"
+              value={data.portfolioStats.highRiskCount}
+              icon={ShieldAlert}
             />
           </div>
 
