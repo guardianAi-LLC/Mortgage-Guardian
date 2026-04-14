@@ -8,10 +8,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 **Current focus:** v7.0 Web Dashboard
 ## Current Position
 
-Phase: 43 of 50 (Analytics Dashboard & Visualizations)
-Plan: 04 of 04
-Status: Complete — Phase 43 done
-Last activity: 2026-04-14 - Plan 43-04 complete (High Risk stat card, layout polish, human-verified dashboard)
+Phase: 44 of 50 (Plaid Bank Integration UI)
+Plan: 01 of 04
+Status: In Progress — Plan 44-01 complete
+Last activity: 2026-04-14 - Plan 44-01 complete (react-plaid-link SDK, 6 API methods, 6 hooks, PlaidLinkButton)
 
 Progress: ███░░░░░░░ 38%
 
@@ -113,6 +113,7 @@ v7.0 Phase 43-01: useAnalytics hook with 7 aggregated datasets (casesByStatus, c
 v7.0 Phase 43-02: Three Recharts visualizations — Cases by Status donut chart, Risk Distribution horizontal bar chart, Case Trend area chart. Dark theme styling (zinc-400 text, zinc-700 grid). BarChart aliased as RechartsBarChart to avoid lucide conflict.
 v7.0 Phase 43-03: Three more Recharts charts — Finding Severity vertical bar (per-severity colors via Cell), Top Categories horizontal bar (top 8), Confidence histogram (useMemo bucketing into 5 ranges). ChartPlaceholder removed — all 6 chart sections complete.
 v7.0 Phase 43-04: 5th stat card (High Risk/ShieldAlert), avgConfidence toFixed(1), lg:grid-cols-5 stat grid. Human-verified complete dashboard. Phase 43 complete — 4 plans shipped.
+v7.0 Phase 44-01: react-plaid-link SDK, 6 api.plaid methods (POST body pattern), 5 Plaid types, 6 React Query hooks, PlaidLinkButton component with auto link token. --legacy-peer-deps for React 19.
 
 ### Deferred Issues
 
@@ -138,5 +139,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-14
-Stopped at: Phase 43 complete (4/4 plans), ready for Phase 44 (Plaid Bank Integration UI)
+Stopped at: Phase 44, Plan 01 complete (1/4 plans), ready for Plan 44-02 (bank accounts page)
 Resume file: None
