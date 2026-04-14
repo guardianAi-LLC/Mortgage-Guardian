@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { PageHeader } from '@/components/page-header'
 import { StatsCard } from '@/components/stats-card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -29,17 +30,6 @@ import {
   AlertCircle,
   RefreshCw,
 } from 'lucide-react'
-
-function ChartPlaceholder({ title }: { title: string }) {
-  return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 min-h-[300px] flex flex-col">
-      <h3 className="text-white font-semibold text-lg mb-4">{title}</h3>
-      <div className="flex-1 flex items-center justify-center">
-        <p className="text-gray-500">Chart coming in next plan</p>
-      </div>
-    </div>
-  )
-}
 
 const STATUS_COLORS: Record<string, string> = {
   open: '#3b82f6',
@@ -369,6 +359,75 @@ function CaseTrendChart({ data }: { data: Array<{ month: string; count: number }
   )
 }
 
+const CONFIDENCE_BUCKETS = [
+  { label: '0-20', min: 0, max: 20, color: '#ef4444' },
+  { label: '21-40', min: 21, max: 40, color: '#f97316' },
+  { label: '41-60', min: 41, max: 60, color: '#f59e0b' },
+  { label: '61-80', min: 61, max: 80, color: '#3b82f6' },
+  { label: '81-100', min: 81, max: 100, color: '#10b981' },
+]
+
+function ConfidenceHistogramChart({ scores }: { scores: number[] }) {
+  const chartData = useMemo(() => {
+    return CONFIDENCE_BUCKETS.map((bucket) => ({
+      name: bucket.label,
+      value: scores.filter((s) => s >= bucket.min && s <= bucket.max).length,
+      color: bucket.color,
+    }))
+  }, [scores])
+
+  const total = scores.length
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 min-h-[300px] flex flex-col">
+      <h3 className="text-white font-semibold text-lg mb-4">Confidence Distribution</h3>
+      {total === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-gray-500">No data</p>
+        </div>
+      ) : (
+        <div className="flex-1">
+          <ResponsiveContainer width="100%" height={300}>
+            <RechartsBarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" vertical={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fill: '#a1a1aa', fontSize: 12 }}
+                axisLine={{ stroke: '#3f3f46' }}
+                tickLine={false}
+              />
+              <YAxis
+                allowDecimals={false}
+                tick={{ fill: '#a1a1aa', fontSize: 12 }}
+                axisLine={{ stroke: '#3f3f46' }}
+                tickLine={false}
+              />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null
+                  const item = payload[0]
+                  return (
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm shadow-lg">
+                      <p className="text-white font-medium">{item.payload.name}%</p>
+                      <p className="text-gray-400">{item.value} documents</p>
+                    </div>
+                  )
+                }}
+                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+              />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} />
+                ))}
+              </Bar>
+            </RechartsBarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function LoadingSkeleton() {
   return (
     <div className="space-y-6">
@@ -477,7 +536,7 @@ export default function AnalyticsPage() {
           {/* Fourth row: Case Trend + Confidence Distribution */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <CaseTrendChart data={data.casesByMonth} />
-            <ChartPlaceholder title="Confidence Distribution" />
+            <ConfidenceHistogramChart scores={data.confidenceScores} />
           </div>
         </div>
       )}
