@@ -93,6 +93,21 @@ export const api = {
       fetchWithAuth(`/cases/${caseId}/report/letter`, token, { method: 'POST', body: JSON.stringify(data) }),
   },
 
+  plaid: {
+    createLinkToken: (token: string, data: { userId: string }) =>
+      fetchWithAuth('/plaid/link_token', token, { method: 'POST', body: JSON.stringify({ user_id: data.userId }) }),
+    exchangeToken: (token: string, data: { publicToken: string; institution?: object }) =>
+      fetchWithAuth('/plaid/exchange_token', token, { method: 'POST', body: JSON.stringify({ public_token: data.publicToken, institution: data.institution }) }),
+    getAccounts: (token: string, accessToken: string) =>
+      fetchWithAuth('/plaid/accounts', token, { method: 'POST', body: JSON.stringify({ access_token: accessToken }) }),
+    getTransactions: (token: string, data: { accessToken: string; startDate?: string; endDate?: string }) =>
+      fetchWithAuth('/plaid/transactions', token, { method: 'POST', body: JSON.stringify({ access_token: data.accessToken, start_date: data.startDate, end_date: data.endDate }) }),
+    getItem: (token: string, accessToken: string) =>
+      fetchWithAuth('/plaid/item', token, { method: 'POST', body: JSON.stringify({ access_token: accessToken }) }),
+    deleteItem: (token: string, accessToken: string) =>
+      fetchWithAuth('/plaid/item', token, { method: 'DELETE', body: JSON.stringify({ access_token: accessToken }) }),
+  },
+
   health: {
     check: () => fetch('/health').then(r => r.json()),
     live: () => fetch('/health/live').then(r => r.json()),

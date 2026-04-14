@@ -189,3 +189,52 @@ export interface DisputeLetter {
 
 export type RiskLevel = 'critical' | 'high' | 'medium' | 'low' | 'clean'
 export type CaseStatus = 'open' | 'in_review' | 'complete' | 'archived'
+
+// --------------------------------------------------------------------------
+// Plaid
+// --------------------------------------------------------------------------
+
+export interface PlaidAccount {
+  account_id: string
+  name: string
+  official_name?: string
+  type: string
+  subtype: string
+  mask?: string
+  balances: {
+    available: number | null
+    current: number | null
+    limit?: number | null
+    currency: string
+  }
+}
+
+export interface PlaidTransaction {
+  transaction_id: string
+  account_id: string
+  amount: number
+  date: string
+  name: string
+  merchant_name?: string
+  category?: string[]
+  pending: boolean
+}
+
+export interface PlaidItem {
+  item_id: string
+  institution_id: string
+  institution_name?: string
+  consent_expiration_time?: string
+  available_products?: string[]
+  billed_products?: string[]
+}
+
+export interface PlaidLinkResult {
+  linkToken: string
+  expiration: string
+}
+
+export interface PlaidExchangeResult {
+  access_token: string
+  item_id: string
+}
