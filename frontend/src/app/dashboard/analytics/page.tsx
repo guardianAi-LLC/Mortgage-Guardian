@@ -115,6 +115,129 @@ function CasesByStatusChart({ data }: { data: Record<string, number> }) {
   )
 }
 
+const SEVERITY_COLORS: Record<string, string> = {
+  critical: '#ef4444',
+  high: '#f97316',
+  medium: '#f59e0b',
+  low: '#10b981',
+  info: '#3b82f6',
+}
+
+const SEVERITY_LABELS: Record<string, string> = {
+  critical: 'Critical',
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+  info: 'Info',
+}
+
+function FindingSeverityChart({ data }: { data: Record<string, number> }) {
+  const total = Object.values(data).reduce((sum, v) => sum + v, 0)
+  const chartData = Object.entries(data).map(([name, value]) => ({
+    name: SEVERITY_LABELS[name] ?? name,
+    value,
+    key: name,
+    fill: SEVERITY_COLORS[name] ?? '#71717a',
+  }))
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 min-h-[300px] flex flex-col">
+      <h3 className="text-white font-semibold text-lg mb-4">Finding Severity</h3>
+      {total === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-gray-500">No data</p>
+        </div>
+      ) : (
+        <div className="flex-1">
+          <ResponsiveContainer width="100%" height={300}>
+            <RechartsBarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" vertical={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fill: '#a1a1aa', fontSize: 12 }}
+                axisLine={{ stroke: '#3f3f46' }}
+                tickLine={false}
+              />
+              <YAxis
+                allowDecimals={false}
+                tick={{ fill: '#a1a1aa', fontSize: 12 }}
+                axisLine={{ stroke: '#3f3f46' }}
+                tickLine={false}
+              />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null
+                  const item = payload[0]
+                  return (
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm shadow-lg">
+                      <p className="text-white font-medium">{item.payload.name}</p>
+                      <p className="text-gray-400">{item.value} findings</p>
+                    </div>
+                  )
+                }}
+                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+              />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry) => (
+                  <Cell key={entry.key} fill={entry.fill} />
+                ))}
+              </Bar>
+            </RechartsBarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TopCategoriesChart({ data }: { data: Record<string, number> }) {
+  const total = Object.values(data).reduce((sum, v) => sum + v, 0)
+  const chartData = Object.entries(data).map(([name, value]) => ({
+    name,
+    value,
+  }))
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 min-h-[300px] flex flex-col">
+      <h3 className="text-white font-semibold text-lg mb-4">Top Categories</h3>
+      {total === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-gray-500">No data</p>
+        </div>
+      ) : (
+        <div className="flex-1">
+          <ResponsiveContainer width="100%" height={300}>
+            <RechartsBarChart data={chartData} layout="vertical" margin={{ left: 10, right: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" horizontal={false} />
+              <XAxis type="number" tick={{ fill: '#a1a1aa', fontSize: 12 }} allowDecimals={false} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                tick={{ fill: '#a1a1aa', fontSize: 12 }}
+                width={120}
+              />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null
+                  const item = payload[0]
+                  return (
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm shadow-lg">
+                      <p className="text-white font-medium">{item.payload.name}</p>
+                      <p className="text-gray-400">{item.value} findings</p>
+                    </div>
+                  )
+                }}
+                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+              />
+              <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+            </RechartsBarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const RISK_COLORS: Record<string, string> = {
   critical: '#ef4444',
   high: '#f97316',
@@ -347,8 +470,8 @@ export default function AnalyticsPage() {
 
           {/* Third row: Finding Severity + Top Categories */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ChartPlaceholder title="Finding Severity" />
-            <ChartPlaceholder title="Top Categories" />
+            <FindingSeverityChart data={data.severityBreakdown} />
+            <TopCategoriesChart data={data.categoryBreakdown} />
           </div>
 
           {/* Fourth row: Case Trend + Confidence Distribution */}
