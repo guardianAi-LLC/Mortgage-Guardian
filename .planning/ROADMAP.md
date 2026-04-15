@@ -418,10 +418,12 @@ Plans:
 **Depends on**: Phase 42
 **Research**: Likely (SSE vs polling trade-offs in Next.js, toast notification libraries)
 **Research topics**: Server-Sent Events in Express + Next.js, sonner/react-hot-toast integration
-**Plans**: TBD
+**Plans**: 3
 
 Plans:
-- [ ] 45-01: TBD
+- [x] 45-01: Toast infrastructure (sonner) + smart document list polling — COMPLETE 2026-04-14
+- [ ] 45-02: Pipeline status toast notifications on document state transitions
+- [ ] 45-03: SSE or enhanced polling for real-time pipeline events
 
 #### Phase 46: Advanced Search & Filtering
 

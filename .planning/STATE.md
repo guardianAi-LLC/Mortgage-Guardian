@@ -8,10 +8,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 **Current focus:** v7.0 Web Dashboard
 ## Current Position
 
-Phase: 44 of 50 (Plaid Bank Integration UI)
-Plan: 01 of 04
-Status: In Progress — Plan 44-01 complete
-Last activity: 2026-04-14 - Plan 44-01 complete (react-plaid-link SDK, 6 API methods, 6 hooks, PlaidLinkButton)
+Phase: 45 of 50 (Real-Time Pipeline & Notifications)
+Plan: 01 of 03
+Status: In Progress — Plan 45-01 complete
+Last activity: 2026-04-14 - Plan 45-01 complete (sonner toast infrastructure, useDocuments smart polling)
 
 Progress: ███░░░░░░░ 38%
 
@@ -114,6 +114,7 @@ v7.0 Phase 43-02: Three Recharts visualizations — Cases by Status donut chart,
 v7.0 Phase 43-03: Three more Recharts charts — Finding Severity vertical bar (per-severity colors via Cell), Top Categories horizontal bar (top 8), Confidence histogram (useMemo bucketing into 5 ranges). ChartPlaceholder removed — all 6 chart sections complete.
 v7.0 Phase 43-04: 5th stat card (High Risk/ShieldAlert), avgConfidence toFixed(1), lg:grid-cols-5 stat grid. Human-verified complete dashboard. Phase 43 complete — 4 plans shipped.
 v7.0 Phase 44-01: react-plaid-link SDK, 6 api.plaid methods (POST body pattern), 5 Plaid types, 6 React Query hooks, PlaidLinkButton component with auto link token. --legacy-peer-deps for React 19.
+v7.0 Phase 45-01: sonner toast library installed, Toaster in dashboard layout (dark/richColors/bottom-right). useDocuments smart polling at 3s when any document has non-terminal pipeline_status.
 
 ### Deferred Issues
 
@@ -139,5 +140,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-14
-Stopped at: Phase 44, Plan 01 complete (1/4 plans), ready for Plan 44-02 (bank accounts page)
+Stopped at: Phase 45, Plan 01 complete (1/3 plans), ready for Plan 45-02
 Resume file: None
