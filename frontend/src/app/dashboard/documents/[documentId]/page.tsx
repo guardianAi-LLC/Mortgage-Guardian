@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -16,6 +16,8 @@ import {
   ListChecks,
   ShieldAlert,
 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { useDocument, useDocumentStatus, useDeleteDocument, useRetryDocument, useDocumentAnalysis } from '@/lib/hooks'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -66,6 +68,7 @@ function InfoItem({ icon: Icon, label, value, mono }: { icon: React.ElementType;
 export default function DocumentDetailPage({ params }: { params: Promise<{ documentId: string }> }) {
   const { documentId } = use(params)
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { data: document, isLoading, isError, refetch } = useDocument(documentId)
   const { data: pipelineStatus } = useDocumentStatus(documentId)
   const deleteDocument = useDeleteDocument()
@@ -73,6 +76,22 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ docum
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   const currentStatus = pipelineStatus?.status ?? document?.pipeline_status
+  const prevStatus = useRef<string | undefined>(undefined)
+
+  useEffect(() => {
+    if (!currentStatus || prevStatus.current === currentStatus) return
+    const old = prevStatus.current
+    prevStatus.current = currentStatus
+
+    if (!old) return // skip initial load
+
+    if (currentStatus === 'complete') {
+      toast.success('Analysis complete')
+      queryClient.invalidateQueries({ queryKey: ['document-analysis', documentId] })
+    } else if (currentStatus === 'failed') {
+      toast.error('Processing failed')
+    }
+  }, [currentStatus, documentId, queryClient])
   const isAnalyzed = currentStatus === 'analyzed' || currentStatus === 'complete'
   const isProcessing = currentStatus && !['complete', 'failed', 'analyzed'].includes(currentStatus)
 

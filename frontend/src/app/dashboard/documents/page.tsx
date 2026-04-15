@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { FileText, AlertTriangle } from 'lucide-react'
 import { useDocuments, useDeleteDocument, useRetryDocument } from '@/lib/hooks'
+import { useDocumentNotifications } from '@/hooks/use-document-notifications'
 import { DocumentFilters } from '@/components/document-filters'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -95,6 +96,7 @@ export default function DocumentsPage() {
   const { data, isLoading, isError, refetch } = useDocuments({ limit: 500, offset: 0 })
 
   const allDocuments = data?.documents ?? []
+  useDocumentNotifications(allDocuments)
 
   const resetPage = useCallback(() => setPage(0), [])
   const handleSearchChange = useCallback((v: string) => { setSearch(v); resetPage() }, [resetPage])
