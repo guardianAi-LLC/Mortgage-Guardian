@@ -12,6 +12,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { Sidebar } from '@/components/sidebar'
+import { GlobalSearch } from '@/components/global-search'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -48,8 +49,7 @@ export function AppShell({ children }: AppShellProps) {
               </SheetContent>
             </Sheet>
 
-            {/* Breadcrumb area placeholder */}
-            <div />
+            <GlobalSearch />
           </div>
 
           <UserButton
