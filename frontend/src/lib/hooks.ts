@@ -194,6 +194,14 @@ export function useDocuments(params?: { limit?: number; offset?: number }) {
       const documents = Array.isArray(list) ? list.map(mapDocument) : []
       return { documents, total: res.total ?? documents.length }
     },
+    refetchInterval: (query) => {
+      const docs = query.state.data?.documents
+      if (!docs) return false
+      const hasProcessing = docs.some(
+        (d) => d.pipeline_status && d.pipeline_status !== 'complete' && d.pipeline_status !== 'failed'
+      )
+      return hasProcessing ? 3000 : false
+    },
   })
 }
 
