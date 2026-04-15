@@ -260,6 +260,18 @@ export function useRetryDocument() {
 }
 
 // --------------------------------------------------------------------------
+// Processing count (sidebar badge)
+// --------------------------------------------------------------------------
+
+export function useProcessingCount(): number {
+  const { data } = useDocuments({ limit: 500, offset: 0 })
+  if (!data?.documents) return 0
+  return data.documents.filter(
+    (d) => d.pipeline_status && !['complete', 'failed'].includes(d.pipeline_status)
+  ).length
+}
+
+// --------------------------------------------------------------------------
 // Forensic Analysis
 // --------------------------------------------------------------------------
 

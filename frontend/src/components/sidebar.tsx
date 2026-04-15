@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, FolderOpen, FileText, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useProcessingCount } from '@/lib/hooks'
 
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -28,6 +29,7 @@ function ShieldLogo() {
 
 export function Sidebar({ collapsed = false, className }: SidebarProps) {
   const pathname = usePathname()
+  const processingCount = useProcessingCount()
 
   return (
     <aside
@@ -54,6 +56,8 @@ export function Sidebar({ collapsed = false, className }: SidebarProps) {
               ? pathname === '/dashboard'
               : pathname.startsWith(item.href)
 
+          const showBadge = item.href === '/dashboard/documents' && processingCount > 0
+
           return (
             <Link
               key={item.href}
@@ -67,7 +71,17 @@ export function Sidebar({ collapsed = false, className }: SidebarProps) {
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              {!collapsed && (
+                <>
+                  <span>{item.label}</span>
+                  {showBadge && (
+                    <span className="ml-auto flex items-center gap-1.5 bg-amber-500/20 text-amber-400 text-xs font-medium px-1.5 py-0.5 rounded-full">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      {processingCount}
+                    </span>
+                  )}
+                </>
+              )}
             </Link>
           )
         })}
