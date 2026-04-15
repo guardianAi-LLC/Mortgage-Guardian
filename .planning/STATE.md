@@ -8,10 +8,10 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 **Current focus:** v7.0 Web Dashboard
 ## Current Position
 
-Phase: 45 of 50 (Real-Time Pipeline & Notifications)
-Plan: 03 of 03
-Status: Complete — Phase 45 done
-Last activity: 2026-04-14 - Plan 45-03 complete (sidebar processing badge, query auto-invalidation)
+Phase: 44 of 50 (Plaid Bank Integration UI)
+Plan: 02 of 04
+Status: In Progress — Plan 44-02 complete
+Last activity: 2026-04-14 - Plan 44-02 complete (bank accounts page, expandable cards, link/unlink)
 
 Progress: ████░░░░░░ 42%
 
@@ -117,6 +117,7 @@ v7.0 Phase 44-01: react-plaid-link SDK, 6 api.plaid methods (POST body pattern),
 v7.0 Phase 45-01: sonner toast library installed, Toaster in dashboard layout (dark/richColors/bottom-right). useDocuments smart polling at 3s when any document has non-terminal pipeline_status.
 v7.0 Phase 45-02: useDocumentNotifications hook tracks pipeline_status transitions via useRef Map, fires toast.success on complete and toast.error on failed. Detail page auto-invalidates analysis query on completion.
 v7.0 Phase 45-03: useProcessingCount hook derives count from useDocuments. Sidebar amber badge with pulse dot. useDocumentNotifications invalidates document-analysis + analytics on complete, documents on failed. Phase 45 complete.
+v7.0 Phase 44-02: /dashboard/bank-accounts page with LinkedItemCard, localStorage access token storage (mg_plaid_access_tokens), expandable account detail rows, unlink confirmation, consent expiration warnings, sidebar Landmark nav link.
 
 ### Deferred Issues
 
@@ -142,5 +143,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-14
-Stopped at: Phase 45 complete (3/3 plans), ready for Phase 46
+Stopped at: Phase 44, Plan 02 complete (2/4 plans), ready for Plan 44-03
 Resume file: None
