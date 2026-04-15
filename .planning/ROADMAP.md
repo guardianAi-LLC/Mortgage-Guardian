@@ -422,7 +422,7 @@ Plans:
 
 Plans:
 - [x] 45-01: Toast infrastructure (sonner) + smart document list polling — COMPLETE 2026-04-14
-- [ ] 45-02: Pipeline status toast notifications on document state transitions
+- [x] 45-02: Pipeline status toast notifications on document state transitions — COMPLETE 2026-04-14
 - [ ] 45-03: SSE or enhanced polling for real-time pipeline events
 
 #### Phase 46: Advanced Search & Filtering
