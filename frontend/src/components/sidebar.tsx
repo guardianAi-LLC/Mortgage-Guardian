@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FolderOpen, FileText, BarChart3, Landmark } from 'lucide-react'
+import { LayoutDashboard, FolderOpen, FileText, BarChart3, Landmark, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useProcessingCount } from '@/lib/hooks'
 
@@ -12,6 +12,7 @@ const navItems = [
   { label: 'Documents', href: '/dashboard/documents', icon: FileText },
   { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { label: 'Bank Accounts', href: '/dashboard/bank-accounts', icon: Landmark },
+  { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
 interface SidebarProps {
