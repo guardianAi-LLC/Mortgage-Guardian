@@ -8,12 +8,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 **Current focus:** v7.0 Web Dashboard
 ## Current Position
 
-Phase: 44 of 50 (Plaid Bank Integration UI)
-Plan: 04 of 04
-Status: Complete — Phase 44 done
-Last activity: 2026-04-14 - Plan 44-04 complete (UX polish, responsive, accessibility, human verified)
+Phase: 46 of 50 (Advanced Search & Filtering)
+Plan: 01 of 03
+Status: In Progress — Plan 46-01 complete
+Last activity: 2026-04-15 - Plan 46-01 complete (GlobalSearch component, Cmd+K, dashboard header)
 
-Progress: █████░░░░░ 50%
+Progress: █████░░░░░ 52%
 
 ## Performance Metrics
 
@@ -120,6 +120,7 @@ v7.0 Phase 45-03: useProcessingCount hook derives count from useDocuments. Sideb
 v7.0 Phase 44-02: /dashboard/bank-accounts page with LinkedItemCard, localStorage access token storage (mg_plaid_access_tokens), expandable account detail rows, unlink confirmation, consent expiration warnings, sidebar Landmark nav link.
 v7.0 Phase 44-03: TransactionSection with account selector, date/amount filters, 25/page pagination, mortgage keyword highlighting. CrossReferenceSection reads caseId query param, PaymentVerificationCard with progress bar and findings.
 v7.0 Phase 44-04: Responsive grid (cols-1/2/3) for account cards, overflow-x-auto on transaction table, aria-expanded/aria-label accessibility, mobile filter grid. Phase 44 complete.
+v7.0 Phase 46-01: GlobalSearch component with Cmd+K shortcut, debounced client-side search across cases+documents, results dropdown with RiskBadge. Wired into app-shell header.
 
 ### Deferred Issues
 
@@ -145,5 +146,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-14
-Stopped at: Phase 44 complete (4/4 plans), Phase 45 complete (3/3 plans), ready for Phase 46
+Stopped at: Phase 46, Plan 01 complete (1/3 plans), ready for Plan 46-02
 Resume file: None

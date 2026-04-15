@@ -433,7 +433,9 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 46-01: TBD
+- [x] 46-01: GlobalSearch component with Cmd+K, results dropdown, dashboard header — COMPLETE 2026-04-15
+- [ ] 46-02: Case filters (status, date range, sort) on dashboard page
+- [ ] 46-03: Enhanced document filters (date range, severity) + human verification
 
 #### Phase 47: Settings, Profile & Account Management
 
@@ -590,7 +592,7 @@ Plans:
 | 43. Analytics Dashboard & Visualizations | v7.0 | 4/4 | Complete | 2026-04-14 |
 | 44. Plaid Bank Integration UI | v7.0 | 4/4 | Complete | 2026-04-14 |
 | 45. Real-Time Pipeline & Notifications | v7.0 | 3/3 | Complete | 2026-04-14 |
-| 46. Advanced Search & Filtering | v7.0 | 0/? | Not started | - |
+| 46. Advanced Search & Filtering | v7.0 | 1/3 | In Progress | - |
 | 47. Settings, Profile & Account Management | v7.0 | 0/? | Not started | - |
 | 48. Responsive Polish & Accessibility | v7.0 | 0/? | Not started | - |
 | 49. E2E Testing & Quality Assurance | v7.0 | 0/? | Not started | - |
