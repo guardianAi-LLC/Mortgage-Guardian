@@ -9,9 +9,9 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 47 of 50 (Settings, Profile & Account Management)
-Plan: 01 of 03
-Status: In Progress — Plan 47-01 complete
-Last activity: 2026-04-15 - Plan 47-01 complete (settings page, notification prefs, toast gating)
+Plan: 02 of 03
+Status: In Progress — Plan 47-02 complete
+Last activity: 2026-04-15 - Plan 47-02 complete (data export, account deletion)
 
 Progress: ██████░░░░ 62%
 
@@ -124,6 +124,7 @@ v7.0 Phase 46-01: GlobalSearch component with Cmd+K shortcut, debounced client-s
 v7.0 Phase 46-02: CaseFilters component (search/status/date/sort). Dashboard page filtering pipeline with useMemo, 20/page pagination, "Showing X of Y" text.
 v7.0 Phase 46-03: DocumentFilters enhanced with optional dateFrom/dateTo/severity props. Severity filter checks anomaly severity for critical+/high+ levels. Phase 46 complete.
 v7.0 Phase 47-01: /dashboard/settings page with Clerk profile display and 3 notification toggle switches (localStorage mg_notification_prefs). getNotificationPrefs() gates toasts in useDocumentNotifications.
+v7.0 Phase 47-02: Data export as JSON download (Blob+createObjectURL), account deletion with type-to-confirm dialog and Clerk signOut.
 
 ### Deferred Issues
 
@@ -149,5 +150,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-14
-Stopped at: Phase 47, Plan 01 complete (1/3 plans), ready for Plan 47-02
+Stopped at: Phase 47, Plan 02 complete (2/3 plans), ready for Plan 47-03
 Resume file: None
