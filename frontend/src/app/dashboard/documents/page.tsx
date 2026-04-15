@@ -84,6 +84,9 @@ export default function DocumentsPage() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [severityFilter, setSeverityFilter] = useState('all')
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -103,10 +106,13 @@ export default function DocumentsPage() {
   const handleTypeChange = useCallback((v: string) => { setTypeFilter(v); resetPage() }, [resetPage])
   const handleStatusChange = useCallback((v: string) => { setStatusFilter(v); resetPage() }, [resetPage])
   const handleSortChange = useCallback((v: string) => { setSortBy(v); resetPage() }, [resetPage])
+  const handleDateFromChange = useCallback((v: string) => { setDateFrom(v); resetPage() }, [resetPage])
+  const handleDateToChange = useCallback((v: string) => { setDateTo(v); resetPage() }, [resetPage])
+  const handleSeverityChange = useCallback((v: string) => { setSeverityFilter(v); resetPage() }, [resetPage])
 
   useEffect(() => {
     setSelectedIds(new Set())
-  }, [search, typeFilter, statusFilter, sortBy])
+  }, [search, typeFilter, statusFilter, sortBy, dateFrom, dateTo, severityFilter])
 
   const filteredDocuments = useMemo(() => {
     let docs = allDocuments
@@ -132,6 +138,27 @@ export default function DocumentsPage() {
       }
     }
 
+    if (dateFrom) {
+      docs = docs.filter((doc) => doc.created_at >= dateFrom)
+    }
+    if (dateTo) {
+      docs = docs.filter((doc) => doc.created_at.slice(0, 10) <= dateTo)
+    }
+
+    if (severityFilter !== 'all') {
+      docs = docs.filter((doc) => {
+        const anomalies = doc.analysis_report?.anomalies ?? []
+        const count = anomalies.length
+        switch (severityFilter) {
+          case 'has_findings': return count > 0
+          case 'critical': return anomalies.some((a) => a.severity === 'critical')
+          case 'high': return anomalies.some((a) => a.severity === 'critical' || a.severity === 'high')
+          case 'clean': return count === 0
+          default: return true
+        }
+      })
+    }
+
     docs = [...docs].sort((a, b) => {
       switch (sortBy) {
         case 'oldest':
@@ -147,11 +174,11 @@ export default function DocumentsPage() {
     })
 
     return docs
-  }, [allDocuments, search, typeFilter, statusFilter, sortBy])
+  }, [allDocuments, search, typeFilter, statusFilter, sortBy, dateFrom, dateTo, severityFilter])
 
   const totalRaw = allDocuments.length
   const totalFiltered = filteredDocuments.length
-  const isFiltered = search || typeFilter !== 'all' || statusFilter !== 'all'
+  const isFiltered = search || typeFilter !== 'all' || statusFilter !== 'all' || dateFrom || dateTo || severityFilter !== 'all'
   const documents = filteredDocuments.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
   const start = page * PAGE_SIZE + 1
   const end = Math.min((page + 1) * PAGE_SIZE, totalFiltered)
@@ -268,6 +295,12 @@ export default function DocumentsPage() {
         onStatusChange={handleStatusChange}
         sortBy={sortBy}
         onSortChange={handleSortChange}
+        dateFrom={dateFrom}
+        onDateFromChange={handleDateFromChange}
+        dateTo={dateTo}
+        onDateToChange={handleDateToChange}
+        severityFilter={severityFilter}
+        onSeverityChange={handleSeverityChange}
       />
 
       {selectedIds.size > 0 && (
@@ -385,6 +418,9 @@ export default function DocumentsPage() {
               setTypeFilter('all')
               setStatusFilter('all')
               setSortBy('newest')
+              setDateFrom('')
+              setDateTo('')
+              setSeverityFilter('all')
               setPage(0)
             }}
             className="border-gray-700 text-gray-300 hover:bg-gray-800"

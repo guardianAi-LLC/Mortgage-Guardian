@@ -20,6 +20,12 @@ interface DocumentFiltersProps {
   onStatusChange: (value: string) => void
   sortBy: string
   onSortChange: (value: string) => void
+  dateFrom?: string
+  onDateFromChange?: (value: string) => void
+  dateTo?: string
+  onDateToChange?: (value: string) => void
+  severityFilter?: string
+  onSeverityChange?: (value: string) => void
 }
 
 export function DocumentFilters({
@@ -31,6 +37,12 @@ export function DocumentFilters({
   onStatusChange,
   sortBy,
   onSortChange,
+  dateFrom,
+  onDateFromChange,
+  dateTo,
+  onDateToChange,
+  severityFilter,
+  onSeverityChange,
 }: DocumentFiltersProps) {
   const [localSearch, setLocalSearch] = useState(search)
 
@@ -97,6 +109,41 @@ export function DocumentFilters({
           <SelectItem value="name_desc">Name Z-A</SelectItem>
         </SelectContent>
       </Select>
+
+      {onDateFromChange && (
+        <Input
+          type="date"
+          value={dateFrom ?? ''}
+          onChange={(e) => onDateFromChange(e.target.value)}
+          className="w-[140px] border-gray-700 bg-gray-950 text-gray-300"
+          placeholder="From"
+        />
+      )}
+
+      {onDateToChange && (
+        <Input
+          type="date"
+          value={dateTo ?? ''}
+          onChange={(e) => onDateToChange(e.target.value)}
+          className="w-[140px] border-gray-700 bg-gray-950 text-gray-300"
+          placeholder="To"
+        />
+      )}
+
+      {onSeverityChange && (
+        <Select value={severityFilter ?? 'all'} onValueChange={(v) => v && onSeverityChange(v)}>
+          <SelectTrigger className="w-[160px] border-gray-700 bg-gray-950 text-gray-300">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Severity</SelectItem>
+            <SelectItem value="has_findings">Has Findings</SelectItem>
+            <SelectItem value="critical">Critical+</SelectItem>
+            <SelectItem value="high">High+</SelectItem>
+            <SelectItem value="clean">Clean Only</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
     </div>
   )
 }
