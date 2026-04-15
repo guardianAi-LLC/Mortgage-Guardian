@@ -9,6 +9,16 @@ function truncate(name: string, max = 40): string {
   return name.length > max ? name.slice(0, max) + '...' : name
 }
 
+function getNotificationPrefs(): { complete: boolean; findings: boolean; errors: boolean } {
+  if (typeof window === 'undefined') return { complete: true, findings: true, errors: true }
+  try {
+    const raw = localStorage.getItem('mg_notification_prefs')
+    return raw ? JSON.parse(raw) : { complete: true, findings: true, errors: true }
+  } catch {
+    return { complete: true, findings: true, errors: true }
+  }
+}
+
 /**
  * Tracks document pipeline_status changes and fires toast notifications
  * when documents reach terminal states (complete or failed).
@@ -24,6 +34,8 @@ export function useDocumentNotifications(documents: Document[]) {
     const isInitialLoad = prev.size === 0
 
     if (!isInitialLoad) {
+      const prefs = getNotificationPrefs()
+
       for (const doc of documents) {
         const oldStatus = prev.get(doc.document_id)
         const newStatus = doc.pipeline_status
@@ -31,15 +43,19 @@ export function useDocumentNotifications(documents: Document[]) {
         if (!newStatus || oldStatus === newStatus) continue
 
         if (newStatus === 'complete' && oldStatus && oldStatus !== 'complete') {
-          toast.success(`${truncate(doc.file_name)} analysis complete`, {
-            description: 'View results',
-          })
+          if (prefs.complete) {
+            toast.success(`${truncate(doc.file_name)} analysis complete`, {
+              description: 'View results',
+            })
+          }
           queryClient.invalidateQueries({ queryKey: ['document-analysis', doc.document_id] })
           queryClient.invalidateQueries({ queryKey: ['analytics'] })
         } else if (newStatus === 'failed' && oldStatus && oldStatus !== 'failed') {
-          toast.error(`${truncate(doc.file_name)} processing failed`, {
-            description: 'Retry or contact support',
-          })
+          if (prefs.errors) {
+            toast.error(`${truncate(doc.file_name)} processing failed`, {
+              description: 'Retry or contact support',
+            })
+          }
           queryClient.invalidateQueries({ queryKey: ['documents'] })
         }
       }
