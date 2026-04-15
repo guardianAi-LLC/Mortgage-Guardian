@@ -233,6 +233,7 @@ function LinkedItemCard({
               size="sm"
               onClick={handleRefresh}
               disabled={refreshing}
+              aria-label="Refresh account data"
               className="text-gray-400 hover:text-white"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -241,6 +242,7 @@ function LinkedItemCard({
               variant="ghost"
               size="sm"
               onClick={() => setUnlinkOpen(true)}
+              aria-label="Unlink bank account"
               className="text-red-400 hover:text-red-300"
             >
               <Trash2 className="h-4 w-4" />
@@ -262,6 +264,8 @@ function LinkedItemCard({
                   <button
                     type="button"
                     onClick={() => toggleExpand(acct.account_id)}
+                    aria-expanded={isExpanded}
+                    aria-label={`${acct.name}${acct.mask ? ` ending in ${acct.mask}` : ''}`}
                     className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-800/40 transition-colors"
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -659,7 +663,7 @@ function TransactionSection({ accessTokens }: { accessTokens: string[] }) {
       </div>
 
       {/* Filters row */}
-      <div className="flex items-end gap-3 flex-wrap">
+      <div className="grid grid-cols-2 sm:flex sm:items-end gap-3">
         <div className="space-y-1">
           <label className="text-xs text-gray-500">Start Date</label>
           <Input
@@ -720,7 +724,7 @@ function TransactionSection({ accessTokens }: { accessTokens: string[] }) {
           <p className="text-sm text-gray-500">No transactions found for this date range.</p>
         </div>
       ) : (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="border-gray-800 hover:bg-transparent">
@@ -867,7 +871,7 @@ export default function BankAccountsPage() {
   }, [])
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
       <PageHeader
         title="Bank Accounts"
         description="Link and manage your bank accounts"
@@ -899,7 +903,7 @@ export default function BankAccountsPage() {
       ) : (
         <div className="space-y-6">
           {/* Linked accounts */}
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {accessTokens.map((token) => (
               <LinkedItemCard
                 key={token}
