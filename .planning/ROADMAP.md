@@ -445,7 +445,9 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 47-01: TBD
+- [x] 47-01: Settings page with Clerk profile, notification toggles, toast gating — COMPLETE 2026-04-15
+- [ ] 47-02: Data export JSON download + account deletion with type-to-confirm
+- [ ] 47-03: Polish, accessibility, human verification
 
 #### Phase 48: Responsive Polish & Accessibility
 
@@ -593,7 +595,7 @@ Plans:
 | 44. Plaid Bank Integration UI | v7.0 | 4/4 | Complete | 2026-04-14 |
 | 45. Real-Time Pipeline & Notifications | v7.0 | 3/3 | Complete | 2026-04-14 |
 | 46. Advanced Search & Filtering | v7.0 | 3/3 | Complete | 2026-04-15 |
-| 47. Settings, Profile & Account Management | v7.0 | 0/? | Not started | - |
+| 47. Settings, Profile & Account Management | v7.0 | 1/3 | In Progress | - |
 | 48. Responsive Polish & Accessibility | v7.0 | 0/? | Not started | - |
 | 49. E2E Testing & Quality Assurance | v7.0 | 0/? | Not started | - |
 | 50. Production Build & Deployment | v7.0 | 0/? | Not started | - |
