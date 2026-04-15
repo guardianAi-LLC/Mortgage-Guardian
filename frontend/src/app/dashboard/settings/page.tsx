@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useUser, useClerk } from '@clerk/nextjs'
-import { Bell } from 'lucide-react'
+import { Bell, User, Download, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
@@ -27,22 +27,26 @@ const DEFAULT_PREFS: NotificationPrefs = { complete: true, findings: true, error
 const STORAGE_KEY = 'mg_notification_prefs'
 
 function Toggle({
+  id,
   label,
   checked,
   onChange,
 }: {
+  id: string
   label: string
   checked: boolean
   onChange: (v: boolean) => void
 }) {
   return (
-    <label className="flex items-center justify-between cursor-pointer">
+    <label htmlFor={id} className="flex items-center justify-between cursor-pointer">
       <span className="text-sm text-gray-300">{label}</span>
       <div className="relative">
         <input
+          id={id}
           type="checkbox"
           className="sr-only peer"
           checked={checked}
+          aria-label={label}
           onChange={(e) => onChange(e.target.checked)}
         />
         <div className="w-9 h-5 bg-gray-700 rounded-full peer peer-checked:bg-blue-600 transition-colors" />
@@ -99,7 +103,10 @@ export default function SettingsPage() {
 
       {/* Profile section */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-white mb-4">Profile</h2>
+        <div className="flex items-center gap-2 mb-4">
+          <User className="h-5 w-5 text-gray-400" />
+          <h2 className="text-lg font-semibold text-white">Profile</h2>
+        </div>
         <div className="flex items-center gap-4 mb-4">
           {user?.imageUrl && (
             <img
@@ -133,16 +140,19 @@ export default function SettingsPage() {
         {mounted && (
           <div className="space-y-4">
             <Toggle
+              id="pref-complete"
               label="Document processing complete"
               checked={prefs.complete}
               onChange={(v) => updatePref('complete', v)}
             />
             <Toggle
+              id="pref-findings"
               label="Analysis findings ready"
               checked={prefs.findings}
               onChange={(v) => updatePref('findings', v)}
             />
             <Toggle
+              id="pref-errors"
               label="Pipeline errors"
               checked={prefs.errors}
               onChange={(v) => updatePref('errors', v)}
@@ -153,11 +163,15 @@ export default function SettingsPage() {
 
       {/* Data Export section */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-white mb-2">Data Export</h2>
+        <div className="flex items-center gap-2 mb-2">
+          <Download className="h-5 w-5 text-gray-400" />
+          <h2 className="text-lg font-semibold text-white">Data Export</h2>
+        </div>
         <p className="text-sm text-gray-400 mb-4">
           Download all your cases, documents, and analysis data as JSON
         </p>
         <Button
+          aria-label="Export all data as JSON"
           className="bg-blue-600 hover:bg-blue-700 text-white"
           onClick={() => {
             const exportData = {
@@ -178,12 +192,16 @@ export default function SettingsPage() {
 
       {/* Danger Zone section */}
       <div className="bg-gray-900 border border-red-900/40 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-red-400 mb-2">Danger Zone</h2>
+        <div className="flex items-center gap-2 mb-2">
+          <AlertTriangle className="h-5 w-5 text-red-400" />
+          <h2 className="text-lg font-semibold text-red-400">Danger Zone</h2>
+        </div>
         <p className="text-sm text-gray-400 mb-4">
           Permanently delete your account and all associated data. This action cannot be undone.
         </p>
         <Button
           variant="destructive"
+          aria-label="Delete your account"
           onClick={() => setDeleteDialogOpen(true)}
         >
           Delete Account
