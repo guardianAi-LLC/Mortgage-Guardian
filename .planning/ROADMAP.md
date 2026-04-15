@@ -423,7 +423,7 @@ Plans:
 Plans:
 - [x] 45-01: Toast infrastructure (sonner) + smart document list polling — COMPLETE 2026-04-14
 - [x] 45-02: Pipeline status toast notifications on document state transitions — COMPLETE 2026-04-14
-- [ ] 45-03: SSE or enhanced polling for real-time pipeline events
+- [x] 45-03: Sidebar processing badge, query auto-invalidation, end-to-end verification — COMPLETE 2026-04-14
 
 #### Phase 46: Advanced Search & Filtering
 
@@ -585,11 +585,11 @@ Plans:
 | 38. Settings, Account Management & Persistence | v6.0 | 4/4 | Complete | 2026-04-09 |
 | 39. UI/UX Polish & App Store Assets | v6.0 | 5/5 | Complete | 2026-04-09 |
 | 40. End-to-End Testing & TestFlight Prep | v6.0 | 3/3 | Complete | 2026-04-12 |
-| 41. API Proxy & End-to-End Wiring | v7.0 | 0/? | Not started | - |
-| 42. Document Library & Management | v7.0 | 0/? | Not started | - |
-| 43. Analytics Dashboard & Visualizations | v7.0 | 0/? | Not started | - |
-| 44. Plaid Bank Integration UI | v7.0 | 0/? | Not started | - |
-| 45. Real-Time Pipeline & Notifications | v7.0 | 0/? | Not started | - |
+| 41. API Proxy & End-to-End Wiring | v7.0 | 1/1 | Complete | 2026-04-13 |
+| 42. Document Library & Management | v7.0 | 5/5 | Complete | 2026-04-13 |
+| 43. Analytics Dashboard & Visualizations | v7.0 | 4/4 | Complete | 2026-04-14 |
+| 44. Plaid Bank Integration UI | v7.0 | 1/4 | In Progress | - |
+| 45. Real-Time Pipeline & Notifications | v7.0 | 3/3 | Complete | 2026-04-14 |
 | 46. Advanced Search & Filtering | v7.0 | 0/? | Not started | - |
 | 47. Settings, Profile & Account Management | v7.0 | 0/? | Not started | - |
 | 48. Responsive Polish & Accessibility | v7.0 | 0/? | Not started | - |

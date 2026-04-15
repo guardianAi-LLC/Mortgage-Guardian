@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 45 of 50 (Real-Time Pipeline & Notifications)
-Plan: 02 of 03
-Status: In Progress — Plan 45-02 complete
-Last activity: 2026-04-14 - Plan 45-02 complete (useDocumentNotifications hook, toast on pipeline transitions)
+Plan: 03 of 03
+Status: Complete — Phase 45 done
+Last activity: 2026-04-14 - Plan 45-03 complete (sidebar processing badge, query auto-invalidation)
 
-Progress: ███░░░░░░░ 38%
+Progress: ████░░░░░░ 42%
 
 ## Performance Metrics
 
@@ -116,6 +116,7 @@ v7.0 Phase 43-04: 5th stat card (High Risk/ShieldAlert), avgConfidence toFixed(1
 v7.0 Phase 44-01: react-plaid-link SDK, 6 api.plaid methods (POST body pattern), 5 Plaid types, 6 React Query hooks, PlaidLinkButton component with auto link token. --legacy-peer-deps for React 19.
 v7.0 Phase 45-01: sonner toast library installed, Toaster in dashboard layout (dark/richColors/bottom-right). useDocuments smart polling at 3s when any document has non-terminal pipeline_status.
 v7.0 Phase 45-02: useDocumentNotifications hook tracks pipeline_status transitions via useRef Map, fires toast.success on complete and toast.error on failed. Detail page auto-invalidates analysis query on completion.
+v7.0 Phase 45-03: useProcessingCount hook derives count from useDocuments. Sidebar amber badge with pulse dot. useDocumentNotifications invalidates document-analysis + analytics on complete, documents on failed. Phase 45 complete.
 
 ### Deferred Issues
 
@@ -141,5 +142,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-14
-Stopped at: Phase 45, Plan 02 complete (2/3 plans), ready for Plan 45-03
+Stopped at: Phase 45 complete (3/3 plans), ready for Phase 46
 Resume file: None
