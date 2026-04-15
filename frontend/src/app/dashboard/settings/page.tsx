@@ -1,9 +1,21 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useUser } from '@clerk/nextjs'
+import { useUser, useClerk } from '@clerk/nextjs'
 import { Bell } from 'lucide-react'
+import { toast } from 'sonner'
 import { PageHeader } from '@/components/page-header'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog'
+import { useCases, useDocuments } from '@/lib/hooks'
 
 interface NotificationPrefs {
   complete: boolean
@@ -40,10 +52,28 @@ function Toggle({
   )
 }
 
+function downloadJson(data: unknown, filename: string) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 export default function SettingsPage() {
   const { user } = useUser()
+  const clerk = useClerk()
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS)
   const [mounted, setMounted] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+
+  const { data: casesData } = useCases()
+  const { data: documentsData } = useDocuments({ limit: 500, offset: 0 })
 
   useEffect(() => {
     try {
@@ -119,6 +149,87 @@ export default function SettingsPage() {
             />
           </div>
         )}
+      </div>
+
+      {/* Data Export section */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-white mb-2">Data Export</h2>
+        <p className="text-sm text-gray-400 mb-4">
+          Download all your cases, documents, and analysis data as JSON
+        </p>
+        <Button
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+          onClick={() => {
+            const exportData = {
+              exportedAt: new Date().toISOString(),
+              cases: casesData,
+              documents: documentsData,
+            }
+            downloadJson(
+              exportData,
+              `mortgage-guardian-export-${new Date().toISOString().slice(0, 10)}.json`
+            )
+            toast.success('Data exported successfully')
+          }}
+        >
+          Export All Data
+        </Button>
+      </div>
+
+      {/* Danger Zone section */}
+      <div className="bg-gray-900 border border-red-900/40 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-red-400 mb-2">Danger Zone</h2>
+        <p className="text-sm text-gray-400 mb-4">
+          Permanently delete your account and all associated data. This action cannot be undone.
+        </p>
+        <Button
+          variant="destructive"
+          onClick={() => setDeleteDialogOpen(true)}
+        >
+          Delete Account
+        </Button>
+
+        <Dialog
+          open={deleteDialogOpen}
+          onOpenChange={(open) => {
+            setDeleteDialogOpen(open)
+            if (!open) setConfirmText('')
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Account</DialogTitle>
+              <DialogDescription>
+                This will permanently delete your account, all cases, documents, and analysis data.
+                Type <span className="font-mono font-bold text-white">DELETE</span> to confirm.
+              </DialogDescription>
+            </DialogHeader>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="Type DELETE to confirm"
+              className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-red-500"
+            />
+            <DialogFooter>
+              <DialogClose
+                render={<Button variant="outline" />}
+              >
+                Cancel
+              </DialogClose>
+              <Button
+                variant="destructive"
+                disabled={confirmText !== 'DELETE'}
+                onClick={() => {
+                  toast('Account deletion initiated')
+                  clerk.signOut({ redirectUrl: '/' })
+                }}
+              >
+                Delete My Account
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
