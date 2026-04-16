@@ -68,10 +68,10 @@ function LoadingRows() {
         <TableRow key={i}>
           <TableCell><Skeleton className="h-4 w-4" /></TableCell>
           <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
           <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-12" /></TableCell>
+          <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
         </TableRow>
       ))}
     </>
@@ -304,7 +304,7 @@ export default function DocumentsPage() {
       />
 
       {selectedIds.size > 0 && (
-        <div className="flex items-center justify-between bg-blue-950/50 border border-blue-800 rounded-lg p-3 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-blue-950/50 border border-blue-800 rounded-lg p-3 mb-4">
           <div className="flex items-center gap-3 text-sm text-blue-200">
             <span>{selectedIds.size} document(s) selected</span>
             {batchStatus && (
@@ -361,21 +361,23 @@ export default function DocumentsPage() {
       </Dialog>
 
       {isLoading ? (
-        <Table>
-          <TableHeader>
-            <TableRow className="border-gray-800 hover:bg-transparent">
-              <TableHead className="w-10"><Skeleton className="h-4 w-4" /></TableHead>
-              <TableHead className="text-gray-400">File Name</TableHead>
-              <TableHead className="text-gray-400">Type</TableHead>
-              <TableHead className="text-gray-400">Status</TableHead>
-              <TableHead className="text-gray-400">Anomalies</TableHead>
-              <TableHead className="text-gray-400">Date Added</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <LoadingRows />
-          </TableBody>
-        </Table>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-gray-800 hover:bg-transparent">
+                <TableHead className="w-10"><Skeleton className="h-4 w-4" /></TableHead>
+                <TableHead className="text-gray-400">File Name</TableHead>
+                <TableHead className="text-gray-400 hidden sm:table-cell">Type</TableHead>
+                <TableHead className="text-gray-400">Status</TableHead>
+                <TableHead className="text-gray-400 hidden md:table-cell">Anomalies</TableHead>
+                <TableHead className="text-gray-400 hidden lg:table-cell">Date Added</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <LoadingRows />
+            </TableBody>
+          </Table>
+        </div>
       ) : isError ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="mb-4 rounded-full bg-red-900/30 p-4">
@@ -430,63 +432,65 @@ export default function DocumentsPage() {
         </EmptyState>
       ) : (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow className="border-gray-800 hover:bg-transparent">
-                <TableHead className="w-10">
-                  <input
-                    type="checkbox"
-                    checked={pageAllSelected}
-                    ref={(el) => { if (el) el.indeterminate = pageSomeSelected }}
-                    onChange={toggleAll}
-                    className="accent-blue-500 h-4 w-4 rounded border-gray-600 bg-gray-800"
-                  />
-                </TableHead>
-                <TableHead className="text-gray-400">File Name</TableHead>
-                <TableHead className="text-gray-400">Type</TableHead>
-                <TableHead className="text-gray-400">Status</TableHead>
-                <TableHead className="text-gray-400">Anomalies</TableHead>
-                <TableHead className="text-gray-400">Date Added</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {documents.map((doc) => {
-                const anomalyCount = doc.analysis_report?.anomalies?.length ?? 0
-                return (
-                  <TableRow
-                    key={doc.document_id}
-                    className="cursor-pointer border-gray-800 hover:bg-gray-800/50"
-                  >
-                    <TableCell>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(doc.document_id)}
-                        onChange={() => toggleOne(doc.document_id)}
-                        className="accent-blue-500 h-4 w-4 rounded border-gray-600 bg-gray-800"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        href={`/dashboard/documents/${doc.document_id}`}
-                        className="font-medium text-white hover:text-blue-400"
-                      >
-                        {doc.file_name}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-gray-300 capitalize">{doc.document_type}</TableCell>
-                    <TableCell>{statusBadge(doc.pipeline_status)}</TableCell>
-                    <TableCell>
-                      <RiskBadge
-                        level={anomalyLevel(anomalyCount)}
-                        label={`${anomalyCount} found`}
-                      />
-                    </TableCell>
-                    <TableCell className="text-gray-400">{formatRelativeTime(doc.created_at)}</TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-gray-800 hover:bg-transparent">
+                  <TableHead className="w-10">
+                    <input
+                      type="checkbox"
+                      checked={pageAllSelected}
+                      ref={(el) => { if (el) el.indeterminate = pageSomeSelected }}
+                      onChange={toggleAll}
+                      className="accent-blue-500 h-4 w-4 rounded border-gray-600 bg-gray-800"
+                    />
+                  </TableHead>
+                  <TableHead className="text-gray-400">File Name</TableHead>
+                  <TableHead className="text-gray-400 hidden sm:table-cell">Type</TableHead>
+                  <TableHead className="text-gray-400">Status</TableHead>
+                  <TableHead className="text-gray-400 hidden md:table-cell">Anomalies</TableHead>
+                  <TableHead className="text-gray-400 hidden lg:table-cell">Date Added</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {documents.map((doc) => {
+                  const anomalyCount = doc.analysis_report?.anomalies?.length ?? 0
+                  return (
+                    <TableRow
+                      key={doc.document_id}
+                      className="cursor-pointer border-gray-800 hover:bg-gray-800/50"
+                    >
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(doc.document_id)}
+                          onChange={() => toggleOne(doc.document_id)}
+                          className="accent-blue-500 h-4 w-4 rounded border-gray-600 bg-gray-800"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Link
+                          href={`/dashboard/documents/${doc.document_id}`}
+                          className="font-medium text-white hover:text-blue-400"
+                        >
+                          {doc.file_name}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-gray-300 capitalize hidden sm:table-cell">{doc.document_type}</TableCell>
+                      <TableCell>{statusBadge(doc.pipeline_status)}</TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <RiskBadge
+                          level={anomalyLevel(anomalyCount)}
+                          label={`${anomalyCount} found`}
+                        />
+                      </TableCell>
+                      <TableCell className="text-gray-400 hidden lg:table-cell">{formatRelativeTime(doc.created_at)}</TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
 
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4 px-2">

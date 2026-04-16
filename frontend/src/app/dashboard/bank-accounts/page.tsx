@@ -728,10 +728,10 @@ function TransactionSection({ accessTokens }: { accessTokens: string[] }) {
           <Table>
             <TableHeader>
               <TableRow className="border-gray-800 hover:bg-transparent">
-                <TableHead className="text-gray-400">Date</TableHead>
+                <TableHead className="text-gray-400 hidden sm:table-cell">Date</TableHead>
                 <TableHead className="text-gray-400">Description</TableHead>
                 <TableHead className="text-gray-400 text-right">Amount</TableHead>
-                <TableHead className="text-gray-400">Category</TableHead>
+                <TableHead className="text-gray-400 hidden md:table-cell">Category</TableHead>
                 <TableHead className="text-gray-400">Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -754,7 +754,7 @@ function TransactionSection({ accessTokens }: { accessTokens: string[] }) {
                         : ''
                     }`}
                   >
-                    <TableCell className="text-gray-300 text-sm">
+                    <TableCell className="text-gray-300 text-sm hidden sm:table-cell">
                       {formatDate(tx.date)}
                     </TableCell>
                     <TableCell className="text-gray-200 text-sm max-w-[300px] truncate">
@@ -767,7 +767,7 @@ function TransactionSection({ accessTokens }: { accessTokens: string[] }) {
                     >
                       {isDeposit ? '+' : '-'}{fmt.format(displayAmount)}
                     </TableCell>
-                    <TableCell className="text-gray-400 text-sm">
+                    <TableCell className="text-gray-400 text-sm hidden md:table-cell">
                       {tx.category?.[0] ?? '-'}
                     </TableCell>
                     <TableCell>

@@ -39,41 +39,43 @@ export function DocumentList({ documents }: DocumentListProps) {
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow className="border-gray-800 hover:bg-transparent">
-          <TableHead className="text-gray-400">File Name</TableHead>
-          <TableHead className="text-gray-400">Type</TableHead>
-          <TableHead className="text-gray-400">Anomalies</TableHead>
-          <TableHead className="text-gray-400">Status</TableHead>
-          <TableHead className="text-gray-400">Added</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {documents.map((doc) => {
-          const anomalyCount = doc.analysis_report?.anomalies?.length ?? 0
-          const hasReport = !!doc.analysis_report
-          return (
-            <TableRow key={doc.document_id} className="border-gray-800">
-              <TableCell className="font-medium text-white">{doc.file_name}</TableCell>
-              <TableCell className="text-gray-300 capitalize">{doc.document_type}</TableCell>
-              <TableCell>
-                <RiskBadge
-                  level={anomalyLevel(anomalyCount)}
-                  label={`${anomalyCount} found`}
-                />
-              </TableCell>
-              <TableCell>
-                <RiskBadge
-                  level={hasReport ? 'clean' : 'info'}
-                  label={hasReport ? 'Analyzed' : 'Pending'}
-                />
-              </TableCell>
-              <TableCell className="text-gray-400">{formatRelativeTime(doc.created_at)}</TableCell>
-            </TableRow>
-          )
-        })}
-      </TableBody>
-    </Table>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow className="border-gray-800 hover:bg-transparent">
+            <TableHead className="text-gray-400">File Name</TableHead>
+            <TableHead className="text-gray-400 hidden sm:table-cell">Type</TableHead>
+            <TableHead className="text-gray-400">Anomalies</TableHead>
+            <TableHead className="text-gray-400">Status</TableHead>
+            <TableHead className="text-gray-400 hidden md:table-cell">Added</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {documents.map((doc) => {
+            const anomalyCount = doc.analysis_report?.anomalies?.length ?? 0
+            const hasReport = !!doc.analysis_report
+            return (
+              <TableRow key={doc.document_id} className="border-gray-800">
+                <TableCell className="font-medium text-white">{doc.file_name}</TableCell>
+                <TableCell className="text-gray-300 capitalize hidden sm:table-cell">{doc.document_type}</TableCell>
+                <TableCell>
+                  <RiskBadge
+                    level={anomalyLevel(anomalyCount)}
+                    label={`${anomalyCount} found`}
+                  />
+                </TableCell>
+                <TableCell>
+                  <RiskBadge
+                    level={hasReport ? 'clean' : 'info'}
+                    label={hasReport ? 'Analyzed' : 'Pending'}
+                  />
+                </TableCell>
+                <TableCell className="text-gray-400 hidden md:table-cell">{formatRelativeTime(doc.created_at)}</TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+    </div>
   )
 }
