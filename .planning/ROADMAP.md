@@ -447,7 +447,7 @@ Plans:
 Plans:
 - [x] 47-01: Settings page with Clerk profile, notification toggles, toast gating — COMPLETE 2026-04-15
 - [x] 47-02: Data export JSON download + account deletion with type-to-confirm — COMPLETE 2026-04-15
-- [ ] 47-03: Polish, accessibility, human verification
+- [x] 47-03: Polish, accessibility, human verification — COMPLETE 2026-04-16
 
 #### Phase 48: Responsive Polish & Accessibility
 
