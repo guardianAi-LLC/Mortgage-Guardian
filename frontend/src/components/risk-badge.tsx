@@ -1,5 +1,7 @@
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { CircleAlert, AlertTriangle, Info, ShieldCheck, Circle } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 type RiskBadgeLevel = 'critical' | 'high' | 'medium' | 'low' | 'clean' | 'info'
 
@@ -10,6 +12,15 @@ const levelStyles: Record<RiskBadgeLevel, string> = {
   low: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
   clean: 'bg-green-500/15 text-green-400 border-green-500/30',
   info: 'bg-gray-500/15 text-gray-400 border-gray-500/30',
+}
+
+const levelIcons: Record<RiskBadgeLevel, LucideIcon> = {
+  critical: CircleAlert,
+  high: AlertTriangle,
+  medium: AlertTriangle,
+  low: Info,
+  clean: ShieldCheck,
+  info: Circle,
 }
 
 const levelLabels: Record<RiskBadgeLevel, string> = {
@@ -28,11 +39,13 @@ interface RiskBadgeProps {
 }
 
 export function RiskBadge({ level, label, className }: RiskBadgeProps) {
+  const Icon = levelIcons[level]
   return (
     <Badge
       variant="outline"
       className={cn(levelStyles[level], className)}
     >
+      <Icon className="h-3 w-3 mr-1" aria-hidden="true" />
       {label ?? levelLabels[level]}
     </Badge>
   )
