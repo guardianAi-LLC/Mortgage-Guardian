@@ -148,7 +148,7 @@ export default function DashboardPage() {
             <CaseTable cases={paginatedCases} isLoading={false} />
 
             {/* Pagination */}
-            <div className="flex items-center justify-between mt-4 px-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mt-4 px-2">
               <p className="text-sm text-gray-400">
                 {isFiltered
                   ? `Showing ${totalFiltered} of ${totalCases} cases`
