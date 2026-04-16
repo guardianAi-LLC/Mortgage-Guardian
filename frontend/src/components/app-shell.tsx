@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/sheet'
 import { Sidebar } from '@/components/sidebar'
 import { GlobalSearch } from '@/components/global-search'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -22,7 +23,7 @@ export function AppShell({ children }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <div className="flex h-screen bg-gray-950">
+    <div className="flex h-screen bg-background">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-md">Skip to content</a>
       {/* Desktop sidebar */}
       <div className="hidden md:flex">
@@ -32,18 +33,18 @@ export function AppShell({ children }: AppShellProps) {
       {/* Main area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex h-14 items-center justify-between border-b border-gray-800 bg-gray-950 px-4">
+        <header className="flex h-14 items-center justify-between border-b border-border bg-background px-4">
           <div className="flex items-center gap-3">
             {/* Mobile menu trigger */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger
                 render={
-                  <Button variant="ghost" size="icon" className="md:hidden text-gray-400" aria-label="Open navigation menu" />
+                  <Button variant="ghost" size="icon" className="md:hidden text-muted-foreground" aria-label="Open navigation menu" />
                 }
               >
                 <Menu className="h-5 w-5" />
               </SheetTrigger>
-              <SheetContent side="left" className="w-60 p-0 bg-gray-950 border-gray-800">
+              <SheetContent side="left" className="w-60 p-0 bg-background border-border">
                 <SheetTitle className="sr-only">Navigation</SheetTitle>
                 <SheetDescription className="sr-only">Main navigation menu</SheetDescription>
                 <Sidebar className="border-r-0" />
@@ -53,13 +54,16 @@ export function AppShell({ children }: AppShellProps) {
             <GlobalSearch />
           </div>
 
-          <UserButton
-            appearance={{
-              elements: {
-                avatarBox: 'h-8 w-8',
-              },
-            }}
-          />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: 'h-8 w-8',
+                },
+              }}
+            />
+          </div>
         </header>
 
         {/* Content */}

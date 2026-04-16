@@ -36,18 +36,18 @@ export function Sidebar({ collapsed = false, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'flex h-full flex-col border-r border-gray-800 bg-gray-950',
+        'flex h-full flex-col border-r border-border bg-background',
         collapsed ? 'w-16' : 'w-60',
         className
       )}
     >
       <div className={cn(
-        'flex h-14 items-center gap-2 border-b border-gray-800 px-4',
+        'flex h-14 items-center gap-2 border-b border-border px-4',
         collapsed && 'justify-center px-0'
       )}>
         <ShieldLogo />
         {!collapsed && (
-          <span className="text-white font-semibold text-base">Mortgage Guardian</span>
+          <span className="text-foreground font-semibold text-base">Mortgage Guardian</span>
         )}
       </div>
 
@@ -70,7 +70,7 @@ export function Sidebar({ collapsed = false, className }: SidebarProps) {
                 collapsed && 'justify-center px-0',
                 isActive
                   ? 'bg-blue-500/10 text-blue-400 border-l-2 border-blue-400'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
