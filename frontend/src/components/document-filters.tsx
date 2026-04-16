@@ -70,7 +70,7 @@ export function DocumentFilters({
       </div>
 
       <Select value={typeFilter} onValueChange={(v) => v && onTypeChange(v)}>
-        <SelectTrigger className="w-[160px] border-gray-700 bg-gray-950 text-gray-300">
+        <SelectTrigger className="w-full sm:w-[160px] border-gray-700 bg-gray-950 text-gray-300">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -85,7 +85,7 @@ export function DocumentFilters({
       </Select>
 
       <Select value={statusFilter} onValueChange={(v) => v && onStatusChange(v)}>
-        <SelectTrigger className="w-[160px] border-gray-700 bg-gray-950 text-gray-300">
+        <SelectTrigger className="w-full sm:w-[160px] border-gray-700 bg-gray-950 text-gray-300">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -99,7 +99,7 @@ export function DocumentFilters({
       </Select>
 
       <Select value={sortBy} onValueChange={(v) => v && onSortChange(v)}>
-        <SelectTrigger className="w-[160px] border-gray-700 bg-gray-950 text-gray-300">
+        <SelectTrigger className="w-full sm:w-[160px] border-gray-700 bg-gray-950 text-gray-300">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -115,7 +115,7 @@ export function DocumentFilters({
           type="date"
           value={dateFrom ?? ''}
           onChange={(e) => onDateFromChange(e.target.value)}
-          className="w-[140px] border-gray-700 bg-gray-950 text-gray-300"
+          className="w-full sm:w-[140px] border-gray-700 bg-gray-950 text-gray-300"
           placeholder="From"
         />
       )}
@@ -125,14 +125,14 @@ export function DocumentFilters({
           type="date"
           value={dateTo ?? ''}
           onChange={(e) => onDateToChange(e.target.value)}
-          className="w-[140px] border-gray-700 bg-gray-950 text-gray-300"
+          className="w-full sm:w-[140px] border-gray-700 bg-gray-950 text-gray-300"
           placeholder="To"
         />
       )}
 
       {onSeverityChange && (
         <Select value={severityFilter ?? 'all'} onValueChange={(v) => v && onSeverityChange(v)}>
-          <SelectTrigger className="w-[160px] border-gray-700 bg-gray-950 text-gray-300">
+          <SelectTrigger className="w-full sm:w-[160px] border-gray-700 bg-gray-950 text-gray-300">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
