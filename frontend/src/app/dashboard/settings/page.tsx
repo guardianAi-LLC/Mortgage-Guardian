@@ -163,49 +163,53 @@ export default function SettingsPage() {
 
       {/* Data Export section */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-4">
           <Download className="h-5 w-5 text-gray-400" />
           <h2 className="text-lg font-semibold text-white">Data Export</h2>
         </div>
         <p className="text-sm text-gray-400 mb-4">
           Download all your cases, documents, and analysis data as JSON
         </p>
-        <Button
-          aria-label="Export all data as JSON"
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-          onClick={() => {
-            const exportData = {
-              exportedAt: new Date().toISOString(),
-              cases: casesData,
-              documents: documentsData,
-            }
-            downloadJson(
-              exportData,
-              `mortgage-guardian-export-${new Date().toISOString().slice(0, 10)}.json`
-            )
-            toast.success('Data exported successfully')
-          }}
-        >
-          Export All Data
-        </Button>
+        <div className="flex justify-end">
+          <Button
+            aria-label="Export all data as JSON"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => {
+              const exportData = {
+                exportedAt: new Date().toISOString(),
+                cases: casesData,
+                documents: documentsData,
+              }
+              downloadJson(
+                exportData,
+                `mortgage-guardian-export-${new Date().toISOString().slice(0, 10)}.json`
+              )
+              toast.success('Data exported successfully')
+            }}
+          >
+            Export All Data
+          </Button>
+        </div>
       </div>
 
       {/* Danger Zone section */}
       <div className="bg-gray-900 border border-red-900/40 rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-4">
           <AlertTriangle className="h-5 w-5 text-red-400" />
           <h2 className="text-lg font-semibold text-red-400">Danger Zone</h2>
         </div>
         <p className="text-sm text-gray-400 mb-4">
           Permanently delete your account and all associated data. This action cannot be undone.
         </p>
-        <Button
-          variant="destructive"
-          aria-label="Delete your account"
-          onClick={() => setDeleteDialogOpen(true)}
-        >
-          Delete Account
-        </Button>
+        <div className="flex justify-end">
+          <Button
+            variant="destructive"
+            aria-label="Delete your account"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            Delete Account
+          </Button>
+        </div>
 
         <Dialog
           open={deleteDialogOpen}
@@ -227,6 +231,7 @@ export default function SettingsPage() {
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               placeholder="Type DELETE to confirm"
+              aria-label="Type DELETE to confirm account deletion"
               className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-red-500"
             />
             <DialogFooter>
