@@ -23,6 +23,7 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex h-screen bg-gray-950">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-md">Skip to content</a>
       {/* Desktop sidebar */}
       <div className="hidden md:flex">
         <Sidebar />
@@ -37,7 +38,7 @@ export function AppShell({ children }: AppShellProps) {
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger
                 render={
-                  <Button variant="ghost" size="icon" className="md:hidden text-gray-400" />
+                  <Button variant="ghost" size="icon" className="md:hidden text-gray-400" aria-label="Open navigation menu" />
                 }
               >
                 <Menu className="h-5 w-5" />
@@ -62,7 +63,7 @@ export function AppShell({ children }: AppShellProps) {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>
       </div>
