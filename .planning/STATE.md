@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 49 of 50 (E2E Testing & Quality Assurance)
-Plan: 2 of 5 in current phase
+Plan: 3 of 5 in current phase
 Status: In progress
-Last activity: 2026-04-17 - Completed 49-02-PLAN.md (Auth, Dashboard & Navigation E2E tests)
+Last activity: 2026-04-17 - Completed 49-03-PLAN.md (Case CRUD & Document Management E2E tests)
 
-Progress: ████████░░ 79%
+Progress: ████████░░ 81%
 
 ## Performance Metrics
 
@@ -133,6 +133,7 @@ v7.0 Phase 48-04: Dark/light theme toggle — next-themes ThemeProvider, CSS var
 v7.0 Phase 48-05: ARIA live regions on global search (role listbox/option, sr-only status) and document status (aria-live polite). Form validation accessibility (aria-invalid, role alert). Phase 48 complete.
 v7.0 Phase 49-01: Playwright E2E infrastructure — @playwright/test + @clerk/testing installed, playwright.config.ts with 3 browser projects, auth helper, smoke tests (2 pass/1 skipped), CI workflow updated. --legacy-peer-deps for React 19.
 v7.0 Phase 49-02: 15 E2E tests — auth redirects (5 pass), Clerk sign-in/sign-up rendering, sidebar navigation with aria-current, skip-to-content, dashboard stats/filters/table. Auth-dependent tests skip without CLERK_SECRET_KEY.
+v7.0 Phase 49-03: 19 E2E tests — case CRUD (9: list/filters/form/detail/analysis/report) + document management (10: list/filters/batch/detail). Shared mock-data.ts fixtures. clerk.signIn for full auth. global-setup.ts for clerkSetup().
 
 ### Deferred Issues
 
@@ -158,5 +159,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-17
-Stopped at: Completed 49-02-PLAN.md
+Stopped at: Completed 49-03-PLAN.md
 Resume file: None
