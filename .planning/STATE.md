@@ -8,12 +8,12 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 **Current focus:** v7.0 Web Dashboard
 ## Current Position
 
-Phase: 48 of 50 (Responsive Polish & Accessibility)
-Plan: 5 of 5 in current phase
-Status: Phase complete
-Last activity: 2026-04-17 - Completed 48-05-PLAN.md (ARIA live regions & final verification)
+Phase: 49 of 50 (E2E Testing & Quality Assurance)
+Plan: 1 of 5 in current phase
+Status: In progress
+Last activity: 2026-04-17 - Completed 49-01-PLAN.md (Playwright E2E infrastructure)
 
-Progress: ████████░░ 75%
+Progress: ████████░░ 78%
 
 ## Performance Metrics
 
@@ -131,6 +131,7 @@ v7.0 Phase 48-02: Responsive tables — overflow-x-auto wrappers, hidden md:tabl
 v7.0 Phase 48-03: Responsive page headers, filter bars, global search — flex-col sm:flex-row stacking, w-full sm:w-[Npx] controls. 5 files modified.
 v7.0 Phase 48-04: Dark/light theme toggle — next-themes ThemeProvider, CSS variables for light/dark, theme-toggle.tsx in header, app-shell+sidebar semantic colors. 6 files modified.
 v7.0 Phase 48-05: ARIA live regions on global search (role listbox/option, sr-only status) and document status (aria-live polite). Form validation accessibility (aria-invalid, role alert). Phase 48 complete.
+v7.0 Phase 49-01: Playwright E2E infrastructure — @playwright/test + @clerk/testing installed, playwright.config.ts with 3 browser projects, auth helper, smoke tests (2 pass/1 skipped), CI workflow updated. --legacy-peer-deps for React 19.
 
 ### Deferred Issues
 
@@ -156,5 +157,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-17
-Stopped at: Completed 48-05-PLAN.md (Phase 48 complete)
+Stopped at: Completed 49-01-PLAN.md
 Resume file: None
