@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 48 of 50 (Responsive Polish & Accessibility)
-Plan: 4 of 5 in current phase
-Status: In progress
-Last activity: 2026-04-16 - Completed 48-04-PLAN.md (dark/light theme toggle)
+Plan: 5 of 5 in current phase
+Status: Phase complete
+Last activity: 2026-04-17 - Completed 48-05-PLAN.md (ARIA live regions & final verification)
 
-Progress: ███████░░░ 71%
+Progress: ████████░░ 75%
 
 ## Performance Metrics
 
@@ -130,6 +130,7 @@ v7.0 Phase 48-01: Skip-to-content link, aria-current on sidebar nav, RiskBadge i
 v7.0 Phase 48-02: Responsive tables — overflow-x-auto wrappers, hidden md:table-cell column visibility, keyboard-navigable case rows. 4 files modified.
 v7.0 Phase 48-03: Responsive page headers, filter bars, global search — flex-col sm:flex-row stacking, w-full sm:w-[Npx] controls. 5 files modified.
 v7.0 Phase 48-04: Dark/light theme toggle — next-themes ThemeProvider, CSS variables for light/dark, theme-toggle.tsx in header, app-shell+sidebar semantic colors. 6 files modified.
+v7.0 Phase 48-05: ARIA live regions on global search (role listbox/option, sr-only status) and document status (aria-live polite). Form validation accessibility (aria-invalid, role alert). Phase 48 complete.
 
 ### Deferred Issues
 
@@ -154,6 +155,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-16
-Stopped at: Completed 48-04-PLAN.md (4/5 plans in Phase 48)
+Last session: 2026-04-17
+Stopped at: Completed 48-05-PLAN.md (Phase 48 complete)
 Resume file: None
