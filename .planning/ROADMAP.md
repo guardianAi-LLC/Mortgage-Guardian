@@ -473,7 +473,7 @@ Plans:
 
 Plans:
 - [x] 49-01: Playwright setup, Clerk test auth, CI config — COMPLETE 2026-04-17
-- [ ] 49-02: Auth + Dashboard + Navigation E2E tests
+- [x] 49-02: Auth + Dashboard + Navigation E2E tests — COMPLETE 2026-04-17
 - [ ] 49-03: Case CRUD + Document management E2E tests
 - [ ] 49-04: Analytics + Bank accounts + Settings E2E tests
 - [ ] 49-05: Search + Theme + Error states + Cross-browser verification
