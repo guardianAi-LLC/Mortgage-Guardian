@@ -29,13 +29,33 @@ export function CaseForm({ onSubmit, isLoading = false }: CaseFormProps) {
     servicerName: '',
     notes: '',
   })
+  const [errors, setErrors] = useState<Partial<Record<keyof CaseFormData, string>>>({})
+  const [submitted, setSubmitted] = useState(false)
+
+  function validate(data: CaseFormData): Partial<Record<keyof CaseFormData, string>> {
+    const errs: Partial<Record<keyof CaseFormData, string>> = {}
+    if (!data.caseName.trim()) {
+      errs.caseName = 'Case name is required'
+    }
+    return errs
+  }
 
   function handleChange(field: keyof CaseFormData, value: string) {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value }
+      if (submitted) {
+        setErrors(validate(next))
+      }
+      return next
+    })
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setSubmitted(true)
+    const validationErrors = validate(formData)
+    setErrors(validationErrors)
+    if (Object.keys(validationErrors).length > 0) return
     // Strip empty optional fields
     const cleaned: CaseFormData = { caseName: formData.caseName }
     if (formData.borrowerName) cleaned.borrowerName = formData.borrowerName
@@ -58,8 +78,15 @@ export function CaseForm({ onSubmit, isLoading = false }: CaseFormProps) {
           placeholder="e.g., Smith Mortgage Review"
           value={formData.caseName}
           onChange={(e) => handleChange('caseName', e.target.value)}
+          aria-invalid={!!errors.caseName}
+          aria-describedby={errors.caseName ? 'caseName-error' : undefined}
           className="bg-gray-900 border-gray-700 text-white placeholder:text-gray-500"
         />
+        {errors.caseName && (
+          <p id="caseName-error" role="alert" className="text-sm text-red-400">
+            {errors.caseName}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

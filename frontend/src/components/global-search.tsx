@@ -101,7 +101,15 @@ export function GlobalSearch() {
   }, [debouncedQuery, docsData])
 
   const hasResults = filteredCases.length > 0 || filteredDocs.length > 0
+  const totalResults = filteredCases.length + filteredDocs.length
   const showDropdown = open && debouncedQuery.length >= 2
+
+  const statusMessage = useMemo(() => {
+    if (debouncedQuery.length < 2) return ''
+    if (isLoading) return 'Searching...'
+    if (totalResults > 0) return `${totalResults} results found`
+    return 'No results'
+  }, [debouncedQuery, isLoading, totalResults])
 
   const closeDropdown = useCallback(() => setOpen(false), [])
 
@@ -125,10 +133,12 @@ export function GlobalSearch() {
         )}
       </div>
 
+      <span className="sr-only" aria-live="polite">{statusMessage}</span>
+
       {showDropdown && (
-        <div className="absolute bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 max-h-[400px] overflow-y-auto mt-1 w-full">
+        <div className="absolute bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 max-h-[400px] overflow-y-auto mt-1 w-full" aria-live="polite" role="listbox">
           {!hasResults ? (
-            <div className="px-3 py-4 text-sm text-gray-500">
+            <div className="px-3 py-4 text-sm text-gray-500" role="option" aria-selected={false}>
               No results for &apos;{debouncedQuery}&apos;
             </div>
           ) : (
@@ -145,6 +155,8 @@ export function GlobalSearch() {
                         key={c.id}
                         href={`/dashboard/cases/${c.id}`}
                         onClick={closeDropdown}
+                        role="option"
+                        aria-selected={false}
                         className="flex items-center justify-between px-3 py-2 hover:bg-gray-800 transition-colors"
                       >
                         <div className="min-w-0 flex-1">
@@ -173,6 +185,8 @@ export function GlobalSearch() {
                         key={d.document_id}
                         href={`/dashboard/documents/${d.document_id}`}
                         onClick={closeDropdown}
+                        role="option"
+                        aria-selected={false}
                         className="flex items-center justify-between px-3 py-2 hover:bg-gray-800 transition-colors"
                       >
                         <div className="min-w-0 flex-1">

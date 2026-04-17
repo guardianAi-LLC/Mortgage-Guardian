@@ -361,7 +361,7 @@ export default function DocumentsPage() {
       </Dialog>
 
       {isLoading ? (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" aria-busy={true}>
           <Table>
             <TableHeader>
               <TableRow className="border-gray-800 hover:bg-transparent">
@@ -432,7 +432,7 @@ export default function DocumentsPage() {
         </EmptyState>
       ) : (
         <>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" aria-busy={false}>
             <Table>
               <TableHeader>
                 <TableRow className="border-gray-800 hover:bg-transparent">
@@ -477,7 +477,7 @@ export default function DocumentsPage() {
                         </Link>
                       </TableCell>
                       <TableCell className="text-gray-300 capitalize hidden sm:table-cell">{doc.document_type}</TableCell>
-                      <TableCell>{statusBadge(doc.pipeline_status)}</TableCell>
+                      <TableCell aria-live="polite">{statusBadge(doc.pipeline_status)}</TableCell>
                       <TableCell className="hidden md:table-cell">
                         <RiskBadge
                           level={anomalyLevel(anomalyCount)}
