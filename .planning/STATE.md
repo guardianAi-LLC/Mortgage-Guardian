@@ -138,7 +138,7 @@ None.
 
 ### Pending Todos
 
-None — all todos resolved. Web dashboard frontend already exists in this repo (Next.js 15 + Clerk + React Query).
+2 pending todos in `.planning/todos/pending/`.
 
 ### Blockers/Concerns Carried Forward
 
