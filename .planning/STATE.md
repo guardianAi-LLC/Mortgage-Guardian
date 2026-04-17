@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 48 of 50 (Responsive Polish & Accessibility)
-Plan: 3 of 5 in current phase
+Plan: 4 of 5 in current phase
 Status: In progress
-Last activity: 2026-04-16 - Completed 48-03-PLAN.md (responsive layouts)
+Last activity: 2026-04-16 - Completed 48-04-PLAN.md (dark/light theme toggle)
 
-Progress: ██████░░░░ 69%
+Progress: ███████░░░ 71%
 
 ## Performance Metrics
 
@@ -129,6 +129,7 @@ v7.0 Phase 47-03: Settings polish — consistent margins, right-aligned actions,
 v7.0 Phase 48-01: Skip-to-content link, aria-current on sidebar nav, RiskBadge icons for WCAG 1.4.1. Icon-only button audit found no unlabeled buttons.
 v7.0 Phase 48-02: Responsive tables — overflow-x-auto wrappers, hidden md:table-cell column visibility, keyboard-navigable case rows. 4 files modified.
 v7.0 Phase 48-03: Responsive page headers, filter bars, global search — flex-col sm:flex-row stacking, w-full sm:w-[Npx] controls. 5 files modified.
+v7.0 Phase 48-04: Dark/light theme toggle — next-themes ThemeProvider, CSS variables for light/dark, theme-toggle.tsx in header, app-shell+sidebar semantic colors. 6 files modified.
 
 ### Deferred Issues
 
@@ -154,5 +155,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-16
-Stopped at: Completed 48-03-PLAN.md (3/5 plans in Phase 48)
+Stopped at: Completed 48-04-PLAN.md (4/5 plans in Phase 48)
 Resume file: None

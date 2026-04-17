@@ -460,7 +460,7 @@ Plans:
 - [x] 48-01: Foundational accessibility — skip-to-content, aria-current, icon badges — COMPLETE 2026-04-16
 - [x] 48-02: Responsive tables — overflow-x-auto, column visibility, keyboard nav — COMPLETE 2026-04-16
 - [x] 48-03: Responsive page headers, filter bars, global search, dashboard pagination — COMPLETE 2026-04-16
-- [ ] 48-04: TBD
+- [x] 48-04: Dark/light theme toggle with next-themes, CSS variables, semantic colors — COMPLETE 2026-04-16
 - [ ] 48-05: TBD
 
 #### Phase 49: E2E Testing & Quality Assurance
