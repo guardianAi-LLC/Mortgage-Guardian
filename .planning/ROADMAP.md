@@ -463,7 +463,7 @@ Plans:
 - [x] 48-04: Dark/light theme toggle with next-themes, CSS variables, semantic colors — COMPLETE 2026-04-16
 - [x] 48-05: ARIA live regions, form validation accessibility, final verification — COMPLETE 2026-04-17
 
-#### Phase 49: E2E Testing & Quality Assurance
+#### Phase 49: E2E Testing & Quality Assurance — COMPLETE 2026-04-18
 
 **Goal**: Playwright E2E tests for all critical flows, error boundary coverage, loading/empty state verification, cross-browser testing
 **Depends on**: Phase 48
@@ -476,7 +476,7 @@ Plans:
 - [x] 49-02: Auth + Dashboard + Navigation E2E tests — COMPLETE 2026-04-17
 - [x] 49-03: Case CRUD + Document management E2E tests — COMPLETE 2026-04-17
 - [x] 49-04: Analytics + Bank accounts + Settings E2E tests — COMPLETE 2026-04-18
-- [ ] 49-05: Search + Theme + Error states + Cross-browser verification
+- [x] 49-05: Search + Theme + Error states + Cross-browser verification — COMPLETE 2026-04-18
 
 #### Phase 50: Production Build & Deployment
 

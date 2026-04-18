@@ -9,11 +9,11 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 49 of 50 (E2E Testing & Quality Assurance)
-Plan: 4 of 5 in current phase
-Status: In progress
-Last activity: 2026-04-18 - Completed 49-04-PLAN.md (Analytics, Bank Accounts & Settings E2E tests)
+Plan: 5 of 5 in current phase
+Status: Phase complete
+Last activity: 2026-04-18 - Completed 49-05-PLAN.md (Search, Theme & Error States E2E tests)
 
-Progress: █████████░ 83%
+Progress: █████████░ 90%
 
 ## Performance Metrics
 
@@ -135,6 +135,7 @@ v7.0 Phase 49-01: Playwright E2E infrastructure — @playwright/test + @clerk/te
 v7.0 Phase 49-02: 15 E2E tests — auth redirects (5 pass), Clerk sign-in/sign-up rendering, sidebar navigation with aria-current, skip-to-content, dashboard stats/filters/table. Auth-dependent tests skip without CLERK_SECRET_KEY.
 v7.0 Phase 49-03: 19 E2E tests — case CRUD (9: list/filters/form/detail/analysis/report) + document management (10: list/filters/batch/detail). Shared mock-data.ts fixtures. clerk.signIn for full auth. global-setup.ts for clerkSetup().
 v7.0 Phase 49-04: 21 E2E tests — analytics (5: stats/charts/empty/loading), bank accounts (8: cards/transactions/filters/Plaid), settings (8: toggles/export/delete). Mock data for analytics/Plaid/settings. localStorage seeding for Plaid tokens.
+v7.0 Phase 49-05: 21 E2E tests — global search (7: Cmd+K/ARIA/keyboard nav), theme toggle (5: dark/light/persistence), error states (9: empty/loading/500/404/network). Phase 49 complete — 10 spec files, all critical flows covered.
 
 ### Deferred Issues
 
@@ -160,5 +161,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-18
-Stopped at: Completed 49-04-PLAN.md
+Stopped at: Completed 49-05-PLAN.md — Phase 49 complete
 Resume file: None
