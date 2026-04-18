@@ -314,6 +314,309 @@ export async function interceptDocumentsAPI(page: Page, data?: ReturnType<typeof
 }
 
 // ---------------------------------------------------------------------------
+// Analytics mock data
+// ---------------------------------------------------------------------------
+
+/** Create mock analytics data for the analytics dashboard. */
+export function mockAnalyticsData() {
+  return {
+    cases: [
+      mockCase({
+        documents: [
+          mockDocument({
+            analysis_report: {
+              anomalies: [
+                { id: 'a1', field: 'escrow', type: 'miscalculation', severity: 'high', description: 'Escrow amount mismatch' },
+                { id: 'a2', field: 'interest_rate', type: 'discrepancy', severity: 'critical', description: 'Interest rate discrepancy' },
+              ],
+              summary: { riskLevel: 'high', keyFindings: ['Escrow miscalculation', 'Interest rate discrepancy'] },
+              completeness: { score: 85, totalExpected: 20, totalFound: 17 },
+              documentInfo: { documentId: 'doc-001', fileName: 'mortgage_statement_jan.pdf', classificationType: 'mortgage_statement', classificationSubtype: 'monthly' },
+            },
+          }),
+          mockDocument({
+            document_id: 'doc-002',
+            file_name: 'bank_statement_feb.pdf',
+            document_type: 'bank_statement',
+            pipeline_status: 'complete',
+            analysis_report: {
+              anomalies: [
+                { id: 'a3', field: 'payment', type: 'late_fee', severity: 'medium', description: 'Late fee incorrectly applied' },
+              ],
+              summary: { riskLevel: 'medium', keyFindings: ['Late fee issue'] },
+              completeness: { score: 92, totalExpected: 15, totalFound: 14 },
+              documentInfo: { documentId: 'doc-002', fileName: 'bank_statement_feb.pdf', classificationType: 'bank_statement', classificationSubtype: 'monthly' },
+            },
+          }),
+        ],
+      }),
+      mockCase({
+        id: 'case-002',
+        case_name: 'Johnson Property Audit',
+        borrower_name: 'Bob Johnson',
+        status: 'in_review',
+        documents: [
+          mockDocument({
+            document_id: 'doc-003',
+            file_name: 'tax_return.pdf',
+            document_type: 'tax_document',
+            pipeline_status: 'complete',
+            analysis_report: {
+              anomalies: [
+                { id: 'a4', field: 'income', type: 'miscalculation', severity: 'low', description: 'Minor income discrepancy' },
+              ],
+              summary: { riskLevel: 'low', keyFindings: ['Minor income discrepancy'] },
+              completeness: { score: 95, totalExpected: 10, totalFound: 10 },
+              documentInfo: { documentId: 'doc-003', fileName: 'tax_return.pdf', classificationType: 'tax_document', classificationSubtype: 'annual' },
+            },
+          }),
+        ],
+      }),
+      mockCase({
+        id: 'case-003',
+        case_name: 'Williams Refinance Case',
+        borrower_name: 'Carol Williams',
+        status: 'complete',
+        documents: [],
+      }),
+    ],
+    total: 3,
+  }
+}
+
+/** Create empty analytics data (no cases). */
+export function mockEmptyAnalyticsData() {
+  return { cases: [], total: 0 }
+}
+
+/** Set up page.route interception for analytics (cases list used by useAnalytics). */
+export async function interceptAnalyticsAPI(page: Page, data?: ReturnType<typeof mockAnalyticsData>) {
+  const responseData = data ?? mockAnalyticsData()
+
+  await page.route('**/api/v1/cases?*', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(responseData),
+    })
+  )
+  await page.route('**/api/v1/cases', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(responseData),
+    })
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Plaid / Bank account mock data
+// ---------------------------------------------------------------------------
+
+export interface MockPlaidAccount {
+  account_id: string
+  name: string
+  official_name: string
+  type: string
+  subtype: string
+  mask: string
+  balances: {
+    available: number | null
+    current: number | null
+    limit: number | null
+    iso_currency_code: string
+  }
+}
+
+export interface MockPlaidTransaction {
+  transaction_id: string
+  account_id: string
+  name: string
+  merchant_name: string | null
+  amount: number
+  date: string
+  category: string[]
+  pending: boolean
+}
+
+/** Create mock Plaid accounts. */
+export function mockPlaidAccounts(): MockPlaidAccount[] {
+  return [
+    {
+      account_id: 'acct-001',
+      name: 'Checking',
+      official_name: 'Gold Checking',
+      type: 'depository',
+      subtype: 'checking',
+      mask: '4567',
+      balances: { available: 5230.50, current: 5430.50, limit: null, iso_currency_code: 'USD' },
+    },
+    {
+      account_id: 'acct-002',
+      name: 'Savings',
+      official_name: 'Premium Savings',
+      type: 'depository',
+      subtype: 'savings',
+      mask: '8901',
+      balances: { available: 22100.00, current: 22100.00, limit: null, iso_currency_code: 'USD' },
+    },
+  ]
+}
+
+/** Create mock Plaid transactions. */
+export function mockTransactions(): MockPlaidTransaction[] {
+  return [
+    {
+      transaction_id: 'tx-001',
+      account_id: 'acct-001',
+      name: 'ABC Mortgage Payment',
+      merchant_name: 'ABC Mortgage Co',
+      amount: 1850.00,
+      date: '2026-04-01',
+      category: ['Payment', 'Mortgage'],
+      pending: false,
+    },
+    {
+      transaction_id: 'tx-002',
+      account_id: 'acct-001',
+      name: 'Grocery Store',
+      merchant_name: 'Fresh Mart',
+      amount: 142.30,
+      date: '2026-04-03',
+      category: ['Shops', 'Groceries'],
+      pending: false,
+    },
+    {
+      transaction_id: 'tx-003',
+      account_id: 'acct-001',
+      name: 'Escrow Payment',
+      merchant_name: null,
+      amount: 450.00,
+      date: '2026-04-05',
+      category: ['Payment', 'Insurance'],
+      pending: true,
+    },
+    {
+      transaction_id: 'tx-004',
+      account_id: 'acct-002',
+      name: 'Interest Payment',
+      merchant_name: null,
+      amount: -12.50,
+      date: '2026-04-02',
+      category: ['Transfer', 'Interest'],
+      pending: false,
+    },
+  ]
+}
+
+/** Set up page.route interception for Plaid API endpoints. */
+export async function interceptPlaidAPI(
+  page: Page,
+  opts?: {
+    accounts?: MockPlaidAccount[]
+    transactions?: MockPlaidTransaction[]
+    empty?: boolean
+  }
+) {
+  const accounts = opts?.empty ? [] : (opts?.accounts ?? mockPlaidAccounts())
+  const transactions = opts?.empty ? [] : (opts?.transactions ?? mockTransactions())
+
+  // Link token creation
+  await page.route('**/api/v1/plaid/link_token', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ linkToken: 'link-sandbox-test-token' }),
+    })
+  )
+
+  // Token exchange
+  await page.route('**/api/v1/plaid/exchange_token', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ access_token: 'access-sandbox-test-token' }),
+    })
+  )
+
+  // Accounts
+  await page.route('**/api/v1/plaid/accounts', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ accounts }),
+    })
+  )
+
+  // Transactions
+  await page.route('**/api/v1/plaid/transactions', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ transactions }),
+    })
+  )
+
+  // Item info
+  await page.route('**/api/v1/plaid/item', (route) => {
+    if (route.request().method() === 'DELETE') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true }),
+      })
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        item: {
+          institution_id: 'ins_001',
+          institution_name: 'First National Bank',
+          consent_expiration_time: null,
+        },
+      }),
+    })
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Settings mock data
+// ---------------------------------------------------------------------------
+
+/** Set up page.route interception for settings page (cases + documents for export). */
+export async function interceptSettingsAPI(page: Page) {
+  await page.route('**/api/v1/cases?*', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ cases: mockCasesList(2), total: 2 }),
+    })
+  )
+  await page.route('**/api/v1/cases', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ cases: mockCasesList(2), total: 2 }),
+    })
+  )
+  await page.route('**/api/v1/documents?*', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ documents: mockDocumentsList(2), total: 2 }),
+    })
+  )
+  await page.route('**/api/v1/documents', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ documents: mockDocumentsList(2), total: 2 }),
+    })
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Auth helper
 // ---------------------------------------------------------------------------
 
