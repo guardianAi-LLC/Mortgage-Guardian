@@ -626,5 +626,5 @@ const TEST_USER_EMAIL = process.env.E2E_CLERK_USER_EMAIL || 'n.garrison@me.com'
 export async function signIn(page: Page, context: BrowserContext) {
   await setupClerkTestingToken({ page, context })
   await page.goto('/')
-  await clerk.signIn({ page, emailAddress: TEST_USER_EMAIL, setupClerkTestingTokenOptions: { context } })
+  await clerk.signIn({ page, emailAddress: TEST_USER_EMAIL })
 }

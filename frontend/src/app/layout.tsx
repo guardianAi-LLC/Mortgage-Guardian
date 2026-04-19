@@ -15,9 +15,25 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
+const metadataBase = new URL(
+  process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+)
+
 export const metadata: Metadata = {
+  metadataBase,
   title: 'Mortgage Guardian — AI-Powered Mortgage Audit',
   description: 'AI-powered forensic audit that detects mortgage servicer violations and generates legal documents.',
+  openGraph: {
+    title: 'Mortgage Guardian — AI-Powered Mortgage Audit',
+    description: 'AI-powered forensic audit that detects mortgage servicer violations and generates legal documents.',
+    type: 'website',
+    siteName: 'Mortgage Guardian',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Mortgage Guardian — AI-Powered Mortgage Audit',
+    description: 'AI-powered forensic audit that detects mortgage servicer violations and generates legal documents.',
+  },
 }
 
 export default function RootLayout({
