@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import {
   Landmark,
   ChevronDown,
@@ -24,7 +25,19 @@ import {
   useDeletePlaidItem,
 } from '@/hooks/use-plaid-link'
 import { useReport } from '@/lib/hooks'
-import { PlaidLinkButton } from '@/components/plaid-link-button'
+
+// Dynamically import PlaidLinkButton to keep react-plaid-link out of the shared bundle
+const PlaidLinkButton = dynamic(
+  () => import('@/components/plaid-link-button').then((m) => m.PlaidLinkButton),
+  {
+    ssr: false,
+    loading: () => (
+      <button disabled className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white opacity-50 cursor-not-allowed">
+        Loading...
+      </button>
+    ),
+  }
+)
 import { PageHeader } from '@/components/page-header'
 import { EmptyState } from '@/components/empty-state'
 import { Button } from '@/components/ui/button'
