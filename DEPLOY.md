@@ -234,6 +234,48 @@ docker run -d --name mg-backend -p 3000:3000 --env-file backend-express/.env mg-
 
 > **Tip:** Always verify rollback success by running `bash scripts/validate-deployment.sh <url>`.
 
+## Monitoring
+
+### Sentry Error Tracking
+
+Sentry is optional and gracefully degrades when not configured. To enable:
+
+1. Set `NEXT_PUBLIC_SENTRY_DSN` in your Vercel environment variables (or `.env` for local dev).
+2. Optionally set `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` to enable source map uploads during Vercel builds. Source maps provide readable stack traces in Sentry.
+
+Without `SENTRY_AUTH_TOKEN`, the build skips source map upload silently. The frontend still captures errors via the DSN.
+
+For backend Sentry, set `SENTRY_DSN` in the backend environment.
+
+See [MONITORING.md](./MONITORING.md) for full monitoring and observability documentation.
+
+### Health Check URLs
+
+These endpoints are proxied through the frontend to the Express backend:
+
+| Endpoint | Purpose |
+|---|---|
+| `/api/v1/health` | Full service health with dependency checks |
+| `/api/v1/health/live` | Liveness probe (process alive) |
+| `/api/v1/health/ready` | Readiness probe (dependencies connected) |
+| `/api/v1/metrics` | Request metrics, response times, memory usage |
+
+### Verifying Health After Deployment
+
+```bash
+# Check liveness
+curl -s https://your-app.vercel.app/health/live
+
+# Check readiness
+curl -s https://your-app.vercel.app/health/ready
+
+# Full health status
+curl -s https://your-app.vercel.app/health | python3 -m json.tool
+
+# Request metrics
+curl -s https://your-app.vercel.app/api/v1/metrics | python3 -m json.tool
+```
+
 ## Troubleshooting
 
 **Port conflicts:** If ports 3000 or 3001 are in use, stop the conflicting process or change the port mapping in `docker-compose.yml` (e.g., `"3002:3000"`).
