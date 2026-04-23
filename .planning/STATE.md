@@ -34,7 +34,7 @@ None.
 
 ### Pending Todos
 
-2 pending todos in `.planning/todos/pending/`.
+1 pending todo in `.planning/todos/pending/`.
 
 ### Blockers/Concerns Carried Forward
 
