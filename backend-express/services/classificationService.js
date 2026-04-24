@@ -1,8 +1,13 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const { createLogger } = require('../utils/logger');
+const { REASONING_PROMPT_INSTRUCTIONS } = require('../config/structuredReasoningConfig');
 const logger = createLogger('classification');
 
-// Confidence thresholds for classification gating
+// Confidence thresholds for classification gating.
+// Note: classification uses domain-specific thresholds (0.7/0.4) because document
+// type classification has different certainty semantics than analysis findings.
+// The shared config's getConfidenceLevel uses 0.85/0.50 — appropriate for findings
+// with direct documentary evidence, but too strict for document type matching.
 const CONFIDENCE_HIGH_THRESHOLD = 0.7;
 const CONFIDENCE_LOW_THRESHOLD = 0.4;
 
@@ -186,7 +191,7 @@ ${taxonomyJson}
 1. **Classify** the document into one of the taxonomy categories (classificationType) and a specific subtype (classificationSubtype).
 2. **Extract key metadata** from the document including dates, monetary amounts, parties/entities, account numbers (masked), and property addresses.
 3. **Provide a confidence score** between 0 and 1 indicating how certain you are of the classification.
-4. **Explain your reasoning** briefly.
+4. **Explain your reasoning** using structured steps (reasoningSteps) and a brief confidence explanation (confidenceExplanation).
 
 If the document doesn't fit any category, use classificationType: "unknown" with classificationSubtype: "unclassified".${existingTypeInstruction}
 
@@ -204,8 +209,14 @@ Respond with ONLY valid JSON in this exact format (no markdown, no code fences):
     "accountNumbers": ["****1234"],
     "propertyAddress": "123 Main St, Springfield, IL 62701"
   },
-  "reasoning": "Brief explanation of why this classification was chosen."
+  "reasoning": "Brief explanation of why this classification was chosen (retained for compatibility).",
+  "reasoningSteps": ["step 1: analyzed document features (layout, headers, terminology)...", "step 2: matched features against taxonomy category...", "step 3: assessed confidence based on feature match quality..."],
+  "confidenceExplanation": "One sentence explaining why this confidence level was assigned."
 }
+
+## Reasoning Instructions
+
+${REASONING_PROMPT_INSTRUCTIONS.CLASSIFICATION_REASONING_INSTRUCTION}
 
 ## Document Text
 
@@ -247,6 +258,18 @@ ${documentText}`;
       });
       parsed.classificationType = 'unknown';
       parsed.classificationSubtype = 'unclassified';
+    }
+
+    // Extract structured reasoning fields (new — backward compat with old 'reasoning' string)
+    if (!Array.isArray(parsed.reasoningSteps)) {
+      parsed.reasoningSteps = [];
+    }
+    if (!('confidenceExplanation' in parsed)) {
+      parsed.confidenceExplanation = null;
+    }
+    // Backward compat: if reasoningSteps present but no reasoning string, synthesize one
+    if (parsed.reasoningSteps.length > 0 && !parsed.reasoning) {
+      parsed.reasoning = parsed.reasoningSteps.join(' ');
     }
 
     // Clamp confidence to 0-1 range

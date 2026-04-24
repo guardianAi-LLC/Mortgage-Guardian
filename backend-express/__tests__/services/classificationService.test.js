@@ -235,6 +235,24 @@ describe('ClassificationService', () => {
       expect(prompt).toContain('unknown');
       expect(prompt).toContain('unclassified');
     });
+
+    it('includes reasoningSteps and confidenceExplanation in JSON schema', () => {
+      const prompt = classificationService._buildClassificationPrompt(sampleText);
+
+      expect(prompt).toContain('reasoningSteps');
+      expect(prompt).toContain('confidenceExplanation');
+    });
+
+    it('includes CLASSIFICATION_REASONING_INSTRUCTION before document text', () => {
+      const prompt = classificationService._buildClassificationPrompt(sampleText);
+
+      // CLASSIFICATION_REASONING_INSTRUCTION content
+      expect(prompt).toContain('document features were analyzed');
+      // Reasoning section must appear before the document text section
+      const reasoningIdx = prompt.indexOf('document features were analyzed');
+      const docTextIdx = prompt.indexOf('## Document Text');
+      expect(reasoningIdx).toBeLessThan(docTextIdx);
+    });
   });
 
   // ============================================================
@@ -352,6 +370,63 @@ describe('ClassificationService', () => {
 
       expect(result.classificationType).toBe('unknown');
       expect(result.classificationSubtype).toBe('unclassified');
+    });
+
+    it('should parse structured reasoningSteps from response', () => {
+      const response = {
+        classificationType: 'servicing',
+        classificationSubtype: 'monthly_statement',
+        confidence: 0.9,
+        extractedMetadata: {},
+        reasoning: 'Classification reasoning.',
+        reasoningSteps: [
+          'step 1: document layout shows statement header with account and servicer details',
+          'step 2: matched terminology against servicing/monthly_statement taxonomy entry',
+          'step 3: high confidence due to clear structural and terminology alignment'
+        ],
+        confidenceExplanation: 'High confidence because document structure and terminology clearly match monthly statement format.'
+      };
+
+      const result = classificationService._parseClassificationResponse(JSON.stringify(response));
+
+      expect(Array.isArray(result.reasoningSteps)).toBe(true);
+      expect(result.reasoningSteps).toHaveLength(3);
+      expect(result.reasoningSteps[0]).toContain('step 1');
+      expect(result.confidenceExplanation).toBeDefined();
+      expect(result.confidenceExplanation).not.toBeNull();
+      expect(result.confidenceExplanation).toContain('High confidence');
+    });
+
+    it('should fall back to reasoning string when reasoningSteps not present', () => {
+      const response = {
+        classificationType: 'origination',
+        classificationSubtype: 'promissory_note',
+        confidence: 0.85,
+        extractedMetadata: {},
+        reasoning: 'Old-style reasoning string without structured steps.'
+      };
+
+      const result = classificationService._parseClassificationResponse(JSON.stringify(response));
+
+      expect(result.reasoning).toBe('Old-style reasoning string without structured steps.');
+      expect(result.reasoningSteps).toEqual([]);
+      expect(result.confidenceExplanation).toBeNull();
+    });
+
+    it('should synthesize reasoning string from reasoningSteps when reasoning field absent', () => {
+      const response = {
+        classificationType: 'servicing',
+        classificationSubtype: 'monthly_statement',
+        confidence: 0.9,
+        extractedMetadata: {},
+        reasoningSteps: ['step 1: check layout', 'step 2: match taxonomy'],
+        confidenceExplanation: 'Strong feature match.'
+      };
+
+      const result = classificationService._parseClassificationResponse(JSON.stringify(response));
+
+      expect(result.reasoning).toBe('step 1: check layout step 2: match taxonomy');
+      expect(result.reasoningSteps).toHaveLength(2);
     });
 
     it('allows valid taxonomy types to pass through', () => {
