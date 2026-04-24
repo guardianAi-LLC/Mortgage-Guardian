@@ -149,7 +149,7 @@ Full details: [milestones/v7.0-ROADMAP.md](milestones/v7.0-ROADMAP.md)
 
 Plans:
 - [x] 51-01: Evidence Schema & Document Analysis Enrichment — completed 2026-04-23
-- [ ] 51-02: Cross-Document Comparison Enrichment
+- [x] 51-02: Cross-Document Comparison Enrichment — completed 2026-04-23
 - [ ] 51-03: Compliance Evidence Linking
 - [ ] 51-04: Evidence Propagation Through Report Pipeline
 - [ ] 51-05: Dispute Letter Enrichment & Integration Verification
@@ -305,7 +305,7 @@ Plans:
 | 49. E2E Testing & Quality Assurance | v7.0 | 5/5 | Complete | 2026-04-18 |
 | 50. Production Build & Deployment | v7.0 | 3/3 | Complete | 2026-04-19 |
 
-| 51. Evidence Enrichment | v8.0 | 1/5 | In progress | - |
+| 51. Evidence Enrichment | v8.0 | 2/5 | In progress | - |
 | 52. Structured Reasoning in Claude Prompts | v8.0 | 0/? | Not started | - |
 | 53. Report Output Format | v8.0 | 0/? | Not started | - |
 | 54. Plaid Token Migration | v8.0 | 0/? | Not started | - |
