@@ -6,6 +6,9 @@ const {
   getExpectedFieldCount,
   categorizeField
 } = require('../config/documentFieldDefinitions');
+const {
+  ENRICHMENT_PROMPT_INSTRUCTIONS
+} = require('../config/evidenceEnrichmentConfig');
 
 const logger = createLogger('document-analysis');
 
@@ -223,7 +226,9 @@ class DocumentAnalysisService {
       "severity": "critical|high|medium|low|info",
       "description": "explanation of the anomaly",
       "expectedValue": "if applicable",
-      "actualValue": "if applicable"
+      "actualValue": "if applicable",
+      "pageNumber": null,
+      "quotedText": "exact text from document supporting this finding, max 500 chars"
     }
   ],
   "summary": {
@@ -294,6 +299,10 @@ ${template}
 
 ${specificChecks}
 
+${ENRICHMENT_PROMPT_INSTRUCTIONS.ANOMALY_EVIDENCE_INSTRUCTION}
+
+${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
+
 Document text:
 ---
 ${documentText}
@@ -355,6 +364,10 @@ ${template}
 
 ${specificChecks}
 
+${ENRICHMENT_PROMPT_INSTRUCTIONS.ANOMALY_EVIDENCE_INSTRUCTION}
+
+${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
+
 Document text:
 ---
 ${documentText}
@@ -414,6 +427,10 @@ ${template}
 
 ${specificChecks}
 
+${ENRICHMENT_PROMPT_INSTRUCTIONS.ANOMALY_EVIDENCE_INSTRUCTION}
+
+${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
+
 Document text:
 ---
 ${documentText}
@@ -468,6 +485,10 @@ ${template}
 
 ${specificChecks}
 
+${ENRICHMENT_PROMPT_INSTRUCTIONS.ANOMALY_EVIDENCE_INSTRUCTION}
+
+${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
+
 Document text:
 ---
 ${documentText}
@@ -518,6 +539,10 @@ Extract ALL data points from this document into the following JSON structure:
 ${template}
 
 ${specificChecks}
+
+${ENRICHMENT_PROMPT_INSTRUCTIONS.ANOMALY_EVIDENCE_INSTRUCTION}
+
+${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
 
 Document text:
 ---
@@ -572,6 +597,10 @@ ${template}
 
 ${specificChecks}
 
+${ENRICHMENT_PROMPT_INSTRUCTIONS.ANOMALY_EVIDENCE_INSTRUCTION}
+
+${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
+
 Document text:
 ---
 ${documentText}
@@ -602,6 +631,10 @@ Check for:
 - Missing information that would normally be present
 - Any unusual values or calculation errors
 - Regulatory compliance concerns
+
+${ENRICHMENT_PROMPT_INSTRUCTIONS.ANOMALY_EVIDENCE_INSTRUCTION}
+
+${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
 
 Document text:
 ---
@@ -688,6 +721,18 @@ Respond ONLY with valid JSON. No markdown, no explanation outside the JSON.`;
 
     // Categorize and enrich anomalies
     const anomalies = this._categorizeAnomalies(rawAnomalies, classificationType, classificationSubtype);
+
+    // Enrich anomalies with source document metadata
+    const sourceDocument = {
+      id: classification.documentId || null,
+      name: classification.documentName || classification.extractedMetadata?.fileName || null,
+      type: classificationType,
+      subtype: classificationSubtype
+    };
+
+    anomalies.forEach(anomaly => {
+      anomaly.sourceDocument = sourceDocument;
+    });
 
     // Calculate completeness
     const completeness = this._calculateCompleteness(extractedData, classificationType, classificationSubtype);
@@ -793,6 +838,15 @@ Respond ONLY with valid JSON. No markdown, no explanation outside the JSON.`;
 
       if (fieldCategory === 'critical' && (enriched.severity === 'low' || enriched.severity === 'info' || enriched.severity === 'medium')) {
         enriched.severity = 'high';
+      }
+
+      // Add evidence enrichment fields with null defaults
+      enriched.pageReference = anomaly.pageNumber != null ? anomaly.pageNumber : null;
+      enriched.quotedText = anomaly.quotedText || null;
+
+      // Truncate quotedText to 500 chars if needed
+      if (enriched.quotedText && enriched.quotedText.length > 500) {
+        enriched.quotedText = enriched.quotedText.substring(0, 500);
       }
 
       return enriched;
