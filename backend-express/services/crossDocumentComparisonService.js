@@ -1,6 +1,7 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const { createLogger } = require('../utils/logger');
 const { DISCREPANCY_TYPES, SEVERITY_LEVELS } = require('../schemas/crossDocumentAnalysisSchema');
+const { ENRICHMENT_PROMPT_INSTRUCTIONS } = require('../config/evidenceEnrichmentConfig');
 
 const logger = createLogger('cross-document-comparison');
 
@@ -23,6 +24,8 @@ const DEFAULT_TEMPERATURE = 0.1;
 const SYSTEM_PROMPT = `You are a forensic mortgage document analyst at a major law firm. You are comparing two mortgage-related documents from the same loan file to identify discrepancies, contradictions, and potential regulatory violations.
 
 Your analysis must be thorough, precise, and cite specific field values. When you identify a discrepancy, explain its significance for the borrower and whether it suggests a servicing error, regulatory violation, or potential fraud.
+
+${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
 
 Respond ONLY with valid JSON matching the specified schema.`;
 
@@ -245,6 +248,8 @@ ${instructions}
 ## Applicable Discrepancy Types
 ${discrepancyTypes.join(', ')}
 
+${ENRICHMENT_PROMPT_INSTRUCTIONS.DISCREPANCY_EVIDENCE_INSTRUCTION}
+
 ## Required JSON Output
 
 {
@@ -254,8 +259,8 @@ ${discrepancyTypes.join(', ')}
       "type": "one of: ${DISCREPANCY_TYPES.join(', ')}",
       "severity": "one of: ${SEVERITY_LEVELS.join(', ')}",
       "description": "detailed explanation of the discrepancy and its significance",
-      "documentA": { "field": "fieldName", "value": "value from Document A" },
-      "documentB": { "field": "fieldName", "value": "value from Document B" },
+      "documentA": { "field": "fieldName", "value": "value from Document A", "pageNumber": 1, "quotedText": "exact text from Document A supporting this finding, max 500 chars" },
+      "documentB": { "field": "fieldName", "value": "value from Document B", "pageNumber": 1, "quotedText": "exact text from Document B supporting this finding, max 500 chars" },
       "regulation": "applicable regulation if any (e.g. RESPA Section 6)",
       "forensicNote": "additional forensic analysis context"
     }
@@ -470,8 +475,40 @@ Report only findings supported by specific field values from both documents.`;
         enriched.documentB = { field: 'unknown', value: null };
       }
 
+      // Enrich documentA with evidence fields and document metadata
+      enriched.documentA = {
+        ...enriched.documentA,
+        pageNumber: enriched.documentA.pageNumber != null ? enriched.documentA.pageNumber : null,
+        quotedText: enriched.documentA.quotedText || null,
+        documentName: docA.documentName || null,
+        documentType: docA.documentType || null
+      };
+      // Truncate quotedText to 500 chars
+      if (enriched.documentA.quotedText && enriched.documentA.quotedText.length > 500) {
+        enriched.documentA.quotedText = enriched.documentA.quotedText.substring(0, 500);
+      }
+
+      // Enrich documentB with evidence fields and document metadata
+      enriched.documentB = {
+        ...enriched.documentB,
+        pageNumber: enriched.documentB.pageNumber != null ? enriched.documentB.pageNumber : null,
+        quotedText: enriched.documentB.quotedText || null,
+        documentName: docB.documentName || null,
+        documentType: docB.documentType || null
+      };
+      // Truncate quotedText to 500 chars
+      if (enriched.documentB.quotedText && enriched.documentB.quotedText.length > 500) {
+        enriched.documentB.quotedText = enriched.documentB.quotedText.substring(0, 500);
+      }
+
       return enriched;
     });
+
+    // Build a lookup for document metadata by documentId
+    const docMetadataById = {
+      [docA.documentId]: { documentName: docA.documentName || null, documentType: docA.documentType || null },
+      [docB.documentId]: { documentName: docB.documentName || null, documentType: docB.documentType || null }
+    };
 
     // Enrich timeline events
     const timelineEvents = rawTimelineEvents.map(event => {
@@ -481,6 +518,9 @@ Report only findings supported by specific field values from both documents.`;
       if (!enriched.documentType) enriched.documentType = 'unknown';
       if (!enriched.event) enriched.event = 'Undescribed event';
       if (!enriched.significance) enriched.significance = 'routine';
+      // Add document metadata from input documents
+      const meta = docMetadataById[enriched.documentId];
+      enriched.documentName = meta ? meta.documentName : null;
       return enriched;
     });
 
@@ -494,6 +534,11 @@ Report only findings supported by specific field values from both documents.`;
       if (!Array.isArray(enriched.relatedDocuments) || enriched.relatedDocuments.length === 0) {
         enriched.relatedDocuments = [docA.documentId, docB.documentId];
       }
+      // Add relatedDocumentNames from input document metadata
+      enriched.relatedDocumentNames = enriched.relatedDocuments.map(id => {
+        const meta = docMetadataById[id];
+        return meta ? meta.documentName : null;
+      });
       return enriched;
     });
 
