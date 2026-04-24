@@ -2,6 +2,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { createLogger } = require('../utils/logger');
 const { DISCREPANCY_TYPES, SEVERITY_LEVELS } = require('../schemas/crossDocumentAnalysisSchema');
 const { ENRICHMENT_PROMPT_INSTRUCTIONS } = require('../config/evidenceEnrichmentConfig');
+const { REASONING_PROMPT_INSTRUCTIONS, getConfidenceLevel } = require('../config/structuredReasoningConfig');
 
 const logger = createLogger('cross-document-comparison');
 
@@ -26,6 +27,8 @@ const SYSTEM_PROMPT = `You are a forensic mortgage document analyst at a major l
 Your analysis must be thorough, precise, and cite specific field values. When you identify a discrepancy, explain its significance for the borrower and whether it suggests a servicing error, regulatory violation, or potential fraud.
 
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
+
+For each discrepancy you identify, show your analytical reasoning chain so that your conclusions are legally defensible. ${REASONING_PROMPT_INSTRUCTIONS.DISCREPANCY_REASONING_INSTRUCTION}
 
 Respond ONLY with valid JSON matching the specified schema.`;
 
@@ -250,6 +253,10 @@ ${discrepancyTypes.join(', ')}
 
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.DISCREPANCY_EVIDENCE_INSTRUCTION}
 
+${REASONING_PROMPT_INSTRUCTIONS.DISCREPANCY_REASONING_INSTRUCTION}
+
+${REASONING_PROMPT_INSTRUCTIONS.GENERAL_REASONING_INSTRUCTION}
+
 ## Required JSON Output
 
 {
@@ -262,7 +269,9 @@ ${ENRICHMENT_PROMPT_INSTRUCTIONS.DISCREPANCY_EVIDENCE_INSTRUCTION}
       "documentA": { "field": "fieldName", "value": "value from Document A", "pageNumber": 1, "quotedText": "exact text from Document A supporting this finding, max 500 chars" },
       "documentB": { "field": "fieldName", "value": "value from Document B", "pageNumber": 1, "quotedText": "exact text from Document B supporting this finding, max 500 chars" },
       "regulation": "applicable regulation if any (e.g. RESPA Section 6)",
-      "forensicNote": "additional forensic analysis context"
+      "forensicNote": "additional forensic analysis context",
+      "reasoningSteps": ["step 1: what was compared", "step 2: values found", "step 3: why they conflict", "step 4: regulatory/financial significance"],
+      "confidence": 0.0
     }
   ],
   "timelineEvents": [
