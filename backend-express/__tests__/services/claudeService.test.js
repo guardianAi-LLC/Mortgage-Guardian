@@ -25,9 +25,11 @@ const claudeService = require('../../services/claudeService');
 // ============================================================
 describe('ClaudeService', () => {
   describe('analyzeDocument', () => {
+    const MODEL = 'claude-sonnet-4-5-20250514';
+
     const mockApiResponse = {
       content: [{ text: 'Analysis result text' }],
-      model: 'claude-3-5-sonnet-20241022',
+      model: MODEL,
       usage: { input_tokens: 100, output_tokens: 50 },
       stop_reason: 'end_turn'
     };
@@ -36,16 +38,49 @@ describe('ClaudeService', () => {
       mockMessagesCreate.mockReset();
     });
 
-    it('returns formatted response on success', async () => {
+    it('returns formatted response on success (plain text content)', async () => {
       mockMessagesCreate.mockResolvedValue(mockApiResponse);
 
       const result = await claudeService.analyzeDocument({ prompt: 'Analyze this document' });
 
-      expect(result).toEqual({
-        content: 'Analysis result text',
-        model: 'claude-3-5-sonnet-20241022',
-        usage: { inputTokens: 100, outputTokens: 50 },
-        stopReason: 'end_turn'
+      // Plain text (non-JSON) content is returned as-is
+      expect(result.content).toBe('Analysis result text');
+      expect(result.model).toBe(MODEL);
+      expect(result.usage).toEqual({ inputTokens: 100, outputTokens: 50 });
+      expect(result.stopReason).toBe('end_turn');
+    });
+
+    it('enriches JSON content with default reasoning fields', async () => {
+      const jsonResponse = {
+        content: [{ text: JSON.stringify({ summary: 'test', issues: [] }) }],
+        model: MODEL,
+        usage: { input_tokens: 100, output_tokens: 50 },
+        stop_reason: 'end_turn'
+      };
+      mockMessagesCreate.mockResolvedValue(jsonResponse);
+
+      const result = await claudeService.analyzeDocument({ prompt: 'Analyze' });
+
+      expect(result.content).toMatchObject({
+        summary: 'test',
+        issues: [],
+        reasoningSteps: [],
+        confidence: null,
+        confidenceLevel: null,
+        confidenceExplanation: null
+      });
+    });
+
+    it('reasoning fields present in top-level response object', async () => {
+      mockMessagesCreate.mockResolvedValue(mockApiResponse);
+
+      const result = await claudeService.analyzeDocument({ prompt: 'test' });
+
+      expect(result.reasoning).toEqual({
+        reasoningSteps: [],
+        confidence: null,
+        confidenceLevel: null,
+        confidenceExplanation: null
       });
     });
 
@@ -67,13 +102,13 @@ describe('ClaudeService', () => {
       });
     });
 
-    it('uses default model when not specified', async () => {
+    it('uses updated default model claude-sonnet-4-5-20250514 when not specified', async () => {
       mockMessagesCreate.mockResolvedValue(mockApiResponse);
 
       await claudeService.analyzeDocument({ prompt: 'test' });
 
       expect(mockMessagesCreate).toHaveBeenCalledWith(
-        expect.objectContaining({ model: 'claude-3-5-sonnet-20241022' })
+        expect.objectContaining({ model: 'claude-sonnet-4-5-20250514' })
       );
     });
 
@@ -152,6 +187,13 @@ describe('ClaudeService', () => {
       expect(prompt).toMatch(/mortgage auditor/i);
     });
 
+    it('mortgage_statement prompt includes reasoning instructions', () => {
+      const prompt = claudeService.buildMortgageAnalysisPrompt(sampleText, 'mortgage_statement');
+
+      expect(prompt).toMatch(/reasoningSteps/);
+      expect(prompt).toMatch(/confidence/i);
+    });
+
     it('returns escrow_statement prompt', () => {
       const prompt = claudeService.buildMortgageAnalysisPrompt(sampleText, 'escrow_statement');
 
@@ -190,12 +232,24 @@ describe('ClaudeService', () => {
         expect(prompt).toContain(uniqueText);
       });
     });
+
+    it('all prompt variants include reasoning instructions', () => {
+      const types = ['mortgage_statement', 'escrow_statement', 'payment_history', 'unknown_type'];
+
+      types.forEach((type) => {
+        const prompt = claudeService.buildMortgageAnalysisPrompt(sampleText, type);
+        // General reasoning instruction is appended to all types
+        expect(prompt).toMatch(/Show your work/i);
+      });
+    });
   });
 
   // ============================================================
   // testConnection
   // ============================================================
   describe('testConnection', () => {
+    const MODEL = 'claude-sonnet-4-5-20250514';
+
     beforeEach(() => {
       mockMessagesCreate.mockReset();
     });
@@ -203,7 +257,7 @@ describe('ClaudeService', () => {
     it('returns success with message when API responds', async () => {
       mockMessagesCreate.mockResolvedValue({
         content: [{ text: 'API connection successful' }],
-        model: 'claude-3-5-sonnet-20241022',
+        model: MODEL,
         usage: { input_tokens: 10, output_tokens: 5 },
         stop_reason: 'end_turn'
       });
@@ -230,7 +284,7 @@ describe('ClaudeService', () => {
     it('calls analyzeDocument with maxTokens: 20', async () => {
       mockMessagesCreate.mockResolvedValue({
         content: [{ text: 'OK' }],
-        model: 'claude-3-5-sonnet-20241022',
+        model: MODEL,
         usage: { input_tokens: 10, output_tokens: 3 },
         stop_reason: 'end_turn'
       });
