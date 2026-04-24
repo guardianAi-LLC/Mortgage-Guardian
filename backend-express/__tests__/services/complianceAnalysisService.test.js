@@ -681,6 +681,74 @@ describe('ComplianceAnalysisService', () => {
       expect(result[0].supportingFindings).toEqual([]);
       expect(result[0].pageReferences).toEqual([]);
     });
+
+    it('should include reasoning fields in enhanced violations', () => {
+      const violations = [makeViolation()];
+      const parsed = {
+        enhancedViolations: [
+          {
+            index: 0,
+            detailedLegalBasis: 'Legal basis',
+            recommendations: ['Fix it'],
+            reasoningSteps: [
+              'RESPA Section 10 requires annual escrow analysis',
+              'Servicer charged $200 above allowed limit',
+              'Overcharge violates 12 CFR § 1024.17(c)',
+              'Borrower entitled to actual damages plus statutory damages'
+            ],
+            confidence: 0.92
+          }
+        ]
+      };
+
+      const result = complianceAnalysisService._mergeEnhancements(violations, parsed);
+      expect(result[0].reasoningSteps).toHaveLength(4);
+      expect(result[0].reasoningSteps[0]).toBe('RESPA Section 10 requires annual escrow analysis');
+      expect(result[0].confidence).toBe(0.92);
+      expect(result[0].confidenceLevel).toBe('high');
+    });
+
+    it('should default reasoning fields when not in enhancement response', () => {
+      const violations = [makeViolation()];
+      const parsed = {
+        enhancedViolations: [
+          {
+            index: 0,
+            detailedLegalBasis: 'Legal basis',
+            recommendations: ['Fix it']
+            // no reasoningSteps, no confidence
+          }
+        ]
+      };
+
+      const result = complianceAnalysisService._mergeEnhancements(violations, parsed);
+      expect(result[0].reasoningSteps).toEqual([]);
+      expect(result[0].confidence).toBeNull();
+      expect(result[0].confidenceLevel).toBeNull();
+    });
+
+    it('should preserve detailedLegalBasis alongside reasoningSteps', () => {
+      const violations = [makeViolation({ legalBasis: 'Original basis' })];
+      const parsed = {
+        enhancedViolations: [
+          {
+            index: 0,
+            detailedLegalBasis: 'Enhanced legal basis citing 12 CFR § 1024.17',
+            recommendations: ['Remedial action'],
+            reasoningSteps: ['Statute requires X', 'Document shows Y', 'Y violates X'],
+            confidence: 0.78
+          }
+        ]
+      };
+
+      const result = complianceAnalysisService._mergeEnhancements(violations, parsed);
+      // detailedLegalBasis mapped to legalBasis field
+      expect(result[0].legalBasis).toBe('Enhanced legal basis citing 12 CFR § 1024.17');
+      // reasoningSteps coexist alongside
+      expect(result[0].reasoningSteps).toEqual(['Statute requires X', 'Document shows Y', 'Y violates X']);
+      expect(result[0].confidence).toBe(0.78);
+      expect(result[0].confidenceLevel).toBe('medium');
+    });
   });
 
   // ================================================================
