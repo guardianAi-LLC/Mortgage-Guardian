@@ -835,6 +835,111 @@ describe('DocumentAnalysisService', () => {
   });
 
   // ==========================================================================
+  // analyzeDocument - reasoning enrichment
+  // ==========================================================================
+  describe('analyzeDocument - reasoning enrichment', () => {
+    it('should include reasoning fields in anomaly output when Claude provides them', async () => {
+      const response = createMockAnalysisResponse({
+        anomalies: [
+          {
+            field: 'monthlyPayment',
+            type: 'calculation_error',
+            severity: 'high',
+            description: 'Payment mismatch',
+            expectedValue: 1498.23,
+            actualValue: 1523.47,
+            pageNumber: 1,
+            quotedText: 'Monthly Payment: $1,523.47',
+            reasoningSteps: [
+              'Expected P&I payment is $1,498.23 based on rate x balance / 12',
+              'Document shows $1,523.47 which exceeds expected by $25.24',
+              'Discrepancy constitutes a calculation anomaly'
+            ],
+            confidence: 0.92
+          }
+        ]
+      });
+      mockMessagesCreate.mockResolvedValue(response);
+      const classification = createClassification('servicing', 'monthly_statement');
+
+      const result = await documentAnalysisService.analyzeDocument(sampleDocumentText, classification);
+
+      expect(result.anomalies).toHaveLength(1);
+      const anomaly = result.anomalies[0];
+      expect(anomaly.reasoningSteps).toEqual([
+        'Expected P&I payment is $1,498.23 based on rate x balance / 12',
+        'Document shows $1,523.47 which exceeds expected by $25.24',
+        'Discrepancy constitutes a calculation anomaly'
+      ]);
+      expect(anomaly.confidence).toBe(0.92);
+      expect(anomaly.confidenceLevel).toBe('high');
+    });
+
+    it('should default reasoning fields to null/empty when not provided by Claude', async () => {
+      const response = createMockAnalysisResponse({
+        anomalies: [
+          {
+            field: 'escrowBalance',
+            type: 'unusual_value',
+            severity: 'medium',
+            description: 'Escrow balance is unusually high'
+            // No reasoningSteps, no confidence
+          }
+        ]
+      });
+      mockMessagesCreate.mockResolvedValue(response);
+      const classification = createClassification('servicing', 'monthly_statement');
+
+      const result = await documentAnalysisService.analyzeDocument(sampleDocumentText, classification);
+
+      expect(result.anomalies).toHaveLength(1);
+      const anomaly = result.anomalies[0];
+      expect(anomaly.reasoningSteps).toEqual([]);
+      expect(anomaly.confidence).toBeNull();
+      expect(anomaly.confidenceLevel).toBeNull();
+    });
+
+    it('should clamp confidence to 0-1 range when Claude returns out-of-range value', async () => {
+      const response = createMockAnalysisResponse({
+        anomalies: [
+          {
+            field: 'interestRate',
+            type: 'unusual_value',
+            severity: 'medium',
+            description: 'Rate seems high',
+            reasoningSteps: ['Rate is above market average'],
+            confidence: 1.5
+          }
+        ]
+      });
+      mockMessagesCreate.mockResolvedValue(response);
+      const classification = createClassification('servicing', 'monthly_statement');
+
+      const result = await documentAnalysisService.analyzeDocument(sampleDocumentText, classification);
+
+      expect(result.anomalies).toHaveLength(1);
+      const anomaly = result.anomalies[0];
+      expect(anomaly.confidence).toBe(1.0);
+      expect(anomaly.confidenceLevel).toBe('high');
+    });
+
+    it('should include reasoning instructions in prompts', async () => {
+      mockMessagesCreate.mockResolvedValue(createMockAnalysisResponse());
+      const classification = createClassification('servicing', 'monthly_statement');
+
+      await documentAnalysisService.analyzeDocument(sampleDocumentText, classification);
+
+      const calledPrompt = mockMessagesCreate.mock.calls[0][0].messages[0].content;
+      // Check ANOMALY_REASONING_INSTRUCTION content
+      expect(calledPrompt).toContain('step-by-step reasoning');
+      expect(calledPrompt).toContain('confidence score');
+      // Check GENERAL_REASONING_INSTRUCTION content
+      expect(calledPrompt).toContain('reasoningSteps');
+      expect(calledPrompt).toContain('every finding must trace back');
+    });
+  });
+
+  // ==========================================================================
   // _categorizeAnomalies (direct unit test)
   // ==========================================================================
   describe('_categorizeAnomalies', () => {
