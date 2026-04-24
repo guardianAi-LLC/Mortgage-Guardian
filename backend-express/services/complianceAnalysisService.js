@@ -15,6 +15,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { createLogger } = require('../utils/logger');
 const { getStatuteById } = require('../config/federalStatuteTaxonomy');
 const { getStateStatuteById, getStateSectionById } = require('../config/stateStatuteTaxonomy');
+const { REASONING_PROMPT_INSTRUCTIONS, getConfidenceLevel } = require('../config/structuredReasoningConfig');
 
 const logger = createLogger('compliance-analysis');
 
@@ -361,6 +362,10 @@ Discrepancy Summary: ${caseContext.discrepancySummary || 'N/A'}
 
 ${JSON.stringify(violationSummaries, null, 2)}
 ${evidenceContext}
+## Reasoning Requirements
+
+${REASONING_PROMPT_INSTRUCTIONS.VIOLATION_REASONING_INSTRUCTION}
+
 ## Instructions
 
 For EACH violation above, provide enhanced legal analysis. Reference the specific source documents and quoted evidence in your analysis where available. Respond with valid JSON in this format:
@@ -373,13 +378,16 @@ For EACH violation above, provide enhanced legal analysis. Reference the specifi
       "detailedLegalBasis": "Detailed explanation citing specific regulatory provisions and why this finding constitutes a violation",
       "potentialPenalties": "Specific penalty exposure based on the statute and severity",
       "recommendations": ["Specific remedial action 1", "Specific remedial action 2"],
-      "regulatoryImplications": "Broader regulatory implications of this violation"
+      "regulatoryImplications": "Broader regulatory implications of this violation",
+      "reasoningSteps": ["The statute requires X", "The document shows Y", "Y violates X because Z", "Legal consequence is W"],
+      "confidence": 0.0
     }
   ]
 }
 \`\`\`
 
 Cite specific regulatory provisions (CFR sections, U.S.C. sections). Be precise and litigation-ready.
+${REASONING_PROMPT_INSTRUCTIONS.GENERAL_REASONING_INSTRUCTION}
 Respond ONLY with valid JSON. No explanation outside the JSON.`;
   }
 
@@ -456,6 +464,8 @@ Write a ${stateSection ? '4-6' : '3-5'} paragraph legal narrative suitable for i
 2. **Most Serious Concerns**: Highlight the most critical violations and their implications for the borrower
 3. **Regulatory Implications**: Explain the regulatory exposure and potential enforcement consequences
 4. **Recommended Actions**: Outline specific remedial steps the servicer should take${stateInstructions}
+
+Where violations carry a confidence score, calibrate your language accordingly: present high-confidence findings (score >= 0.85) with definitive language (e.g., "the servicer failed to", "clearly violates"); present lower-confidence findings with appropriate hedging (e.g., "evidence suggests", "appears to indicate", "warrants further review").
 
 Use professional legal tone. Reference specific statutes and regulations. This narrative will accompany the detailed violation findings in the compliance report.
 
@@ -547,6 +557,10 @@ Discrepancy Summary: ${caseContext.discrepancySummary || 'N/A'}
 
 ${JSON.stringify(violationSummaries, null, 2)}
 ${evidenceContext}
+## Reasoning Requirements
+
+${REASONING_PROMPT_INSTRUCTIONS.VIOLATION_REASONING_INSTRUCTION}
+
 ## Instructions
 
 For EACH violation above, provide enhanced legal analysis under state law. Reference the specific source documents and quoted evidence in your analysis where available. Respond with valid JSON in this format:
@@ -559,13 +573,16 @@ For EACH violation above, provide enhanced legal analysis under state law. Refer
       "detailedLegalBasis": "Detailed explanation citing specific state statutory provisions and why this finding constitutes a violation under state law",
       "potentialPenalties": "Specific state penalty exposure including statutory damages, treble damages, attorney fees as applicable",
       "recommendations": ["Specific remedial action 1", "Specific remedial action 2"],
-      "regulatoryImplications": "State-specific regulatory implications including potential enforcement actions by ${enforcementBodies}"
+      "regulatoryImplications": "State-specific regulatory implications including potential enforcement actions by ${enforcementBodies}",
+      "reasoningSteps": ["The statute requires X", "The document shows Y", "Y violates X because Z", "Legal consequence is W"],
+      "confidence": 0.0
     }
   ]
 }
 \`\`\`
 
 Cite specific state statutory provisions. Reference state enforcement bodies and state-specific remedies (e.g., treble damages, private right of action). Be precise and litigation-ready.
+${REASONING_PROMPT_INSTRUCTIONS.GENERAL_REASONING_INSTRUCTION}
 Respond ONLY with valid JSON. No explanation outside the JSON.`;
   }
 
@@ -714,6 +731,11 @@ Respond ONLY with valid JSON. No explanation outside the JSON.`;
       const enhancement = enhancementMap[i];
       if (!enhancement) return v;
 
+      const rawConfidence = enhancement.confidence;
+      const confidence =
+        typeof rawConfidence === 'number' ? Math.min(1, Math.max(0, rawConfidence)) : null;
+      const confidenceLevel = confidence !== null ? getConfidenceLevel(confidence) : null;
+
       return {
         ...v,
         legalBasis: enhancement.detailedLegalBasis || v.legalBasis,
@@ -721,7 +743,10 @@ Respond ONLY with valid JSON. No explanation outside the JSON.`;
         recommendations: Array.isArray(enhancement.recommendations)
           ? enhancement.recommendations
           : v.recommendations || [],
-        regulatoryImplications: enhancement.regulatoryImplications || undefined
+        regulatoryImplications: enhancement.regulatoryImplications || undefined,
+        reasoningSteps: Array.isArray(enhancement.reasoningSteps) ? enhancement.reasoningSteps : [],
+        confidence,
+        confidenceLevel
       };
     });
   }
