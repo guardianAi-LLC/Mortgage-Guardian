@@ -38,7 +38,9 @@ function createMockAnalysisResponse(overrides = {}) {
         severity: 'high',
         description: 'Payment amount does not match P&I calculation',
         expectedValue: 1498.23,
-        actualValue: 1523.47
+        actualValue: 1523.47,
+        pageNumber: 1,
+        quotedText: 'Monthly Payment: $1,523.47'
       }
     ],
     summary: {
@@ -496,6 +498,104 @@ describe('DocumentAnalysisService', () => {
       expect(result.anomalies[0].type).toBe('calculation_error');
       expect(result.anomalies[1].type).toBe('unusual_value');
       expect(result.anomalies[2].type).toBe('regulatory_concern');
+    });
+  });
+
+  // ==========================================================================
+  // analyzeDocument - evidence enrichment
+  // ==========================================================================
+  describe('analyzeDocument - evidence enrichment', () => {
+    it('should include evidence fields in anomalies when Claude provides them', async () => {
+      const response = createMockAnalysisResponse({
+        anomalies: [
+          {
+            field: 'monthlyPayment',
+            type: 'calculation_error',
+            severity: 'high',
+            description: 'Payment mismatch',
+            expectedValue: 1498.23,
+            actualValue: 1523.47,
+            pageNumber: 2,
+            quotedText: 'Total Monthly Payment Due: $1,523.47'
+          }
+        ]
+      });
+      mockMessagesCreate.mockResolvedValue(response);
+      const classification = createClassification('servicing', 'monthly_statement');
+
+      const result = await documentAnalysisService.analyzeDocument(sampleDocumentText, classification);
+
+      expect(result.anomalies).toHaveLength(1);
+      const anomaly = result.anomalies[0];
+      expect(anomaly.pageReference).toBe(2);
+      expect(anomaly.quotedText).toBe('Total Monthly Payment Due: $1,523.47');
+      expect(anomaly.sourceDocument).toBeDefined();
+      expect(anomaly.sourceDocument.type).toBe('servicing');
+      expect(anomaly.sourceDocument.subtype).toBe('monthly_statement');
+      expect(anomaly.sourceDocument).toHaveProperty('id');
+      expect(anomaly.sourceDocument).toHaveProperty('name');
+    });
+
+    it('should default evidence fields to null when Claude omits them', async () => {
+      const response = createMockAnalysisResponse({
+        anomalies: [
+          {
+            field: 'escrowBalance',
+            type: 'unusual_value',
+            severity: 'medium',
+            description: 'Escrow balance is unusually high'
+          }
+        ]
+      });
+      mockMessagesCreate.mockResolvedValue(response);
+      const classification = createClassification('servicing', 'monthly_statement');
+
+      const result = await documentAnalysisService.analyzeDocument(sampleDocumentText, classification);
+
+      expect(result.anomalies).toHaveLength(1);
+      const anomaly = result.anomalies[0];
+      expect(anomaly.pageReference).toBeNull();
+      expect(anomaly.quotedText).toBeNull();
+      // sourceDocument should still be populated from classification
+      expect(anomaly.sourceDocument).toBeDefined();
+      expect(anomaly.sourceDocument.type).toBe('servicing');
+      expect(anomaly.sourceDocument.subtype).toBe('monthly_statement');
+    });
+
+    it('should truncate quotedText exceeding 500 characters', async () => {
+      const longText = 'x'.repeat(600);
+      const response = createMockAnalysisResponse({
+        anomalies: [
+          {
+            field: 'monthlyPayment',
+            type: 'calculation_error',
+            severity: 'high',
+            description: 'Payment mismatch',
+            pageNumber: 1,
+            quotedText: longText
+          }
+        ]
+      });
+      mockMessagesCreate.mockResolvedValue(response);
+      const classification = createClassification('servicing', 'monthly_statement');
+
+      const result = await documentAnalysisService.analyzeDocument(sampleDocumentText, classification);
+
+      expect(result.anomalies[0].quotedText.length).toBe(500);
+    });
+
+    it('should include evidence instructions in prompts', async () => {
+      mockMessagesCreate.mockResolvedValue(createMockAnalysisResponse());
+      const classification = createClassification('servicing', 'monthly_statement');
+
+      await documentAnalysisService.analyzeDocument(sampleDocumentText, classification);
+
+      const calledPrompt = mockMessagesCreate.mock.calls[0][0].messages[0].content;
+      // Check for ANOMALY_EVIDENCE_INSTRUCTION content
+      expect(calledPrompt).toContain('pageNumber');
+      expect(calledPrompt).toContain('quotedText');
+      // Check for GENERAL_EVIDENCE_INSTRUCTION content
+      expect(calledPrompt).toContain('cite specific values');
     });
   });
 
