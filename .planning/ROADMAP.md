@@ -160,10 +160,15 @@ Plans:
 **Depends on**: Phase 51
 **Research**: Likely (Claude API prompt engineering patterns)
 **Research topics**: Current Claude API best practices for structured output, chain-of-thought prompting, citation extraction
-**Plans**: TBD
+**Plans**: 6
 
 Plans:
-- [ ] 52-01: TBD
+- [ ] 52-01: Reasoning Config & Claude Service Foundation
+- [ ] 52-02: Document Analysis Reasoning Restructuring
+- [ ] 52-03: Cross-Document Comparison Reasoning
+- [ ] 52-04: Compliance Analysis Reasoning
+- [ ] 52-05: Classification Enhancement & Dispute Letter Update
+- [ ] 52-06: API Schema Updates & Integration Verification
 
 #### Phase 53: Report Output Format
 
