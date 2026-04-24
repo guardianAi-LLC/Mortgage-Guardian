@@ -12,6 +12,7 @@ Mortgage Guardian 2.0 roadmap tracking milestones from MVP hardening through for
 - ✅ **v5.0 Production Readiness** (Phases 22-31, 24 plans) — SHIPPED 2026-04-07
 - ✅ **v6.0 iOS App Completion** (Phases 32-40, ~35 plans) — SHIPPED 2026-04-12
 - ✅ [v7.0 Web Dashboard](milestones/v7.0-ROADMAP.md) (Phases 41-50, 36 plans) — SHIPPED 2026-04-19
+- 🚧 **v8.0 Enterprise Readiness** — Phases 51-60 (in progress)
 
 ## Completed Milestones
 
@@ -135,6 +136,115 @@ Full details: [milestones/v7.0-ROADMAP.md](milestones/v7.0-ROADMAP.md)
 
 </details>
 
+### 🚧 v8.0 Enterprise Readiness (In Progress)
+
+**Milestone Goal:** Bridge the gap between "technically complete" and "ready for real users at scale" — citations make output trustworthy, security makes it safe, scale makes it durable, onboarding makes it accessible.
+
+#### Phase 51: Evidence Enrichment
+
+**Goal**: Modify cross-document comparison and document analysis to preserve quoted values, document names, page references in findings
+**Depends on**: Previous milestone complete
+**Research**: Unlikely (internal service modifications)
+**Plans**: TBD
+
+Plans:
+- [ ] 51-01: TBD (run /gsd:plan-phase 51 to break down)
+
+#### Phase 52: Structured Reasoning in Claude Prompts
+
+**Goal**: Restructure compliance analysis prompts to require reasoning steps, source references, confidence levels
+**Depends on**: Phase 51
+**Research**: Likely (Claude API prompt engineering patterns)
+**Research topics**: Current Claude API best practices for structured output, chain-of-thought prompting, citation extraction
+**Plans**: TBD
+
+Plans:
+- [ ] 52-01: TBD
+
+#### Phase 53: Report Output Format
+
+**Goal**: Extend schemas, update consolidated report and dispute letters with enriched citations
+**Depends on**: Phase 52
+**Research**: Unlikely (schema extension, internal patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 53-01: TBD
+
+#### Phase 54: Plaid Token Migration
+
+**Goal**: Move access tokens from localStorage to server-side encrypted storage with secure API endpoints
+**Depends on**: Phase 53
+**Research**: Likely (encrypted token storage patterns)
+**Research topics**: Server-side encrypted credential storage, secure token rotation, migration strategies for live tokens
+**Plans**: TBD
+
+Plans:
+- [ ] 54-01: TBD
+
+#### Phase 55: Upload Security & Malware Scanning
+
+**Goal**: Replace scanFileContent() stub with real scanning, strengthen upload pipeline
+**Depends on**: Phase 54
+**Research**: Likely (new integration — malware scanning library/service)
+**Research topics**: ClamAV vs cloud-based scanning services, Node.js malware scanning libraries, upload pipeline hardening
+**Plans**: TBD
+
+Plans:
+- [ ] 55-01: TBD
+
+#### Phase 56: Auth Hardening & Encryption Audit
+
+**Goal**: Session management improvements, token refresh, CSRF protection, encryption at rest/transit review
+**Depends on**: Phase 55
+**Research**: Likely (CSRF, session management patterns)
+**Research topics**: Express CSRF middleware, Clerk session management best practices, encryption audit checklist
+**Plans**: TBD
+
+Plans:
+- [ ] 56-01: TBD
+
+#### Phase 57: Server-Side Pagination & API Rate Limits
+
+**Goal**: Paginated document queries replacing client-side 500-doc limit, rate limit handling for Claude/Plaid
+**Depends on**: Phase 56
+**Research**: Unlikely (standard patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 57-01: TBD
+
+#### Phase 58: Multi-Tenant & Role-Based Access
+
+**Goal**: Shared cases, team support, RBAC — additive to single-user flow
+**Depends on**: Phase 57
+**Research**: Likely (multi-tenancy architecture)
+**Research topics**: Supabase RLS multi-tenant patterns, RBAC schema design, team invitation flows
+**Plans**: TBD
+
+Plans:
+- [ ] 58-01: TBD
+
+#### Phase 59: Onboarding & Empty States
+
+**Goal**: First-run guided walkthrough, contextual help, meaningful empty states throughout the app
+**Depends on**: Phase 58
+**Research**: Unlikely (internal UI patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 59-01: TBD
+
+#### Phase 60: Landing Page & Public Presence
+
+**Goal**: Marketing landing page explaining what Mortgage Guardian does, feature showcase
+**Depends on**: Phase 59
+**Research**: Unlikely (internal patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 60-01: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -191,4 +301,16 @@ Full details: [milestones/v7.0-ROADMAP.md](milestones/v7.0-ROADMAP.md)
 | 49. E2E Testing & Quality Assurance | v7.0 | 5/5 | Complete | 2026-04-18 |
 | 50. Production Build & Deployment | v7.0 | 3/3 | Complete | 2026-04-19 |
 
-**Total:** 189 plans across 50 phases, 6 milestones — ALL COMPLETE
+| 51. Evidence Enrichment | v8.0 | 0/? | Not started | - |
+| 52. Structured Reasoning in Claude Prompts | v8.0 | 0/? | Not started | - |
+| 53. Report Output Format | v8.0 | 0/? | Not started | - |
+| 54. Plaid Token Migration | v8.0 | 0/? | Not started | - |
+| 55. Upload Security & Malware Scanning | v8.0 | 0/? | Not started | - |
+| 56. Auth Hardening & Encryption Audit | v8.0 | 0/? | Not started | - |
+| 57. Server-Side Pagination & API Rate Limits | v8.0 | 0/? | Not started | - |
+| 58. Multi-Tenant & Role-Based Access | v8.0 | 0/? | Not started | - |
+| 59. Onboarding & Empty States | v8.0 | 0/? | Not started | - |
+| 60. Landing Page & Public Presence | v8.0 | 0/? | Not started | - |
+
+**Completed:** 189 plans across 50 phases, 6 milestones
+**In progress:** v8.0 Enterprise Readiness — 10 phases (51-60)
