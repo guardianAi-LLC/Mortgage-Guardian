@@ -12,6 +12,7 @@ const { getStatuteById, getSectionById, getStatuteIds } = require('../config/fed
 const { matchRules } = require('../config/complianceRuleMappings');
 const { matchStateRules } = require('../config/stateComplianceRuleMappings');
 const { getStateStatuteById, getStateSectionById, getStateStatuteIds, isStateSupported } = require('../config/stateStatuteTaxonomy');
+const { VIOLATION_EVIDENCE_FIELDS } = require('../config/evidenceEnrichmentConfig');
 
 // Severity ordering for comparison (lower = more severe)
 const SEVERITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
@@ -106,7 +107,7 @@ class ComplianceRuleEngine {
           sourceId: disc.id,
           description: disc.description || ''
         };
-        violations.push(this._buildViolation(finding, rule, evidence));
+        violations.push(this._buildViolation(finding, rule, evidence, disc));
       }
     }
     return violations;
@@ -136,7 +137,7 @@ class ComplianceRuleEngine {
           sourceId: anom.field ? `anom-${anom.field}` : 'anom-unknown',
           description: anom.description || ''
         };
-        violations.push(this._buildViolation(finding, rule, evidence));
+        violations.push(this._buildViolation(finding, rule, evidence, anom));
       }
     }
     return violations;
@@ -168,7 +169,7 @@ class ComplianceRuleEngine {
           sourceId: `tv-${String(i + 1).padStart(3, '0')}`,
           description: tv.description || ''
         };
-        violations.push(this._buildViolation(finding, rule, evidence));
+        violations.push(this._buildViolation(finding, rule, evidence, tv));
       }
     }
     return violations;
@@ -205,7 +206,7 @@ class ComplianceRuleEngine {
           sourceId: `pay-${String(i + 1).padStart(3, '0')}`,
           description: payment.description || `Payment of $${payment.amount} on ${payment.date} not verified`
         };
-        violations.push(this._buildViolation(finding, rule, evidence));
+        violations.push(this._buildViolation(finding, rule, evidence, payment));
       }
     }
 
@@ -231,7 +232,7 @@ class ComplianceRuleEngine {
             sourceId: `fee-${String(i + 1).padStart(3, '0')}`,
             description: irreg.description || 'Fee irregularity'
           };
-          violations.push(this._buildViolation(finding, rule, evidence));
+          violations.push(this._buildViolation(finding, rule, evidence, irreg));
         }
       }
     }
@@ -245,9 +246,10 @@ class ComplianceRuleEngine {
    * @param {Object} finding - Normalized finding
    * @param {Object} rule - Matched compliance rule
    * @param {Object} evidence - Evidence linking
+   * @param {Object} [rawSource] - Raw source object (discrepancy, anomaly, etc.) with enriched evidence fields
    * @returns {Object} Violation object (without id — assigned later)
    */
-  _buildViolation(finding, rule, evidence) {
+  _buildViolation(finding, rule, evidence, rawSource) {
     const sectionId = rule.sectionId;
     const section = getSectionById(sectionId);
     const statuteId = sectionId.split('_')[0] === 'cfpb' ? 'cfpb_reg_x' : sectionId.replace(/_.*/, '');
@@ -263,6 +265,9 @@ class ComplianceRuleEngine {
     const description = this._fillTemplate(rule.descriptionTemplate, finding);
     const legalBasis = rule.legalBasisTemplate;
 
+    // Extract enriched evidence from raw source (Plans 51-01 / 51-02)
+    const enrichedEvidence = this._extractEnrichedEvidence(rawSource, evidence);
+
     return {
       id: null, // assigned after deduplication
       ruleId: rule.ruleId,
@@ -276,7 +281,10 @@ class ComplianceRuleEngine {
       evidence: [evidence],
       legalBasis,
       potentialPenalties: section ? section.penalties : undefined,
-      recommendations: []
+      recommendations: [],
+      sourceDocuments: enrichedEvidence.sourceDocuments,
+      supportingFindings: enrichedEvidence.supportingFindings,
+      pageReferences: enrichedEvidence.pageReferences
     };
   }
 
@@ -457,6 +465,129 @@ class ComplianceRuleEngine {
   }
 
   /**
+   * Extract enriched evidence fields from a raw source finding.
+   *
+   * Handles both anomaly-style (single sourceDocument) and discrepancy-style
+   * (documentA/documentB with per-document evidence) raw sources. Returns
+   * empty arrays when the source lacks enriched evidence (backward compat).
+   *
+   * @param {Object|null|undefined} rawSource - Raw finding object (anomaly, discrepancy, etc.)
+   * @param {Object} evidence - The basic evidence object { sourceType, sourceId, description }
+   * @returns {Object} { sourceDocuments, supportingFindings, pageReferences }
+   */
+  _extractEnrichedEvidence(rawSource, evidence) {
+    const result = {
+      sourceDocuments: [],
+      supportingFindings: [],
+      pageReferences: []
+    };
+
+    if (!rawSource || typeof rawSource !== 'object') {
+      return result;
+    }
+
+    // --- Source Documents ---
+    // Anomaly-style: single sourceDocument { id, name, type }
+    if (rawSource.sourceDocument && rawSource.sourceDocument.id) {
+      result.sourceDocuments.push({
+        id: rawSource.sourceDocument.id,
+        name: rawSource.sourceDocument.name || null,
+        type: rawSource.sourceDocument.type || null
+      });
+    }
+
+    // Discrepancy-style: documentA and documentB with documentId/documentType
+    if (rawSource.documentA && rawSource.documentA.documentId) {
+      const docA = rawSource.documentA;
+      // Avoid duplicates
+      if (!result.sourceDocuments.some(d => d.id === docA.documentId)) {
+        result.sourceDocuments.push({
+          id: docA.documentId,
+          name: docA.documentName || null,
+          type: docA.documentType || null
+        });
+      }
+    }
+    if (rawSource.documentB && rawSource.documentB.documentId) {
+      const docB = rawSource.documentB;
+      if (!result.sourceDocuments.some(d => d.id === docB.documentId)) {
+        result.sourceDocuments.push({
+          id: docB.documentId,
+          name: docB.documentName || null,
+          type: docB.documentType || null
+        });
+      }
+    }
+
+    // --- Supporting Findings ---
+    const findingId = evidence.sourceId || rawSource.id || null;
+    const findingType = evidence.sourceType || null;
+
+    // Collect quotedText from the raw source
+    // Anomaly-style: rawSource.quotedText
+    // Discrepancy-style: documentA.quotedText and/or documentB.quotedText
+    const quotedTexts = [];
+    if (rawSource.quotedText) {
+      quotedTexts.push(rawSource.quotedText);
+    }
+    if (rawSource.documentA && rawSource.documentA.quotedText) {
+      quotedTexts.push(rawSource.documentA.quotedText);
+    }
+    if (rawSource.documentB && rawSource.documentB.quotedText) {
+      quotedTexts.push(rawSource.documentB.quotedText);
+    }
+
+    const combinedQuotedText = quotedTexts.length > 0 ? quotedTexts.join(' | ') : null;
+
+    if (findingId) {
+      result.supportingFindings.push({
+        findingId,
+        findingType,
+        quotedText: combinedQuotedText
+      });
+    }
+
+    // --- Page References ---
+    // Anomaly-style: rawSource.pageReference (single number)
+    if (rawSource.pageReference != null) {
+      const pageNum = rawSource.pageReference;
+      if (pageNum !== null) {
+        const docId = (rawSource.sourceDocument && rawSource.sourceDocument.id) || null;
+        const docName = (rawSource.sourceDocument && rawSource.sourceDocument.name) || null;
+        result.pageReferences.push({
+          documentId: docId,
+          documentName: docName,
+          pageNumber: pageNum
+        });
+      }
+    }
+
+    // Discrepancy-style: documentA.pageReference and documentB.pageReference
+    if (rawSource.documentA && rawSource.documentA.pageReference != null) {
+      const pageNum = rawSource.documentA.pageReference;
+      if (pageNum !== null) {
+        result.pageReferences.push({
+          documentId: rawSource.documentA.documentId || null,
+          documentName: rawSource.documentA.documentName || null,
+          pageNumber: pageNum
+        });
+      }
+    }
+    if (rawSource.documentB && rawSource.documentB.pageReference != null) {
+      const pageNum = rawSource.documentB.pageReference;
+      if (pageNum !== null) {
+        result.pageReferences.push({
+          documentId: rawSource.documentB.documentId || null,
+          documentName: rawSource.documentB.documentName || null,
+          pageNumber: pageNum
+        });
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Count payment-related findings.
    */
   _countPaymentFindings(pv) {
@@ -580,7 +711,7 @@ class ComplianceRuleEngine {
           sourceId: disc.id,
           description: disc.description || ''
         };
-        violations.push(this._buildStateViolation(stateCode, finding, rule, evidence));
+        violations.push(this._buildStateViolation(stateCode, finding, rule, evidence, disc));
       }
     }
     return violations;
@@ -608,7 +739,7 @@ class ComplianceRuleEngine {
           sourceId: anom.field ? `anom-${anom.field}` : 'anom-unknown',
           description: anom.description || ''
         };
-        violations.push(this._buildStateViolation(stateCode, finding, rule, evidence));
+        violations.push(this._buildStateViolation(stateCode, finding, rule, evidence, anom));
       }
     }
     return violations;
@@ -638,7 +769,7 @@ class ComplianceRuleEngine {
           sourceId: `tv-${String(i + 1).padStart(3, '0')}`,
           description: tv.description || ''
         };
-        violations.push(this._buildStateViolation(stateCode, finding, rule, evidence));
+        violations.push(this._buildStateViolation(stateCode, finding, rule, evidence, tv));
       }
     }
     return violations;
@@ -672,7 +803,7 @@ class ComplianceRuleEngine {
           sourceId: `pay-${String(i + 1).padStart(3, '0')}`,
           description: payment.description || `Payment of $${payment.amount} on ${payment.date} not verified`
         };
-        violations.push(this._buildStateViolation(stateCode, finding, rule, evidence));
+        violations.push(this._buildStateViolation(stateCode, finding, rule, evidence, payment));
       }
     }
 
@@ -697,7 +828,7 @@ class ComplianceRuleEngine {
             sourceId: `fee-${String(i + 1).padStart(3, '0')}`,
             description: irreg.description || 'Fee irregularity'
           };
-          violations.push(this._buildStateViolation(stateCode, finding, rule, evidence));
+          violations.push(this._buildStateViolation(stateCode, finding, rule, evidence, irreg));
         }
       }
     }
@@ -712,9 +843,10 @@ class ComplianceRuleEngine {
    * @param {Object} finding - Normalized finding
    * @param {Object} rule - Matched state compliance rule
    * @param {Object} evidence - Evidence linking
+   * @param {Object} [rawSource] - Raw source object with enriched evidence fields
    * @returns {Object} State violation object (without id — assigned later)
    */
-  _buildStateViolation(stateCode, finding, rule, evidence) {
+  _buildStateViolation(stateCode, finding, rule, evidence, rawSource) {
     const sectionId = rule.sectionId;
     const section = getStateSectionById(stateCode, sectionId);
 
@@ -734,6 +866,9 @@ class ComplianceRuleEngine {
     const description = this._fillTemplate(rule.descriptionTemplate, finding);
     const legalBasis = rule.legalBasisTemplate;
 
+    // Extract enriched evidence from raw source (Plans 51-01 / 51-02)
+    const enrichedEvidence = this._extractEnrichedEvidence(rawSource, evidence);
+
     return {
       id: null, // assigned after deduplication
       ruleId: rule.ruleId,
@@ -748,7 +883,10 @@ class ComplianceRuleEngine {
       legalBasis,
       potentialPenalties: section ? section.penalties : undefined,
       recommendations: [],
-      jurisdiction: stateCode
+      jurisdiction: stateCode,
+      sourceDocuments: enrichedEvidence.sourceDocuments,
+      supportingFindings: enrichedEvidence.supportingFindings,
+      pageReferences: enrichedEvidence.pageReferences
     };
   }
 }
