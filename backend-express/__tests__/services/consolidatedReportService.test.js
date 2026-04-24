@@ -450,6 +450,146 @@ describe('ConsolidatedReportService', () => {
       );
     });
 
+    it('should preserve enriched anomaly evidence in documentAnalysis section', async () => {
+      const enrichedData = makeAggregatedData({
+        documentAnalyses: [
+          {
+            documentId: 'doc-001',
+            documentName: 'statement.pdf',
+            type: 'mortgage_statement',
+            subtype: 'monthly_statement',
+            completenessScore: 85,
+            anomalyCount: 1,
+            anomalies: [
+              {
+                id: 'anom-001',
+                field: 'escrowBalance',
+                type: 'amount_mismatch',
+                severity: 'high',
+                description: 'Escrow mismatch',
+                pageReference: 3,
+                quotedText: 'Escrow Balance: $5,000.00',
+                sourceDocument: { id: 'doc-001', name: 'statement.pdf', type: 'mortgage_statement', subtype: 'monthly_statement' }
+              }
+            ],
+            keyFindings: ['Escrow issue']
+          }
+        ]
+      });
+      reportAggregationService.gatherCaseFindings.mockResolvedValue(enrichedData);
+
+      const result = await consolidatedReportService.generateReport('case-001', 'user-001', { skipPersistence: true });
+
+      expect(result.error).toBeUndefined();
+      const anomaly = result.documentAnalysis[0].anomalies[0];
+      expect(anomaly.pageReference).toBe(3);
+      expect(anomaly.quotedText).toBe('Escrow Balance: $5,000.00');
+      expect(anomaly.sourceDocument.name).toBe('statement.pdf');
+    });
+
+    it('should preserve enriched discrepancy evidence in forensicFindings', async () => {
+      const enrichedData = makeAggregatedData({
+        forensicReport: {
+          caseId: 'case-001',
+          discrepancies: [
+            {
+              id: 'disc-001',
+              type: 'amount_mismatch',
+              severity: 'high',
+              description: 'Payment differs',
+              documentA: {
+                documentId: 'doc-001',
+                documentName: 'statement.pdf',
+                documentType: 'mortgage_statement',
+                field: 'paymentAmount',
+                value: 1500,
+                pageNumber: 2,
+                quotedText: 'Monthly Payment: $1,500'
+              },
+              documentB: {
+                documentId: 'doc-002',
+                documentName: 'disclosure.pdf',
+                documentType: 'closing_disclosure',
+                field: 'paymentAmount',
+                value: 1800,
+                pageNumber: 5,
+                quotedText: 'Monthly Payment: $1,800'
+              }
+            }
+          ],
+          timeline: { events: [], violations: [] },
+          paymentVerification: null
+        }
+      });
+      reportAggregationService.gatherCaseFindings.mockResolvedValue(enrichedData);
+
+      const result = await consolidatedReportService.generateReport('case-001', 'user-001', { skipPersistence: true });
+
+      expect(result.error).toBeUndefined();
+      const disc = result.forensicFindings.discrepancies[0];
+      expect(disc.documentA.documentName).toBe('statement.pdf');
+      expect(disc.documentA.pageNumber).toBe(2);
+      expect(disc.documentA.quotedText).toBe('Monthly Payment: $1,500');
+      expect(disc.documentB.documentName).toBe('disclosure.pdf');
+      expect(disc.documentB.pageNumber).toBe(5);
+    });
+
+    it('should preserve enriched violation evidence in complianceFindings', async () => {
+      const enrichedData = makeAggregatedData({
+        complianceReport: {
+          violations: [
+            {
+              id: 'viol-001',
+              statuteId: 'RESPA',
+              sectionId: 'sec-6',
+              statuteName: 'RESPA',
+              sectionTitle: 'Section 6',
+              citation: '12 U.S.C. § 2605(e)',
+              severity: 'critical',
+              description: 'QWR failure',
+              legalBasis: 'RESPA Section 6(e)',
+              recommendations: ['Send QWR'],
+              sourceDocuments: [
+                { id: 'doc-001', name: 'statement.pdf', type: 'mortgage_statement' }
+              ],
+              supportingFindings: [
+                { findingId: 'anom-001', findingType: 'anomaly', quotedText: 'No response' }
+              ],
+              pageReferences: [
+                { documentId: 'doc-001', documentName: 'statement.pdf', pageNumber: 1 }
+              ]
+            }
+          ],
+          stateViolations: [],
+          jurisdiction: null
+        }
+      });
+      reportAggregationService.gatherCaseFindings.mockResolvedValue(enrichedData);
+
+      const result = await consolidatedReportService.generateReport('case-001', 'user-001', { skipPersistence: true });
+
+      expect(result.error).toBeUndefined();
+      const violation = result.complianceFindings.federalViolations[0];
+      expect(violation.sourceDocuments).toBeDefined();
+      expect(violation.sourceDocuments[0].name).toBe('statement.pdf');
+      expect(violation.supportingFindings).toBeDefined();
+      expect(violation.supportingFindings[0].findingId).toBe('anom-001');
+      expect(violation.pageReferences).toBeDefined();
+      expect(violation.pageReferences[0].pageNumber).toBe(1);
+    });
+
+    it('should handle gracefully when enriched fields are absent from anomalies', async () => {
+      // Default mock data has no enriched fields — should still work
+      const result = await consolidatedReportService.generateReport('case-001', 'user-001', { skipPersistence: true });
+
+      expect(result.error).toBeUndefined();
+      const anomaly = result.documentAnalysis[0].anomalies[0];
+      expect(anomaly.id).toBe('anom-001');
+      expect(anomaly.pageReference).toBeUndefined();
+      expect(anomaly.quotedText).toBeUndefined();
+      expect(anomaly.sourceDocument).toBeUndefined();
+    });
+
     it('should include aggregation warnings in report metadata', async () => {
       const dataWithWarnings = makeAggregatedData({
         errors: ['Forensic analysis has partial results (some comparisons failed)']

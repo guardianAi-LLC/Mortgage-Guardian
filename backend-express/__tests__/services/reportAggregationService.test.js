@@ -296,6 +296,37 @@ describe('ReportAggregationService', () => {
         keyFindings: []
       });
     });
+
+    it('should preserve enriched evidence fields on anomalies (Plan 51-01)', () => {
+      const report = makeAnalysisReport({
+        anomalies: [
+          {
+            id: 'anom-001',
+            field: 'paymentAmount',
+            type: 'unexpected_change',
+            severity: 'high',
+            description: 'Payment doubled',
+            pageReference: 3,
+            quotedText: 'Total Payment Due: $3,200.00',
+            sourceDocument: { id: 'doc-001', name: 'statement-jan.pdf', type: 'mortgage_statement', subtype: 'monthly_statement' }
+          }
+        ]
+      });
+      const result = service.normalizeDocumentAnalysis(report);
+
+      expect(result.anomalies[0].pageReference).toBe(3);
+      expect(result.anomalies[0].quotedText).toBe('Total Payment Due: $3,200.00');
+      expect(result.anomalies[0].sourceDocument.name).toBe('statement-jan.pdf');
+    });
+
+    it('should not add enriched fields when not present on anomalies', () => {
+      const report = makeAnalysisReport();
+      const result = service.normalizeDocumentAnalysis(report);
+
+      expect(result.anomalies[0].pageReference).toBeUndefined();
+      expect(result.anomalies[0].quotedText).toBeUndefined();
+      expect(result.anomalies[0].sourceDocument).toBeUndefined();
+    });
   });
 
   // =========================================================================

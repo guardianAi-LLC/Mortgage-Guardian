@@ -146,13 +146,20 @@ class ReportAggregationService {
       subtype: docInfo.classificationSubtype || 'unknown',
       completenessScore: completeness.score || 0,
       anomalyCount: anomalies.length,
-      anomalies: anomalies.map(a => ({
-        id: a.id,
-        field: a.field,
-        type: a.type,
-        severity: a.severity,
-        description: a.description
-      })),
+      anomalies: anomalies.map(a => {
+        const normalized = {
+          id: a.id,
+          field: a.field,
+          type: a.type,
+          severity: a.severity,
+          description: a.description
+        };
+        // Preserve enriched evidence fields when present (Plan 51-01)
+        if (a.pageReference != null) normalized.pageReference = a.pageReference;
+        if (a.quotedText != null) normalized.quotedText = a.quotedText;
+        if (a.sourceDocument != null) normalized.sourceDocument = a.sourceDocument;
+        return normalized;
+      }),
       keyFindings: Array.isArray(summary.keyFindings) ? summary.keyFindings : []
     };
   }

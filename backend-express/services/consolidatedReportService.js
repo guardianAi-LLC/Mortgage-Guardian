@@ -320,13 +320,23 @@ class ConsolidatedReportService {
       paymentVerification: this._normalizePaymentVerification(forensicReport)
     };
 
-    // Build complianceFindings section
+    // Build complianceFindings section — preserve enriched evidence fields (Plan 51-03)
     const complianceReport = aggregatedData.complianceReport;
     const complianceFindings = {
       federalViolations: complianceReport && Array.isArray(complianceReport.violations)
-        ? complianceReport.violations : [],
+        ? complianceReport.violations.map(v => {
+            const violation = { ...v };
+            // Enriched fields are already present from Plan 51-03 (sourceDocuments,
+            // supportingFindings, pageReferences) — spread preserves them
+            return violation;
+          })
+        : [],
       stateViolations: complianceReport && Array.isArray(complianceReport.stateViolations)
-        ? complianceReport.stateViolations : [],
+        ? complianceReport.stateViolations.map(sv => {
+            const violation = { ...sv };
+            return violation;
+          })
+        : [],
       jurisdiction: complianceReport && complianceReport.jurisdiction
         ? complianceReport.jurisdiction : null
     };
@@ -355,7 +365,20 @@ class ConsolidatedReportService {
         subtype: da.subtype,
         completenessScore: da.completenessScore,
         anomalyCount: da.anomalyCount,
-        anomalies: da.anomalies || [],
+        anomalies: (da.anomalies || []).map(a => {
+          const anomaly = {
+            id: a.id,
+            field: a.field,
+            type: a.type,
+            severity: a.severity,
+            description: a.description
+          };
+          // Preserve enriched evidence fields (Plan 51-01)
+          if (a.pageReference != null) anomaly.pageReference = a.pageReference;
+          if (a.quotedText != null) anomaly.quotedText = a.quotedText;
+          if (a.sourceDocument != null) anomaly.sourceDocument = a.sourceDocument;
+          return anomaly;
+        }),
         keyFindings: da.keyFindings || []
       })),
       forensicFindings,
@@ -566,7 +589,7 @@ class ConsolidatedReportService {
       if (disc.documentA && disc.documentA.documentId) docIds.push(disc.documentA.documentId);
       if (disc.documentB && disc.documentB.documentId) docIds.push(disc.documentB.documentId);
 
-      return {
+      const normalized = {
         id: disc.id || 'unknown',
         type: disc.type || 'unknown',
         severity: disc.severity || 'medium',
@@ -574,6 +597,28 @@ class ConsolidatedReportService {
         documentIds: docIds.length > 0 ? docIds : ['unknown'],
         regulation: disc.regulation || undefined
       };
+
+      // Preserve enriched per-document evidence (Plan 51-02)
+      if (disc.documentA && disc.documentA.documentName != null) {
+        normalized.documentA = {
+          documentId: disc.documentA.documentId,
+          documentName: disc.documentA.documentName,
+          documentType: disc.documentA.documentType || undefined,
+          pageNumber: disc.documentA.pageNumber != null ? disc.documentA.pageNumber : undefined,
+          quotedText: disc.documentA.quotedText || undefined
+        };
+      }
+      if (disc.documentB && disc.documentB.documentName != null) {
+        normalized.documentB = {
+          documentId: disc.documentB.documentId,
+          documentName: disc.documentB.documentName,
+          documentType: disc.documentB.documentType || undefined,
+          pageNumber: disc.documentB.pageNumber != null ? disc.documentB.pageNumber : undefined,
+          quotedText: disc.documentB.quotedText || undefined
+        };
+      }
+
+      return normalized;
     });
   }
 
