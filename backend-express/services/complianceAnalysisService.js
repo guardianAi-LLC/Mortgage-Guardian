@@ -331,8 +331,14 @@ class ComplianceAnalysisService {
       description: v.description,
       evidence: v.evidence,
       legalBasis: v.legalBasis,
-      potentialPenalties: v.potentialPenalties
+      potentialPenalties: v.potentialPenalties,
+      sourceDocuments: v.sourceDocuments || [],
+      supportingFindings: v.supportingFindings || [],
+      pageReferences: v.pageReferences || []
     }));
+
+    // Build evidence context for Claude prompt
+    const evidenceContext = this._buildEvidenceContext(violations);
 
     return `You are a federal regulatory compliance attorney specializing in mortgage servicing law. Analyze the following violations under ${statuteName} (${statuteCitation}), enforced by ${regulatoryBody}.
 
@@ -354,10 +360,10 @@ Discrepancy Summary: ${caseContext.discrepancySummary || 'N/A'}
 ## Violations to Analyze
 
 ${JSON.stringify(violationSummaries, null, 2)}
-
+${evidenceContext}
 ## Instructions
 
-For EACH violation above, provide enhanced legal analysis. Respond with valid JSON in this format:
+For EACH violation above, provide enhanced legal analysis. Reference the specific source documents and quoted evidence in your analysis where available. Respond with valid JSON in this format:
 
 \`\`\`json
 {
@@ -511,8 +517,14 @@ Respond with the narrative text in markdown format (no JSON wrapper needed).`;
       evidence: v.evidence,
       legalBasis: v.legalBasis,
       potentialPenalties: v.potentialPenalties,
-      jurisdiction: v.jurisdiction
+      jurisdiction: v.jurisdiction,
+      sourceDocuments: v.sourceDocuments || [],
+      supportingFindings: v.supportingFindings || [],
+      pageReferences: v.pageReferences || []
     }));
+
+    // Build evidence context for Claude prompt
+    const evidenceContext = this._buildEvidenceContext(violations);
 
     return `You are a state regulatory compliance attorney specializing in ${stateCode} mortgage lending law. Analyze the following state-level violations under ${statuteNames}, enforced by ${enforcementBodies}.
 
@@ -534,10 +546,10 @@ Discrepancy Summary: ${caseContext.discrepancySummary || 'N/A'}
 ## Violations to Analyze
 
 ${JSON.stringify(violationSummaries, null, 2)}
-
+${evidenceContext}
 ## Instructions
 
-For EACH violation above, provide enhanced legal analysis under state law. Respond with valid JSON in this format:
+For EACH violation above, provide enhanced legal analysis under state law. Reference the specific source documents and quoted evidence in your analysis where available. Respond with valid JSON in this format:
 
 \`\`\`json
 {
@@ -555,6 +567,61 @@ For EACH violation above, provide enhanced legal analysis under state law. Respo
 
 Cite specific state statutory provisions. Reference state enforcement bodies and state-specific remedies (e.g., treble damages, private right of action). Be precise and litigation-ready.
 Respond ONLY with valid JSON. No explanation outside the JSON.`;
+  }
+
+  /**
+   * Build evidence context section for Claude prompt.
+   *
+   * Summarizes source documents and quoted evidence across violations to give
+   * Claude the context needed for document-specific legal narrative.
+   *
+   * @param {Array} violations - Violations with optional evidence fields
+   * @returns {string} Evidence context section or empty string
+   */
+  _buildEvidenceContext(violations) {
+    const allSourceDocs = [];
+    const allQuotes = [];
+
+    for (const v of violations) {
+      if (Array.isArray(v.sourceDocuments)) {
+        for (const doc of v.sourceDocuments) {
+          if (doc.id && !allSourceDocs.some(d => d.id === doc.id)) {
+            allSourceDocs.push(doc);
+          }
+        }
+      }
+      if (Array.isArray(v.supportingFindings)) {
+        for (const sf of v.supportingFindings) {
+          if (sf.quotedText) {
+            allQuotes.push({ findingId: sf.findingId, quotedText: sf.quotedText });
+          }
+        }
+      }
+    }
+
+    if (allSourceDocs.length === 0 && allQuotes.length === 0) {
+      return '';
+    }
+
+    let context = '\n## Source Evidence\n\n';
+
+    if (allSourceDocs.length > 0) {
+      context += '**Source Documents:**\n';
+      for (const doc of allSourceDocs) {
+        context += `- ${doc.name || doc.id} (${doc.type || 'unknown type'})\n`;
+      }
+      context += '\n';
+    }
+
+    if (allQuotes.length > 0) {
+      context += '**Supporting Evidence Quotes:**\n';
+      for (const q of allQuotes) {
+        context += `- [${q.findingId}]: "${q.quotedText}"\n`;
+      }
+      context += '\n';
+    }
+
+    return context;
   }
 
   /**

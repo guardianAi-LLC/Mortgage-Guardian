@@ -644,6 +644,43 @@ describe('ComplianceAnalysisService', () => {
       expect(result[0].potentialPenalties).toBe('Original penalty');
       expect(result[0].recommendations).toEqual([]);
     });
+
+    it('preserves sourceDocuments through enhancement merge', () => {
+      const violations = [makeViolation({
+        sourceDocuments: [{ id: 'doc-001', name: 'Escrow Analysis', type: 'servicing' }],
+        supportingFindings: [{ findingId: 'disc-001', findingType: 'discrepancy', quotedText: 'Balance: $5000' }],
+        pageReferences: [{ documentId: 'doc-001', documentName: 'Escrow Analysis', pageNumber: 3 }]
+      })];
+      const parsed = {
+        enhancedViolations: [
+          { index: 0, detailedLegalBasis: 'Enhanced basis', recommendations: ['Fix it'] }
+        ]
+      };
+
+      const result = complianceAnalysisService._mergeEnhancements(violations, parsed);
+      expect(result[0].sourceDocuments).toEqual([{ id: 'doc-001', name: 'Escrow Analysis', type: 'servicing' }]);
+      expect(result[0].supportingFindings).toEqual([{ findingId: 'disc-001', findingType: 'discrepancy', quotedText: 'Balance: $5000' }]);
+      expect(result[0].pageReferences).toEqual([{ documentId: 'doc-001', documentName: 'Escrow Analysis', pageNumber: 3 }]);
+      expect(result[0].legalBasis).toBe('Enhanced basis');
+    });
+
+    it('preserves empty evidence arrays through enhancement merge', () => {
+      const violations = [makeViolation({
+        sourceDocuments: [],
+        supportingFindings: [],
+        pageReferences: []
+      })];
+      const parsed = {
+        enhancedViolations: [
+          { index: 0, detailedLegalBasis: 'Enhanced', recommendations: [] }
+        ]
+      };
+
+      const result = complianceAnalysisService._mergeEnhancements(violations, parsed);
+      expect(result[0].sourceDocuments).toEqual([]);
+      expect(result[0].supportingFindings).toEqual([]);
+      expect(result[0].pageReferences).toEqual([]);
+    });
   });
 
   // ================================================================
@@ -769,6 +806,158 @@ describe('ComplianceAnalysisService', () => {
       );
 
       expect(prompt).not.toContain('State Law Violations');
+    });
+  });
+
+  // ================================================================
+  // _buildEvidenceContext
+  // ================================================================
+  describe('_buildEvidenceContext', () => {
+    it('builds context from violations with source documents and quotes', () => {
+      const violations = [makeViolation({
+        sourceDocuments: [
+          { id: 'doc-001', name: 'Escrow Statement', type: 'servicing' }
+        ],
+        supportingFindings: [
+          { findingId: 'disc-001', findingType: 'discrepancy', quotedText: 'Balance: $5,000' }
+        ]
+      })];
+
+      const context = complianceAnalysisService._buildEvidenceContext(violations);
+      expect(context).toContain('Source Evidence');
+      expect(context).toContain('Escrow Statement');
+      expect(context).toContain('Balance: $5,000');
+    });
+
+    it('returns empty string when no evidence present', () => {
+      const violations = [makeViolation({
+        sourceDocuments: [],
+        supportingFindings: []
+      })];
+
+      const context = complianceAnalysisService._buildEvidenceContext(violations);
+      expect(context).toBe('');
+    });
+
+    it('returns empty string when evidence fields are missing', () => {
+      const violations = [makeViolation()]; // no sourceDocuments/supportingFindings
+      const context = complianceAnalysisService._buildEvidenceContext(violations);
+      expect(context).toBe('');
+    });
+
+    it('deduplicates source documents across violations', () => {
+      const violations = [
+        makeViolation({ sourceDocuments: [{ id: 'doc-001', name: 'Doc A', type: 'servicing' }] }),
+        makeViolation({ sourceDocuments: [{ id: 'doc-001', name: 'Doc A', type: 'servicing' }] })
+      ];
+
+      const context = complianceAnalysisService._buildEvidenceContext(violations);
+      // Should only appear once
+      const matches = (context.match(/Doc A/g) || []).length;
+      expect(matches).toBe(1);
+    });
+
+    it('skips supportingFindings without quotedText', () => {
+      const violations = [makeViolation({
+        sourceDocuments: [{ id: 'doc-001', name: 'Doc', type: 'servicing' }],
+        supportingFindings: [
+          { findingId: 'disc-001', findingType: 'discrepancy', quotedText: null }
+        ]
+      })];
+
+      const context = complianceAnalysisService._buildEvidenceContext(violations);
+      expect(context).toContain('Source Documents');
+      expect(context).not.toContain('Supporting Evidence Quotes');
+    });
+  });
+
+  // ================================================================
+  // Evidence preservation through full pipeline
+  // ================================================================
+  describe('evidence preservation through analyzeViolations pipeline', () => {
+    it('preserves evidence fields through Claude enhancement', async () => {
+      const violation = makeViolation({
+        sourceDocuments: [{ id: 'doc-001', name: 'Escrow Analysis', type: 'servicing' }],
+        supportingFindings: [{ findingId: 'disc-001', findingType: 'discrepancy', quotedText: 'Balance: $5000' }],
+        pageReferences: [{ documentId: 'doc-001', documentName: 'Escrow Analysis', pageNumber: 3 }]
+      });
+      const enhancementData = makeClaudeEnhancementResponse(1);
+
+      mockMessagesCreate
+        .mockResolvedValueOnce(mockClaudeResponse(enhancementData))
+        .mockResolvedValueOnce({
+          content: [{ text: 'Legal narrative.' }],
+          usage: { input_tokens: 100, output_tokens: 50 }
+        });
+
+      const result = await complianceAnalysisService.analyzeViolations(
+        [violation],
+        { caseId: 'EV1' }
+      );
+
+      expect(result.enhancedViolations).toHaveLength(1);
+      const ev = result.enhancedViolations[0];
+      expect(ev.sourceDocuments).toEqual([{ id: 'doc-001', name: 'Escrow Analysis', type: 'servicing' }]);
+      expect(ev.supportingFindings).toEqual([{ findingId: 'disc-001', findingType: 'discrepancy', quotedText: 'Balance: $5000' }]);
+      expect(ev.pageReferences).toEqual([{ documentId: 'doc-001', documentName: 'Escrow Analysis', pageNumber: 3 }]);
+      // Also check enhancement was applied
+      expect(ev.legalBasis).toBe('Detailed legal basis for violation 0');
+    });
+
+    it('preserves evidence fields when Claude call fails', async () => {
+      const violation = makeViolation({
+        sourceDocuments: [{ id: 'doc-002', name: 'Loan Estimate', type: 'origination' }],
+        supportingFindings: [{ findingId: 'anom-001', findingType: 'anomaly', quotedText: 'APR: 4.5%' }],
+        pageReferences: [{ documentId: 'doc-002', documentName: 'Loan Estimate', pageNumber: 1 }]
+      });
+
+      mockMessagesCreate
+        .mockRejectedValueOnce(new Error('API error'))
+        .mockResolvedValueOnce({
+          content: [{ text: '' }],
+          usage: { input_tokens: 50, output_tokens: 10 }
+        });
+
+      const result = await complianceAnalysisService.analyzeViolations(
+        [violation],
+        { caseId: 'EV2' }
+      );
+
+      const ev = result.enhancedViolations[0];
+      expect(ev.sourceDocuments).toEqual([{ id: 'doc-002', name: 'Loan Estimate', type: 'origination' }]);
+      expect(ev.supportingFindings).toEqual([{ findingId: 'anom-001', findingType: 'anomaly', quotedText: 'APR: 4.5%' }]);
+      expect(ev.pageReferences).toEqual([{ documentId: 'doc-002', documentName: 'Loan Estimate', pageNumber: 1 }]);
+    });
+
+    it('includes evidence context in compliance prompt', () => {
+      const violations = [makeViolation({
+        sourceDocuments: [{ id: 'doc-001', name: 'Escrow Statement', type: 'servicing' }],
+        supportingFindings: [{ findingId: 'disc-001', findingType: 'discrepancy', quotedText: 'Balance differs' }]
+      })];
+
+      const prompt = complianceAnalysisService._buildCompliancePrompt(
+        violations,
+        { name: 'RESPA', citation: '12 USC', regulatoryBody: 'CFPB', sections: [] },
+        { caseId: 'T1' }
+      );
+
+      expect(prompt).toContain('Source Evidence');
+      expect(prompt).toContain('Escrow Statement');
+      expect(prompt).toContain('Balance differs');
+      expect(prompt).toContain('Reference the specific source documents');
+    });
+
+    it('includes evidence context in state violation prompt', () => {
+      const violations = [makeStateViolation({
+        sourceDocuments: [{ id: 'doc-001', name: 'Loan Doc', type: 'origination' }],
+        supportingFindings: [{ findingId: 'disc-001', findingType: 'discrepancy', quotedText: 'Rate mismatch' }]
+      })];
+
+      const prompt = complianceAnalysisService._buildStateViolationPrompt(violations, { caseId: 'S1' });
+
+      expect(prompt).toContain('Source Evidence');
+      expect(prompt).toContain('Loan Doc');
+      expect(prompt).toContain('Rate mismatch');
     });
   });
 

@@ -698,6 +698,201 @@ describe('ComplianceRuleEngine — branch coverage', () => {
   });
 
   // ================================================================
+  // _extractEnrichedEvidence — evidence enrichment (Plan 51-03)
+  // ================================================================
+  describe('_extractEnrichedEvidence', () => {
+    it('extracts sourceDocuments from anomaly-style sourceDocument', () => {
+      const rawSource = {
+        sourceDocument: { id: 'doc-001', name: 'Escrow Statement', type: 'servicing' },
+        quotedText: 'Escrow balance: $5,000',
+        pageReference: 3
+      };
+      const evidence = { sourceType: 'anomaly', sourceId: 'anom-escrow', description: 'test' };
+      const result = engine._extractEnrichedEvidence(rawSource, evidence);
+
+      expect(result.sourceDocuments).toHaveLength(1);
+      expect(result.sourceDocuments[0]).toEqual({ id: 'doc-001', name: 'Escrow Statement', type: 'servicing' });
+    });
+
+    it('extracts sourceDocuments from discrepancy-style documentA/documentB', () => {
+      const rawSource = {
+        documentA: { documentId: 'doc-001', documentName: 'Statement A', documentType: 'servicing', pageReference: 2, quotedText: 'Balance: $5000' },
+        documentB: { documentId: 'doc-002', documentName: 'Statement B', documentType: 'origination', pageReference: 5, quotedText: 'Balance: $4550' }
+      };
+      const evidence = { sourceType: 'discrepancy', sourceId: 'disc-001', description: 'test' };
+      const result = engine._extractEnrichedEvidence(rawSource, evidence);
+
+      expect(result.sourceDocuments).toHaveLength(2);
+      expect(result.sourceDocuments[0].id).toBe('doc-001');
+      expect(result.sourceDocuments[1].id).toBe('doc-002');
+    });
+
+    it('deduplicates sourceDocuments when same document appears in both slots', () => {
+      const rawSource = {
+        sourceDocument: { id: 'doc-001', name: 'Doc', type: 'servicing' },
+        documentA: { documentId: 'doc-001', documentName: 'Doc', documentType: 'servicing' }
+      };
+      const evidence = { sourceType: 'anomaly', sourceId: 'anom-001', description: 'test' };
+      const result = engine._extractEnrichedEvidence(rawSource, evidence);
+
+      expect(result.sourceDocuments).toHaveLength(1);
+    });
+
+    it('extracts supportingFindings with combined quotedText', () => {
+      const rawSource = {
+        id: 'disc-001',
+        documentA: { documentId: 'doc-001', quotedText: 'Value A: $5000' },
+        documentB: { documentId: 'doc-002', quotedText: 'Value B: $4550' }
+      };
+      const evidence = { sourceType: 'discrepancy', sourceId: 'disc-001', description: 'test' };
+      const result = engine._extractEnrichedEvidence(rawSource, evidence);
+
+      expect(result.supportingFindings).toHaveLength(1);
+      expect(result.supportingFindings[0].findingId).toBe('disc-001');
+      expect(result.supportingFindings[0].findingType).toBe('discrepancy');
+      expect(result.supportingFindings[0].quotedText).toBe('Value A: $5000 | Value B: $4550');
+    });
+
+    it('extracts pageReferences from anomaly-style pageReference', () => {
+      const rawSource = {
+        sourceDocument: { id: 'doc-001', name: 'Doc', type: 'servicing' },
+        pageReference: 7
+      };
+      const evidence = { sourceType: 'anomaly', sourceId: 'anom-001', description: 'test' };
+      const result = engine._extractEnrichedEvidence(rawSource, evidence);
+
+      expect(result.pageReferences).toHaveLength(1);
+      expect(result.pageReferences[0]).toEqual({ documentId: 'doc-001', documentName: 'Doc', pageNumber: 7 });
+    });
+
+    it('extracts pageReferences from discrepancy-style per-document pageReference', () => {
+      const rawSource = {
+        documentA: { documentId: 'doc-001', documentName: 'Doc A', pageReference: 2 },
+        documentB: { documentId: 'doc-002', documentName: 'Doc B', pageReference: 5 }
+      };
+      const evidence = { sourceType: 'discrepancy', sourceId: 'disc-001', description: 'test' };
+      const result = engine._extractEnrichedEvidence(rawSource, evidence);
+
+      expect(result.pageReferences).toHaveLength(2);
+      expect(result.pageReferences[0].pageNumber).toBe(2);
+      expect(result.pageReferences[1].pageNumber).toBe(5);
+    });
+
+    it('filters out null pageReferences', () => {
+      const rawSource = {
+        documentA: { documentId: 'doc-001', documentName: 'Doc A', pageReference: null },
+        documentB: { documentId: 'doc-002', documentName: 'Doc B', pageReference: 3 }
+      };
+      const evidence = { sourceType: 'discrepancy', sourceId: 'disc-001', description: 'test' };
+      const result = engine._extractEnrichedEvidence(rawSource, evidence);
+
+      expect(result.pageReferences).toHaveLength(1);
+      expect(result.pageReferences[0].pageNumber).toBe(3);
+    });
+
+    it('returns empty arrays when rawSource is null', () => {
+      const evidence = { sourceType: 'anomaly', sourceId: 'anom-001', description: 'test' };
+      const result = engine._extractEnrichedEvidence(null, evidence);
+
+      expect(result.sourceDocuments).toEqual([]);
+      expect(result.supportingFindings).toEqual([]);
+      expect(result.pageReferences).toEqual([]);
+    });
+
+    it('returns empty arrays when rawSource is undefined', () => {
+      const evidence = { sourceType: 'anomaly', sourceId: 'anom-001', description: 'test' };
+      const result = engine._extractEnrichedEvidence(undefined, evidence);
+
+      expect(result.sourceDocuments).toEqual([]);
+      expect(result.supportingFindings).toEqual([]);
+      expect(result.pageReferences).toEqual([]);
+    });
+
+    it('returns empty arrays when rawSource has no enriched fields', () => {
+      const rawSource = { type: 'calculation_error', severity: 'high', description: 'Some error' };
+      const evidence = { sourceType: 'anomaly', sourceId: 'anom-001', description: 'test' };
+      const result = engine._extractEnrichedEvidence(rawSource, evidence);
+
+      expect(result.sourceDocuments).toEqual([]);
+      // supportingFindings still built from evidence.sourceId
+      expect(result.supportingFindings).toHaveLength(1);
+      expect(result.supportingFindings[0].quotedText).toBeNull();
+      expect(result.pageReferences).toEqual([]);
+    });
+
+    it('handles anomaly with quotedText but no pageReference', () => {
+      const rawSource = {
+        sourceDocument: { id: 'doc-001', name: 'Doc', type: 'servicing' },
+        quotedText: 'Some quoted text from the document'
+      };
+      const evidence = { sourceType: 'anomaly', sourceId: 'anom-001', description: 'test' };
+      const result = engine._extractEnrichedEvidence(rawSource, evidence);
+
+      expect(result.supportingFindings[0].quotedText).toBe('Some quoted text from the document');
+      expect(result.pageReferences).toEqual([]);
+    });
+  });
+
+  // ================================================================
+  // Evidence enrichment in evaluateFindings (integration)
+  // ================================================================
+  describe('evaluateFindings — evidence enrichment integration', () => {
+    it('violations include evidence arrays from enriched discrepancies', () => {
+      const disc = makeDiscrepancy({
+        id: 'disc-enriched-001',
+        documentA: {
+          documentId: 'doc-001',
+          documentName: 'Escrow Analysis',
+          documentType: 'servicing',
+          field: 'escrowBalance',
+          value: 5000,
+          pageReference: 3,
+          quotedText: 'Current escrow balance: $5,000.00'
+        },
+        documentB: {
+          documentId: 'doc-002',
+          documentName: 'Closing Disclosure',
+          documentType: 'origination',
+          field: 'escrowBalance',
+          value: 4550,
+          pageReference: 7,
+          quotedText: 'Escrow amount: $4,550.00'
+        }
+      });
+      const report = makeForensicReport({ discrepancies: [disc] });
+
+      const result = engine.evaluateFindings(report, []);
+
+      if (result.violations.length > 0) {
+        const v = result.violations[0];
+        expect(v.sourceDocuments).toBeDefined();
+        expect(Array.isArray(v.sourceDocuments)).toBe(true);
+        expect(v.supportingFindings).toBeDefined();
+        expect(Array.isArray(v.supportingFindings)).toBe(true);
+        expect(v.pageReferences).toBeDefined();
+        expect(Array.isArray(v.pageReferences)).toBe(true);
+      }
+    });
+
+    it('violations have empty evidence arrays when findings lack enrichment', () => {
+      const disc = makeDiscrepancy({
+        id: 'disc-plain-001'
+      });
+      const report = makeForensicReport({ discrepancies: [disc] });
+
+      const result = engine.evaluateFindings(report, []);
+
+      if (result.violations.length > 0) {
+        const v = result.violations[0];
+        expect(v.sourceDocuments).toBeDefined();
+        expect(Array.isArray(v.sourceDocuments)).toBe(true);
+        expect(v.supportingFindings).toBeDefined();
+        expect(v.pageReferences).toBeDefined();
+      }
+    });
+  });
+
+  // ================================================================
   // evaluateFindings — edge cases for federal path
   // ================================================================
   describe('evaluateFindings — additional edge cases', () => {
