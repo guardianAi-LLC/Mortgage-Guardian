@@ -74,8 +74,8 @@ function mockClaudeResponse(overrides = {}) {
         type: 'amount_mismatch',
         severity: 'high',
         description: 'Interest rate on monthly statement (6.5%) differs from closing disclosure (6.25%). Unless an ARM adjustment occurred, this suggests an incorrect rate is being applied.',
-        documentA: { field: 'interestRate', value: 6.5 },
-        documentB: { field: 'interestRate', value: 6.25 },
+        documentA: { field: 'interestRate', value: 6.5, pageNumber: 1, quotedText: 'Current Interest Rate: 6.500%' },
+        documentB: { field: 'interestRate', value: 6.25, pageNumber: 3, quotedText: 'Your interest rate is 6.250%' },
         regulation: 'TILA Section 128',
         forensicNote: 'A 0.25% rate difference on a $245,000 balance results in approximately $51/month overcharge.'
       }
@@ -375,6 +375,30 @@ describe('CrossDocumentComparisonService', () => {
       expect(instructions).toContain('shared fields');
     });
 
+    it('should include evidence instruction in system prompt', async () => {
+      mockMessagesCreate.mockResolvedValue(mockClaudeResponse());
+
+      await crossDocumentComparisonService.compareDocumentPair(
+        mockDocA(), mockDocB(), mockComparisonConfig()
+      );
+
+      const callArgs = mockMessagesCreate.mock.calls[0][0];
+      expect(callArgs.system).toContain('Always cite specific values');
+    });
+
+    it('should include discrepancy evidence instruction in user prompt', async () => {
+      mockMessagesCreate.mockResolvedValue(mockClaudeResponse());
+
+      await crossDocumentComparisonService.compareDocumentPair(
+        mockDocA(), mockDocB(), mockComparisonConfig()
+      );
+
+      const userPrompt = mockMessagesCreate.mock.calls[0][0].messages[0].content;
+      expect(userPrompt).toContain('pageNumber');
+      expect(userPrompt).toContain('quotedText');
+      expect(userPrompt).toContain('For each discrepancy per document');
+    });
+
     it('should include forensic focus areas specific to each pair type', async () => {
       mockMessagesCreate.mockResolvedValue(mockClaudeResponse());
 
@@ -489,8 +513,8 @@ describe('CrossDocumentComparisonService', () => {
         mockDocA(), mockDocB(), mockComparisonConfig()
       );
 
-      expect(result.discrepancies[0].documentA).toEqual({ field: 'unknown', value: null });
-      expect(result.discrepancies[0].documentB).toEqual({ field: 'unknown', value: null });
+      expect(result.discrepancies[0].documentA).toEqual(expect.objectContaining({ field: 'unknown', value: null, pageNumber: null, quotedText: null }));
+      expect(result.discrepancies[0].documentB).toEqual(expect.objectContaining({ field: 'unknown', value: null, pageNumber: null, quotedText: null }));
     });
 
     it('should enrich timeline violations with defaults for missing fields', async () => {
@@ -546,6 +570,126 @@ describe('CrossDocumentComparisonService', () => {
       expect(result.timelineEvents).toHaveLength(0);
       expect(result.timelineViolations).toHaveLength(0);
       expect(result.comparisonSummary).toBe('Incomplete response.');
+    });
+
+    it('should enrich discrepancies with evidence fields (pageNumber, quotedText)', async () => {
+      const response = mockClaudeResponse({
+        discrepancies: [
+          {
+            id: 'disc-001',
+            type: 'amount_mismatch',
+            severity: 'high',
+            description: 'Rate mismatch',
+            documentA: { field: 'rate', value: 6.5, pageNumber: 2, quotedText: 'Interest Rate: 6.500%' },
+            documentB: { field: 'rate', value: 6.25, pageNumber: 4, quotedText: 'Rate: 6.250%' }
+          }
+        ]
+      });
+      mockMessagesCreate.mockResolvedValue(response);
+
+      const result = await crossDocumentComparisonService.compareDocumentPair(
+        mockDocA(), mockDocB(), mockComparisonConfig()
+      );
+
+      expect(result.discrepancies[0].documentA.pageNumber).toBe(2);
+      expect(result.discrepancies[0].documentA.quotedText).toBe('Interest Rate: 6.500%');
+      expect(result.discrepancies[0].documentB.pageNumber).toBe(4);
+      expect(result.discrepancies[0].documentB.quotedText).toBe('Rate: 6.250%');
+      // Document metadata from input docs
+      expect(result.discrepancies[0].documentA.documentName).toBeNull(); // mockDocA has no documentName
+      expect(result.discrepancies[0].documentA.documentType).toBe('servicing');
+      expect(result.discrepancies[0].documentB.documentType).toBe('origination');
+    });
+
+    it('should default evidence fields to null when Claude omits them', async () => {
+      const response = mockClaudeResponse({
+        discrepancies: [
+          {
+            id: 'disc-001',
+            type: 'amount_mismatch',
+            severity: 'high',
+            description: 'Rate mismatch',
+            documentA: { field: 'rate', value: 6.5 },
+            documentB: { field: 'rate', value: 6.25 }
+          }
+        ]
+      });
+      mockMessagesCreate.mockResolvedValue(response);
+
+      const result = await crossDocumentComparisonService.compareDocumentPair(
+        mockDocA(), mockDocB(), mockComparisonConfig()
+      );
+
+      expect(result.discrepancies[0].documentA.pageNumber).toBeNull();
+      expect(result.discrepancies[0].documentA.quotedText).toBeNull();
+      expect(result.discrepancies[0].documentB.pageNumber).toBeNull();
+      expect(result.discrepancies[0].documentB.quotedText).toBeNull();
+    });
+
+    it('should truncate quotedText to 500 chars if longer', async () => {
+      const longText = 'A'.repeat(600);
+      const response = mockClaudeResponse({
+        discrepancies: [
+          {
+            id: 'disc-001',
+            type: 'amount_mismatch',
+            severity: 'high',
+            description: 'Rate mismatch',
+            documentA: { field: 'rate', value: 6.5, pageNumber: 1, quotedText: longText },
+            documentB: { field: 'rate', value: 6.25, pageNumber: 1, quotedText: 'Short text' }
+          }
+        ]
+      });
+      mockMessagesCreate.mockResolvedValue(response);
+
+      const result = await crossDocumentComparisonService.compareDocumentPair(
+        mockDocA(), mockDocB(), mockComparisonConfig()
+      );
+
+      expect(result.discrepancies[0].documentA.quotedText.length).toBe(500);
+      expect(result.discrepancies[0].documentB.quotedText).toBe('Short text');
+    });
+
+    it('should propagate documentName from input documents to discrepancies', async () => {
+      const docA = mockDocA({ documentName: 'January_Statement.pdf' });
+      const docB = mockDocB({ documentName: 'Closing_Disclosure.pdf' });
+      mockMessagesCreate.mockResolvedValue(mockClaudeResponse());
+
+      const result = await crossDocumentComparisonService.compareDocumentPair(
+        docA, docB, mockComparisonConfig()
+      );
+
+      expect(result.discrepancies[0].documentA.documentName).toBe('January_Statement.pdf');
+      expect(result.discrepancies[0].documentB.documentName).toBe('Closing_Disclosure.pdf');
+    });
+
+    it('should add documentName to timeline events', async () => {
+      const docA = mockDocA({ documentName: 'January_Statement.pdf' });
+      mockMessagesCreate.mockResolvedValue(mockClaudeResponse());
+
+      const result = await crossDocumentComparisonService.compareDocumentPair(
+        docA, mockDocB(), mockComparisonConfig()
+      );
+
+      // Timeline event references doc-001, which is docA
+      expect(result.timelineEvents[0].documentName).toBe('January_Statement.pdf');
+    });
+
+    it('should add relatedDocumentNames to timeline violations', async () => {
+      const docA = mockDocA({ documentName: 'Statement.pdf' });
+      const docB = mockDocB({ documentName: 'Disclosure.pdf' });
+      const response = mockClaudeResponse({
+        timelineViolations: [
+          { description: 'Late notice', relatedDocuments: ['doc-001', 'doc-002'] }
+        ]
+      });
+      mockMessagesCreate.mockResolvedValue(response);
+
+      const result = await crossDocumentComparisonService.compareDocumentPair(
+        docA, docB, mockComparisonConfig()
+      );
+
+      expect(result.timelineViolations[0].relatedDocumentNames).toEqual(['Statement.pdf', 'Disclosure.pdf']);
     });
   });
 

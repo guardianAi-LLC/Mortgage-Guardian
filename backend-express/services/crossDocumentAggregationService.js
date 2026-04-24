@@ -144,8 +144,12 @@ class CrossDocumentAggregationService {
       documentSubtype = classificationData.classificationSubtype;
     }
 
+    // Extract document name from Supabase record fields, with fallback
+    const documentName = doc.name || doc.file_name || `Document ${documentId}`;
+
     return {
       documentId,
+      documentName,
       documentType,
       documentSubtype,
       analysisReport,
@@ -198,11 +202,13 @@ class CrossDocumentAggregationService {
             pairId: config.id,
             docA: {
               documentId: docA.documentId,
+              documentName: docA.documentName || null,
               documentType: docA.documentType,
               documentSubtype: docA.documentSubtype
             },
             docB: {
               documentId: docB.documentId,
+              documentName: docB.documentName || null,
               documentType: docB.documentType,
               documentSubtype: docB.documentSubtype
             },

@@ -460,6 +460,7 @@ describe('CrossDocumentAggregationService', () => {
       const doc = result.documents[0];
       expect(doc).toEqual(expect.objectContaining({
         documentId: expect.any(String),
+        documentName: expect.any(String),
         documentType: 'servicing',
         documentSubtype: 'monthly_statement',
         analysisReport: expect.any(Object),
@@ -475,11 +476,13 @@ describe('CrossDocumentAggregationService', () => {
         pairId: expect.any(String),
         docA: expect.objectContaining({
           documentId: expect.any(String),
+          documentName: expect.any(String),
           documentType: expect.any(String),
           documentSubtype: expect.any(String)
         }),
         docB: expect.objectContaining({
           documentId: expect.any(String),
+          documentName: expect.any(String),
           documentType: expect.any(String),
           documentSubtype: expect.any(String)
         }),
@@ -487,6 +490,76 @@ describe('CrossDocumentAggregationService', () => {
         discrepancyTypes: expect.any(Array),
         forensicSignificance: expect.any(String)
       }));
+    });
+
+    // -----------------------------------------------------------------------
+    // Document name inclusion and fallback
+    // -----------------------------------------------------------------------
+    test('document records include documentName from file_name field', async () => {
+      const analysis = createMockAnalysisReport({
+        documentType: 'servicing',
+        documentSubtype: 'monthly_statement'
+      });
+
+      mockGetCase.mockResolvedValue({
+        id: 'case-name',
+        user_id: 'user-123',
+        case_name: 'Name Test',
+        documents: [
+          createMockDocument({ documentId: 'doc-named', analysisResults: analysis })
+        ]
+      });
+
+      const result = await crossDocumentAggregationService.aggregateForCase('case-name', 'user-123');
+
+      const doc = result.documents.find(d => d.documentId === 'doc-named');
+      // createMockDocument sets file_name to `${documentId}.pdf`
+      expect(doc.documentName).toBe('doc-named.pdf');
+    });
+
+    test('document records fall back to "Document {id}" when name fields are absent', async () => {
+      const analysis = createMockAnalysisReport({
+        documentType: 'servicing',
+        documentSubtype: 'monthly_statement'
+      });
+
+      // Create a document record with no name or file_name
+      const docRecord = createMockDocument({ documentId: 'doc-noname', analysisResults: analysis });
+      delete docRecord.file_name;
+      delete docRecord.name;
+
+      mockGetCase.mockResolvedValue({
+        id: 'case-fallback',
+        user_id: 'user-123',
+        case_name: 'Fallback Test',
+        documents: [docRecord]
+      });
+
+      const result = await crossDocumentAggregationService.aggregateForCase('case-fallback', 'user-123');
+
+      const doc = result.documents.find(d => d.documentId === 'doc-noname');
+      expect(doc.documentName).toBe('Document doc-noname');
+    });
+
+    test('comparison pairs include documentName for both documents', async () => {
+      const analysisA = createMockAnalysisReport({ documentType: 'servicing', documentSubtype: 'monthly_statement' });
+      const analysisB = createMockAnalysisReport({ documentType: 'servicing', documentSubtype: 'monthly_statement' });
+
+      mockGetCase.mockResolvedValue({
+        id: 'case-pair-name',
+        user_id: 'user-123',
+        case_name: 'Pair Name Test',
+        documents: [
+          createMockDocument({ documentId: 'doc-X', analysisResults: analysisA }),
+          createMockDocument({ documentId: 'doc-Y', analysisResults: analysisB })
+        ]
+      });
+
+      const result = await crossDocumentAggregationService.aggregateForCase('case-pair-name', 'user-123');
+
+      expect(result.comparisonPairs).toHaveLength(1);
+      expect(result.comparisonPairs[0].docA.documentName).toBe('doc-X.pdf');
+      expect(result.comparisonPairs[0].docB.documentName).toBe('doc-Y.pdf');
     });
 
     // -----------------------------------------------------------------------
