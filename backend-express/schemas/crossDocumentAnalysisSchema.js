@@ -73,7 +73,20 @@ const discrepancySchema = Joi.object({
   regulation: Joi.string().optional(),
 
   /** Detailed forensic analysis note */
-  forensicNote: Joi.string().max(2000).optional()
+  forensicNote: Joi.string().max(2000).optional(),
+
+  // ---------------------------------------------------------------------------
+  // Structured Reasoning Fields (Phase 52-06 — optional, backward compatible)
+  // ---------------------------------------------------------------------------
+
+  /** Ordered chain-of-thought steps Claude used to reach this finding */
+  reasoningSteps: Joi.array().items(Joi.string()).optional().default([]),
+
+  /** Numeric confidence score (0–1) reflecting Claude's certainty */
+  confidence: Joi.number().min(0).max(1).optional().allow(null).default(null),
+
+  /** Human-readable confidence tier derived from score */
+  confidenceLevel: Joi.string().valid('high', 'medium', 'low').optional().allow(null).default(null)
 });
 
 // ---------------------------------------------------------------------------

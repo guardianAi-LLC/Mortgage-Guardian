@@ -171,7 +171,17 @@ const documentAnalysisItemSchema = Joi.object({
       name: Joi.string().optional(),
       type: Joi.string().optional(),
       subtype: Joi.string().optional()
-    }).allow(null).optional()
+    }).allow(null).optional(),
+
+    // Structured Reasoning Fields (Phase 52-06 — optional, backward compatible)
+    /** Ordered chain-of-thought steps Claude used to reach this finding */
+    reasoningSteps: Joi.array().items(Joi.string()).optional().default([]),
+
+    /** Numeric confidence score (0–1) reflecting Claude's certainty */
+    confidence: Joi.number().min(0).max(1).optional().allow(null).default(null),
+
+    /** Human-readable confidence tier derived from score */
+    confidenceLevel: Joi.string().valid('high', 'medium', 'low').optional().allow(null).default(null)
   })).default([]),
 
   /** Top findings from individual analysis */
@@ -217,7 +227,17 @@ const forensicDiscrepancySchema = Joi.object({
     documentType: Joi.string().optional(),
     pageNumber: Joi.number().integer().allow(null).optional(),
     quotedText: Joi.string().max(500).allow(null).optional()
-  }).optional()
+  }).optional(),
+
+  // Structured Reasoning Fields (Phase 52-06 — optional, backward compatible)
+  /** Ordered chain-of-thought steps Claude used to reach this finding */
+  reasoningSteps: Joi.array().items(Joi.string()).optional().default([]),
+
+  /** Numeric confidence score (0–1) reflecting Claude's certainty */
+  confidence: Joi.number().min(0).max(1).optional().allow(null).default(null),
+
+  /** Human-readable confidence tier derived from score */
+  confidenceLevel: Joi.string().valid('high', 'medium', 'low').optional().allow(null).default(null)
 });
 
 const forensicTimelineViolationSchema = Joi.object({
@@ -322,7 +342,17 @@ const complianceViolationSchema = Joi.object({
   })).optional(),
 
   /** Source document IDs (legacy field, pre-enrichment) */
-  sourceDocumentIds: Joi.array().items(Joi.string()).optional()
+  sourceDocumentIds: Joi.array().items(Joi.string()).optional(),
+
+  // Structured Reasoning Fields (Phase 52-06 — optional, backward compatible)
+  /** Ordered chain-of-thought steps Claude used to reach this violation finding */
+  reasoningSteps: Joi.array().items(Joi.string()).optional().default([]),
+
+  /** Numeric confidence score (0–1) reflecting Claude's certainty */
+  confidence: Joi.number().min(0).max(1).optional().allow(null).default(null),
+
+  /** Human-readable confidence tier derived from score */
+  confidenceLevel: Joi.string().valid('high', 'medium', 'low').optional().allow(null).default(null)
 });
 
 const stateComplianceViolationSchema = complianceViolationSchema.keys({

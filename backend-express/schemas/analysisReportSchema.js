@@ -110,7 +110,21 @@ const anomalyItemSchema = Joi.object({
   actualValue: Joi.any().optional(),
 
   /** Relevant regulation citation (e.g. "RESPA Section 6") */
-  regulation: Joi.string().optional()
+  regulation: Joi.string().optional(),
+
+  // ---------------------------------------------------------------------------
+  // Structured Reasoning Fields (Phase 52-06 — optional, backward compatible)
+  // Added so API responses including reasoning chain and confidence are valid.
+  // ---------------------------------------------------------------------------
+
+  /** Ordered chain-of-thought steps Claude used to reach this finding */
+  reasoningSteps: Joi.array().items(Joi.string()).optional().default([]),
+
+  /** Numeric confidence score (0–1) reflecting Claude's certainty */
+  confidence: Joi.number().min(0).max(1).optional().allow(null).default(null),
+
+  /** Human-readable confidence tier derived from score */
+  confidenceLevel: Joi.string().valid('high', 'medium', 'low').optional().allow(null).default(null)
 });
 
 const anomaliesSchema = Joi.array().items(anomalyItemSchema).default([]);
