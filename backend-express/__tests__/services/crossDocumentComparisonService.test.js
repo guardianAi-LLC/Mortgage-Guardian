@@ -691,6 +691,94 @@ describe('CrossDocumentComparisonService', () => {
 
       expect(result.timelineViolations[0].relatedDocumentNames).toEqual(['Statement.pdf', 'Disclosure.pdf']);
     });
+
+    it('should include reasoning fields in discrepancy output', async () => {
+      const response = mockClaudeResponse({
+        discrepancies: [
+          {
+            id: 'disc-001',
+            type: 'amount_mismatch',
+            severity: 'high',
+            description: 'Rate mismatch',
+            documentA: { field: 'interestRate', value: 6.5, pageNumber: 1, quotedText: 'Rate: 6.500%' },
+            documentB: { field: 'interestRate', value: 6.25, pageNumber: 3, quotedText: 'Rate: 6.250%' },
+            forensicNote: 'A 0.25% difference results in ~$51/month overcharge.',
+            reasoningSteps: [
+              'Compared interestRate field across both documents',
+              'Document A shows 6.500%, Document B shows 6.250%',
+              'Values conflict — a 0.25% discrepancy on a fixed-rate loan',
+              'Significant: TILA violation if no ARM adjustment notice was issued'
+            ],
+            confidence: 0.92
+          }
+        ]
+      });
+      mockMessagesCreate.mockResolvedValue(response);
+
+      const result = await crossDocumentComparisonService.compareDocumentPair(
+        mockDocA(), mockDocB(), mockComparisonConfig()
+      );
+
+      const disc = result.discrepancies[0];
+      expect(disc.reasoningSteps).toHaveLength(4);
+      expect(disc.reasoningSteps[0]).toContain('interestRate');
+      expect(disc.confidence).toBe(0.92);
+      expect(disc.confidenceLevel).toBe('high');
+    });
+
+    it('should default reasoning fields when not provided by Claude', async () => {
+      const response = mockClaudeResponse({
+        discrepancies: [
+          {
+            id: 'disc-001',
+            type: 'amount_mismatch',
+            severity: 'high',
+            description: 'Rate mismatch',
+            documentA: { field: 'rate', value: 6.5 },
+            documentB: { field: 'rate', value: 6.25 }
+            // No reasoningSteps or confidence
+          }
+        ]
+      });
+      mockMessagesCreate.mockResolvedValue(response);
+
+      const result = await crossDocumentComparisonService.compareDocumentPair(
+        mockDocA(), mockDocB(), mockComparisonConfig()
+      );
+
+      const disc = result.discrepancies[0];
+      expect(disc.reasoningSteps).toEqual([]);
+      expect(disc.confidence).toBeNull();
+      expect(disc.confidenceLevel).toBeNull();
+    });
+
+    it('should preserve forensicNote alongside reasoningSteps', async () => {
+      const response = mockClaudeResponse({
+        discrepancies: [
+          {
+            id: 'disc-001',
+            type: 'amount_mismatch',
+            severity: 'high',
+            description: 'Rate mismatch',
+            documentA: { field: 'rate', value: 6.5 },
+            documentB: { field: 'rate', value: 6.25 },
+            forensicNote: 'Investigator should request ARM adjustment history.',
+            reasoningSteps: ['Rate values differ by 0.25%'],
+            confidence: 0.88
+          }
+        ]
+      });
+      mockMessagesCreate.mockResolvedValue(response);
+
+      const result = await crossDocumentComparisonService.compareDocumentPair(
+        mockDocA(), mockDocB(), mockComparisonConfig()
+      );
+
+      const disc = result.discrepancies[0];
+      expect(disc.forensicNote).toBe('Investigator should request ARM adjustment history.');
+      expect(disc.reasoningSteps).toEqual(['Rate values differ by 0.25%']);
+      expect(disc.confidenceLevel).toBe('high');
+    });
   });
 
   // ==========================================================================

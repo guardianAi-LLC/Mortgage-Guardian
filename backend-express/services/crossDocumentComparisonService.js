@@ -510,6 +510,16 @@ Report only findings supported by specific field values from both documents.`;
         enriched.documentB.quotedText = enriched.documentB.quotedText.substring(0, 500);
       }
 
+      // Enrich reasoning fields
+      enriched.reasoningSteps = Array.isArray(enriched.reasoningSteps) ? enriched.reasoningSteps : [];
+      if (typeof enriched.confidence === 'number') {
+        enriched.confidence = Math.min(1, Math.max(0, enriched.confidence));
+        enriched.confidenceLevel = getConfidenceLevel(enriched.confidence);
+      } else {
+        enriched.confidence = null;
+        enriched.confidenceLevel = null;
+      }
+
       return enriched;
     });
 
