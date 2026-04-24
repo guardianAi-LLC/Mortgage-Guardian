@@ -157,7 +157,21 @@ const documentAnalysisItemSchema = Joi.object({
     field: Joi.string().optional(),
     type: Joi.string().optional(),
     severity: Joi.string().valid('critical', 'high', 'medium', 'low', 'info').optional(),
-    description: Joi.string().optional()
+    description: Joi.string().optional(),
+
+    /** Page number where evidence was found (enriched, Plan 51-01) */
+    pageReference: Joi.number().integer().allow(null).optional(),
+
+    /** Exact quoted text supporting the finding (enriched, Plan 51-01) */
+    quotedText: Joi.string().max(500).allow(null).optional(),
+
+    /** Source document metadata (enriched, Plan 51-01) */
+    sourceDocument: Joi.object({
+      id: Joi.string().optional(),
+      name: Joi.string().optional(),
+      type: Joi.string().optional(),
+      subtype: Joi.string().optional()
+    }).allow(null).optional()
   })).default([]),
 
   /** Top findings from individual analysis */
@@ -185,7 +199,25 @@ const forensicDiscrepancySchema = Joi.object({
   documentIds: Joi.array().items(Joi.string()).min(1).required(),
 
   /** Relevant regulation citation */
-  regulation: Joi.string().optional()
+  regulation: Joi.string().optional(),
+
+  /** Enriched evidence from document A (Plan 51-02) */
+  documentA: Joi.object({
+    documentId: Joi.string().required(),
+    documentName: Joi.string().required(),
+    documentType: Joi.string().optional(),
+    pageNumber: Joi.number().integer().allow(null).optional(),
+    quotedText: Joi.string().max(500).allow(null).optional()
+  }).optional(),
+
+  /** Enriched evidence from document B (Plan 51-02) */
+  documentB: Joi.object({
+    documentId: Joi.string().required(),
+    documentName: Joi.string().required(),
+    documentType: Joi.string().optional(),
+    pageNumber: Joi.number().integer().allow(null).optional(),
+    quotedText: Joi.string().max(500).allow(null).optional()
+  }).optional()
 });
 
 const forensicTimelineViolationSchema = Joi.object({
@@ -266,7 +298,31 @@ const complianceViolationSchema = Joi.object({
   potentialPenalties: Joi.string().optional(),
 
   /** Recommended corrective actions */
-  recommendations: Joi.array().items(Joi.string()).default([])
+  recommendations: Joi.array().items(Joi.string()).default([]),
+
+  /** Source documents linked to this violation (enriched, Plan 51-03) */
+  sourceDocuments: Joi.array().items(Joi.object({
+    id: Joi.string().required(),
+    name: Joi.string().required(),
+    type: Joi.string().required()
+  })).optional(),
+
+  /** Supporting findings that triggered this violation (enriched, Plan 51-03) */
+  supportingFindings: Joi.array().items(Joi.object({
+    findingId: Joi.string().required(),
+    findingType: Joi.string().required(),
+    quotedText: Joi.string().max(500).allow(null).optional()
+  })).optional(),
+
+  /** Page references across source documents (enriched, Plan 51-03) */
+  pageReferences: Joi.array().items(Joi.object({
+    documentId: Joi.string().required(),
+    documentName: Joi.string().required(),
+    pageNumber: Joi.number().integer().required()
+  })).optional(),
+
+  /** Source document IDs (legacy field, pre-enrichment) */
+  sourceDocumentIds: Joi.array().items(Joi.string()).optional()
 });
 
 const stateComplianceViolationSchema = complianceViolationSchema.keys({
@@ -314,7 +370,20 @@ const evidenceLinkSchema = Joi.object({
   evidenceDescription: Joi.string().required(),
 
   /** Severity of the linked finding */
-  severity: Joi.string().valid(...SEVERITY_LEVELS).required()
+  severity: Joi.string().valid(...SEVERITY_LEVELS).required(),
+
+  /** Human-readable source document names (enriched, Plan 51-04) */
+  sourceDocumentNames: Joi.array().items(Joi.string()).optional(),
+
+  /** Page references across source documents (enriched, Plan 51-04) */
+  pageReferences: Joi.array().items(Joi.object({
+    documentId: Joi.string().required(),
+    documentName: Joi.string().required(),
+    pageNumber: Joi.number().integer().required()
+  })).optional(),
+
+  /** IDs of supporting findings for violation-type links (enriched, Plan 51-04) */
+  supportingFindingIds: Joi.array().items(Joi.string()).optional()
 });
 
 // ---------------------------------------------------------------------------

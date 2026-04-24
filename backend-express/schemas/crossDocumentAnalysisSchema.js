@@ -33,7 +33,16 @@ const documentRefSchema = Joi.object({
     Joi.string().allow(''),
     Joi.number(),
     Joi.allow(null)
-  ).required()
+  ).required(),
+
+  /** Human-readable document name (enriched, Plan 51-02) */
+  documentName: Joi.string().optional(),
+
+  /** Page number where the field value was found (enriched, Plan 51-02) */
+  pageNumber: Joi.number().integer().allow(null).optional(),
+
+  /** Exact quoted text from the document (enriched, Plan 51-02) */
+  quotedText: Joi.string().max(500).allow(null).optional()
 }).required();
 
 // ---------------------------------------------------------------------------
@@ -85,7 +94,10 @@ const timelineEventSchema = Joi.object({
   event: Joi.string().max(500).required(),
 
   /** How significant this event is */
-  significance: Joi.string().valid(...SIGNIFICANCE_LEVELS).required()
+  significance: Joi.string().valid(...SIGNIFICANCE_LEVELS).required(),
+
+  /** Human-readable document name (enriched, Plan 51-02) */
+  documentName: Joi.string().optional()
 });
 
 const timelineViolationSchema = Joi.object({
@@ -99,7 +111,10 @@ const timelineViolationSchema = Joi.object({
   relatedDocuments: Joi.array().items(Joi.string()).min(1).required(),
 
   /** Relevant regulation (if applicable) */
-  regulation: Joi.string().optional()
+  regulation: Joi.string().optional(),
+
+  /** Human-readable names of related documents (enriched, Plan 51-02) */
+  relatedDocumentNames: Joi.array().items(Joi.string()).optional()
 });
 
 const timelineSchema = Joi.object({
