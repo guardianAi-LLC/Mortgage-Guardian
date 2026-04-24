@@ -270,8 +270,11 @@ const confidenceScoringService = {
   /**
    * Build evidence links connecting findings to source documents.
    *
+   * Uses enriched evidence data (quotedText, sourceDocument, pageReferences)
+   * when available, falling back to template descriptions for un-enriched data.
+   *
    * @param {Object} aggregatedData - { documentAnalyses, forensicReport, complianceReport }
-   * @returns {Array<{ findingId, findingType, sourceDocumentIds, evidenceDescription, severity }>}
+   * @returns {Array<Object>} Evidence link objects with real evidence descriptions
    */
   buildEvidenceLinks(aggregatedData) {
     const { documentAnalyses = [], forensicReport = null, complianceReport = null } = aggregatedData;
@@ -281,14 +284,33 @@ const confidenceScoringService = {
     for (const doc of documentAnalyses) {
       const anomalies = doc.anomalies || [];
       for (const anomaly of anomalies) {
-        const template = EVIDENCE_CATEGORIES.anomaly.sourceDescriptionTemplate;
-        links.push({
+        const link = {
           findingId: anomaly.id || `anomaly-${links.length}`,
           findingType: 'anomaly',
           sourceDocumentIds: [doc.documentId],
-          evidenceDescription: template.replace('{id}', anomaly.id || 'unknown'),
           severity: anomaly.severity || 'medium'
-        });
+        };
+
+        // Enriched evidence: use real quoted text and document names
+        if (anomaly.sourceDocument && anomaly.sourceDocument.name) {
+          const docName = anomaly.sourceDocument.name;
+          const pageStr = anomaly.pageReference != null ? `, p.${anomaly.pageReference}` : '';
+          const text = anomaly.quotedText || anomaly.description || 'Anomaly detected';
+          link.evidenceDescription = `[${docName}${pageStr}]: ${text}`;
+          link.sourceDocumentIds = [anomaly.sourceDocument.id || doc.documentId];
+          link.sourceDocumentNames = [docName];
+          link.pageReferences = anomaly.pageReference != null ? [{
+            documentId: anomaly.sourceDocument.id || doc.documentId,
+            documentName: docName,
+            pageNumber: anomaly.pageReference
+          }] : [];
+        } else {
+          // Fallback: template-based evidence description
+          const template = EVIDENCE_CATEGORIES.anomaly.sourceDescriptionTemplate;
+          link.evidenceDescription = template.replace('{id}', anomaly.id || 'unknown');
+        }
+
+        links.push(link);
       }
     }
 
@@ -299,14 +321,63 @@ const confidenceScoringService = {
         const docIds = [];
         if (disc.documentA && disc.documentA.documentId) docIds.push(disc.documentA.documentId);
         if (disc.documentB && disc.documentB.documentId) docIds.push(disc.documentB.documentId);
-        const template = EVIDENCE_CATEGORIES.discrepancy.sourceDescriptionTemplate;
-        links.push({
+
+        const link = {
           findingId: disc.id || `discrepancy-${links.length}`,
           findingType: 'discrepancy',
           sourceDocumentIds: docIds.length > 0 ? docIds : ['unknown'],
-          evidenceDescription: template.replace('{id}', disc.id || 'unknown'),
           severity: disc.severity || 'medium'
-        });
+        };
+
+        // Enriched evidence: use per-document quoted text and names
+        const hasEnrichedA = disc.documentA && disc.documentA.documentName;
+        const hasEnrichedB = disc.documentB && disc.documentB.documentName;
+
+        if (hasEnrichedA || hasEnrichedB) {
+          const parts = [];
+          const docNames = [];
+          const pageRefs = [];
+
+          if (hasEnrichedA) {
+            const nameA = disc.documentA.documentName;
+            const pageA = disc.documentA.pageNumber != null ? `, p.${disc.documentA.pageNumber}` : '';
+            const textA = disc.documentA.quotedText || disc.documentA.value || '';
+            parts.push(`[${nameA}${pageA}]: ${textA}`);
+            docNames.push(nameA);
+            if (disc.documentA.pageNumber != null) {
+              pageRefs.push({
+                documentId: disc.documentA.documentId,
+                documentName: nameA,
+                pageNumber: disc.documentA.pageNumber
+              });
+            }
+          }
+
+          if (hasEnrichedB) {
+            const nameB = disc.documentB.documentName;
+            const pageB = disc.documentB.pageNumber != null ? `, p.${disc.documentB.pageNumber}` : '';
+            const textB = disc.documentB.quotedText || disc.documentB.value || '';
+            parts.push(`[${nameB}${pageB}]: ${textB}`);
+            docNames.push(nameB);
+            if (disc.documentB.pageNumber != null) {
+              pageRefs.push({
+                documentId: disc.documentB.documentId,
+                documentName: nameB,
+                pageNumber: disc.documentB.pageNumber
+              });
+            }
+          }
+
+          link.evidenceDescription = parts.join(' vs ');
+          link.sourceDocumentNames = docNames;
+          link.pageReferences = pageRefs;
+        } else {
+          // Fallback: template-based evidence description
+          const template = EVIDENCE_CATEGORIES.discrepancy.sourceDescriptionTemplate;
+          link.evidenceDescription = template.replace('{id}', disc.id || 'unknown');
+        }
+
+        links.push(link);
       }
 
       // --- Timeline violations ---
@@ -362,34 +433,75 @@ const confidenceScoringService = {
       // --- Federal violations ---
       const federalViolations = complianceReport.violations || [];
       for (const v of federalViolations) {
-        const template = EVIDENCE_CATEGORIES.federalViolation.sourceDescriptionTemplate;
-        const description = template
-          .replace('{id}', v.id || 'unknown')
-          .replace('{statuteName}', v.statuteName || 'unknown');
-        links.push({
+        const link = {
           findingId: v.id || `federal-violation-${links.length}`,
           findingType: 'federalViolation',
-          sourceDocumentIds: v.sourceDocumentIds || ['compliance-analysis'],
-          evidenceDescription: description,
           severity: v.severity || 'medium'
-        });
+        };
+
+        // Enriched evidence: use source documents, supporting findings, page refs
+        if (Array.isArray(v.sourceDocuments) && v.sourceDocuments.length > 0) {
+          link.sourceDocumentIds = v.sourceDocuments.map(d => d.id);
+          link.sourceDocumentNames = v.sourceDocuments.map(d => d.name);
+
+          // Build description from citation + first supporting finding's quotedText
+          const citation = v.citation || '';
+          const firstQuote = Array.isArray(v.supportingFindings) && v.supportingFindings.length > 0
+            ? v.supportingFindings[0].quotedText : null;
+          link.evidenceDescription = firstQuote
+            ? `${citation}: ${firstQuote}`
+            : `Federal statutory violation under ${v.statuteName || 'unknown'} (${citation})`;
+
+          link.pageReferences = Array.isArray(v.pageReferences) ? v.pageReferences : [];
+          link.supportingFindingIds = Array.isArray(v.supportingFindings)
+            ? v.supportingFindings.map(f => f.findingId) : [];
+        } else {
+          // Fallback: template-based evidence description
+          const template = EVIDENCE_CATEGORIES.federalViolation.sourceDescriptionTemplate;
+          link.evidenceDescription = template
+            .replace('{id}', v.id || 'unknown')
+            .replace('{statuteName}', v.statuteName || 'unknown');
+          link.sourceDocumentIds = v.sourceDocumentIds || ['compliance-analysis'];
+        }
+
+        links.push(link);
       }
 
       // --- State violations ---
       const stateViolations = complianceReport.stateViolations || [];
       for (const sv of stateViolations) {
-        const template = EVIDENCE_CATEGORIES.stateViolation.sourceDescriptionTemplate;
-        const description = template
-          .replace('{id}', sv.id || 'unknown')
-          .replace('{statuteName}', sv.statuteName || 'unknown')
-          .replace('{jurisdiction}', sv.jurisdiction || 'unknown');
-        links.push({
+        const link = {
           findingId: sv.id || `state-violation-${links.length}`,
           findingType: 'stateViolation',
-          sourceDocumentIds: sv.sourceDocumentIds || ['compliance-analysis'],
-          evidenceDescription: description,
           severity: sv.severity || 'medium'
-        });
+        };
+
+        // Enriched evidence: use source documents, supporting findings, page refs
+        if (Array.isArray(sv.sourceDocuments) && sv.sourceDocuments.length > 0) {
+          link.sourceDocumentIds = sv.sourceDocuments.map(d => d.id);
+          link.sourceDocumentNames = sv.sourceDocuments.map(d => d.name);
+
+          const citation = sv.citation || '';
+          const firstQuote = Array.isArray(sv.supportingFindings) && sv.supportingFindings.length > 0
+            ? sv.supportingFindings[0].quotedText : null;
+          link.evidenceDescription = firstQuote
+            ? `${citation}: ${firstQuote}`
+            : `State statutory violation under ${sv.statuteName || 'unknown'} (${citation}) [${sv.jurisdiction || 'unknown'}]`;
+
+          link.pageReferences = Array.isArray(sv.pageReferences) ? sv.pageReferences : [];
+          link.supportingFindingIds = Array.isArray(sv.supportingFindings)
+            ? sv.supportingFindings.map(f => f.findingId) : [];
+        } else {
+          // Fallback: template-based evidence description
+          const template = EVIDENCE_CATEGORIES.stateViolation.sourceDescriptionTemplate;
+          link.evidenceDescription = template
+            .replace('{id}', sv.id || 'unknown')
+            .replace('{statuteName}', sv.statuteName || 'unknown')
+            .replace('{jurisdiction}', sv.jurisdiction || 'unknown');
+          link.sourceDocumentIds = sv.sourceDocumentIds || ['compliance-analysis'];
+        }
+
+        links.push(link);
       }
     }
 

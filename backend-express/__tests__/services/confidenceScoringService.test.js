@@ -971,6 +971,282 @@ describe('ConfidenceScoringService', () => {
       expect(links).toHaveLength(1);
       expect(links[0].findingType).toBe('anomaly');
     });
+
+    // =========================================================================
+    // Enriched evidence tests (Phase 51-04)
+    // =========================================================================
+
+    it('should use enriched anomaly evidence with real quoted text and document names', () => {
+      const data = {
+        documentAnalyses: [
+          {
+            documentId: 'doc-001',
+            anomalies: [
+              {
+                id: 'anom-001',
+                severity: 'high',
+                description: 'Payment doubled',
+                sourceDocument: { id: 'doc-001', name: 'statement-jan.pdf', type: 'mortgage_statement', subtype: 'monthly_statement' },
+                pageReference: 3,
+                quotedText: 'Total Payment Due: $3,200.00'
+              }
+            ]
+          }
+        ],
+        forensicReport: null,
+        complianceReport: null
+      };
+
+      const links = service.buildEvidenceLinks(data);
+
+      expect(links).toHaveLength(1);
+      expect(links[0].evidenceDescription).toBe('[statement-jan.pdf, p.3]: Total Payment Due: $3,200.00');
+      expect(links[0].sourceDocumentNames).toEqual(['statement-jan.pdf']);
+      expect(links[0].pageReferences).toEqual([{
+        documentId: 'doc-001',
+        documentName: 'statement-jan.pdf',
+        pageNumber: 3
+      }]);
+    });
+
+    it('should use enriched discrepancy evidence with per-document quoted text', () => {
+      const data = {
+        documentAnalyses: [],
+        forensicReport: {
+          discrepancies: [
+            {
+              id: 'disc-001',
+              type: 'amount_mismatch',
+              severity: 'high',
+              description: 'Payment differs',
+              documentA: {
+                documentId: 'doc-001',
+                documentName: 'statement.pdf',
+                pageNumber: 2,
+                quotedText: 'Monthly Payment: $1,500',
+                field: 'paymentAmount',
+                value: 1500
+              },
+              documentB: {
+                documentId: 'doc-002',
+                documentName: 'disclosure.pdf',
+                pageNumber: 5,
+                quotedText: 'Monthly Payment: $1,800',
+                field: 'paymentAmount',
+                value: 1800
+              }
+            }
+          ],
+          timeline: { violations: [] },
+          paymentVerification: { unmatchedDocumentPayments: [], feeAnalysis: { irregularities: [] } }
+        },
+        complianceReport: null
+      };
+
+      const links = service.buildEvidenceLinks(data);
+
+      expect(links).toHaveLength(1);
+      expect(links[0].evidenceDescription).toBe('[statement.pdf, p.2]: Monthly Payment: $1,500 vs [disclosure.pdf, p.5]: Monthly Payment: $1,800');
+      expect(links[0].sourceDocumentNames).toEqual(['statement.pdf', 'disclosure.pdf']);
+      expect(links[0].pageReferences).toEqual([
+        { documentId: 'doc-001', documentName: 'statement.pdf', pageNumber: 2 },
+        { documentId: 'doc-002', documentName: 'disclosure.pdf', pageNumber: 5 }
+      ]);
+    });
+
+    it('should use enriched violation evidence with source documents and supporting findings', () => {
+      const data = {
+        documentAnalyses: [],
+        forensicReport: null,
+        complianceReport: {
+          violations: [
+            {
+              id: 'viol-001',
+              statuteId: 'respa',
+              sectionId: 'respa_qwr_response',
+              statuteName: 'Real Estate Settlement Procedures Act',
+              citation: '12 USC 2605(e)',
+              severity: 'critical',
+              description: 'QWR response failure',
+              sourceDocuments: [
+                { id: 'doc-001', name: 'statement.pdf', type: 'mortgage_statement' },
+                { id: 'doc-002', name: 'correspondence.pdf', type: 'correspondence' }
+              ],
+              supportingFindings: [
+                { findingId: 'anom-001', findingType: 'anomaly', quotedText: 'No response received within 30 days' }
+              ],
+              pageReferences: [
+                { documentId: 'doc-001', documentName: 'statement.pdf', pageNumber: 1 }
+              ]
+            }
+          ],
+          stateViolations: []
+        }
+      };
+
+      const links = service.buildEvidenceLinks(data);
+
+      expect(links).toHaveLength(1);
+      expect(links[0].evidenceDescription).toBe('12 USC 2605(e): No response received within 30 days');
+      expect(links[0].sourceDocumentIds).toEqual(['doc-001', 'doc-002']);
+      expect(links[0].sourceDocumentNames).toEqual(['statement.pdf', 'correspondence.pdf']);
+      expect(links[0].pageReferences).toEqual([
+        { documentId: 'doc-001', documentName: 'statement.pdf', pageNumber: 1 }
+      ]);
+      expect(links[0].supportingFindingIds).toEqual(['anom-001']);
+    });
+
+    it('should fall back to template evidence for un-enriched anomalies (backward compat)', () => {
+      const data = {
+        documentAnalyses: [
+          {
+            documentId: 'doc-001',
+            anomalies: [
+              { id: 'anom-001', severity: 'medium', description: 'Some issue' }
+              // No sourceDocument, no pageReference, no quotedText
+            ]
+          }
+        ],
+        forensicReport: null,
+        complianceReport: null
+      };
+
+      const links = service.buildEvidenceLinks(data);
+
+      expect(links).toHaveLength(1);
+      // Should use template text from EVIDENCE_CATEGORIES
+      expect(links[0].evidenceDescription).toContain('anom-001');
+      expect(links[0].evidenceDescription).toContain('anomaly');
+      // Should NOT have enriched fields
+      expect(links[0].sourceDocumentNames).toBeUndefined();
+      expect(links[0].pageReferences).toBeUndefined();
+    });
+
+    it('should fall back to template evidence for un-enriched discrepancies (backward compat)', () => {
+      const data = {
+        documentAnalyses: [],
+        forensicReport: {
+          discrepancies: [
+            {
+              id: 'disc-001',
+              type: 'amount_mismatch',
+              severity: 'high',
+              description: 'Payment differs',
+              documentA: { documentId: 'doc-001', field: 'paymentAmount', value: 1500 },
+              documentB: { documentId: 'doc-002', field: 'paymentAmount', value: 1800 }
+              // No documentName, no pageNumber, no quotedText
+            }
+          ],
+          timeline: { violations: [] },
+          paymentVerification: { unmatchedDocumentPayments: [], feeAnalysis: { irregularities: [] } }
+        },
+        complianceReport: null
+      };
+
+      const links = service.buildEvidenceLinks(data);
+
+      expect(links).toHaveLength(1);
+      expect(links[0].evidenceDescription).toContain('disc-001');
+      expect(links[0].evidenceDescription).toContain('discrepancy');
+      expect(links[0].sourceDocumentNames).toBeUndefined();
+      expect(links[0].pageReferences).toBeUndefined();
+    });
+
+    it('should fall back to template evidence for un-enriched violations (backward compat)', () => {
+      const data = {
+        documentAnalyses: [],
+        forensicReport: null,
+        complianceReport: {
+          violations: [
+            {
+              id: 'viol-001',
+              statuteId: 'respa',
+              statuteName: 'Real Estate Settlement Procedures Act',
+              citation: '12 USC 2605(e)',
+              severity: 'critical',
+              description: 'QWR failure',
+              sourceDocumentIds: ['doc-001']
+              // No sourceDocuments, no supportingFindings, no pageReferences
+            }
+          ],
+          stateViolations: []
+        }
+      };
+
+      const links = service.buildEvidenceLinks(data);
+
+      expect(links).toHaveLength(1);
+      expect(links[0].evidenceDescription).toContain('Federal');
+      expect(links[0].sourceDocumentIds).toEqual(['doc-001']);
+      expect(links[0].sourceDocumentNames).toBeUndefined();
+      expect(links[0].supportingFindingIds).toBeUndefined();
+    });
+
+    it('should handle enriched anomaly with null pageReference (no page refs emitted)', () => {
+      const data = {
+        documentAnalyses: [
+          {
+            documentId: 'doc-001',
+            anomalies: [
+              {
+                id: 'anom-001',
+                severity: 'medium',
+                description: 'Issue found',
+                sourceDocument: { id: 'doc-001', name: 'statement.pdf', type: 'mortgage_statement', subtype: 'monthly' },
+                pageReference: null,
+                quotedText: 'Some quoted text here'
+              }
+            ]
+          }
+        ],
+        forensicReport: null,
+        complianceReport: null
+      };
+
+      const links = service.buildEvidenceLinks(data);
+
+      expect(links).toHaveLength(1);
+      expect(links[0].evidenceDescription).toBe('[statement.pdf]: Some quoted text here');
+      expect(links[0].sourceDocumentNames).toEqual(['statement.pdf']);
+      expect(links[0].pageReferences).toEqual([]);
+    });
+
+    it('should use enriched state violation evidence with source documents', () => {
+      const data = {
+        documentAnalyses: [],
+        forensicReport: null,
+        complianceReport: {
+          violations: [],
+          stateViolations: [
+            {
+              id: 'sviol-001',
+              statuteId: 'ca_hbor',
+              statuteName: 'California Homeowner Bill of Rights',
+              citation: 'Cal. Civ. Code §2924.18',
+              severity: 'high',
+              description: 'Dual tracking violation',
+              jurisdiction: 'CA',
+              sourceDocuments: [
+                { id: 'doc-001', name: 'foreclosure-notice.pdf', type: 'correspondence' }
+              ],
+              supportingFindings: [
+                { findingId: 'disc-001', findingType: 'discrepancy', quotedText: 'Foreclosure proceedings continued' }
+              ],
+              pageReferences: [
+                { documentId: 'doc-001', documentName: 'foreclosure-notice.pdf', pageNumber: 1 }
+              ]
+            }
+          ]
+        }
+      };
+
+      const links = service.buildEvidenceLinks(data);
+
+      expect(links).toHaveLength(1);
+      expect(links[0].evidenceDescription).toBe('Cal. Civ. Code §2924.18: Foreclosure proceedings continued');
+      expect(links[0].sourceDocumentNames).toEqual(['foreclosure-notice.pdf']);
+      expect(links[0].supportingFindingIds).toEqual(['disc-001']);
+    });
   });
 
   // =========================================================================
