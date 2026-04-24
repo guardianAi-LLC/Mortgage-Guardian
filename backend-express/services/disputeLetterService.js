@@ -210,6 +210,25 @@ The audit data below includes specific document references, page numbers, and qu
 - Do not fabricate or generalize evidence — use only the specific citations provided`
       : '';
 
+    // Check if upstream reasoning/confidence data is available
+    const hasReasoningData = violations.some(v => typeof v.confidence === 'number') ||
+      findings.some(f => typeof f.confidence === 'number');
+
+    const highConfViolations = violations.filter(v => v.confidenceLevel === 'high').map(v => v.statuteName);
+    const medConfViolations = violations.filter(v => v.confidenceLevel === 'medium').map(v => v.statuteName);
+    const lowConfViolations = violations.filter(v => v.confidenceLevel === 'low').map(v => v.statuteName);
+
+    const confidenceContextSection = hasReasoningData
+      ? `
+## Analysis Confidence Context
+
+The audit findings include AI-assigned confidence scores. Use these to modulate language strength in the letter:
+- **High-confidence findings** (confidence \u2265 0.85): Use assertive, declarative language — "The servicer failed to...", "The records demonstrate..."
+- **Medium-confidence findings** (confidence 0.50\u20130.84): Use supported but measured language — "The evidence indicates...", "The records suggest..."
+- **Low-confidence findings** (confidence < 0.50): Use measured language — "There are indications that...", "The available evidence raises concerns about..."
+${highConfViolations.length > 0 ? `\nThese findings are supported by strong documentary evidence (confidence: high): ${highConfViolations.join(', ')}` : ''}${medConfViolations.length > 0 ? `\nThese findings are supported by evidence requiring some interpretation (confidence: medium): ${medConfViolations.join(', ')}` : ''}${lowConfViolations.length > 0 ? `\nThese findings have limited direct evidence (confidence: low): ${lowConfViolations.join(', ')}` : ''}`
+      : '';
+
     return `You are a mortgage servicing law expert specializing in RESPA compliance. Generate a formal ${letterTypeName} that is litigation-grade and ready for immediate use.
 
 ## Letter Type
@@ -224,7 +243,7 @@ ${sections.map(s => `- **${s.title}**: ${s.description}`).join('\n')}
 - Property Address: ${propertyAddress}
 - Servicer: ${servicerName}
 - Servicer Address: ${servicerAddress}
-${evidenceCitationInstructions}
+${evidenceCitationInstructions}${confidenceContextSection}
 
 ## Violations & Findings from Audit
 
@@ -318,6 +337,15 @@ Respond ONLY with valid JSON. No explanation outside the JSON.`;
           );
         }
 
+        // Reasoning/confidence fields (backward-compatible: only included when present)
+        if (typeof v.confidence === 'number') {
+          violation.confidence = v.confidence;
+          violation.confidenceLevel = v.confidenceLevel || null;
+        }
+        if (Array.isArray(v.reasoningSteps) && v.reasoningSteps.length > 0) {
+          violation.reasoningContext = v.reasoningSteps[0]; // First step as prompt context
+        }
+
         violations.push(violation);
       }
     }
@@ -347,6 +375,15 @@ Respond ONLY with valid JSON. No explanation outside the JSON.`;
           violation.pageReferences = v.pageReferences.map(p =>
             `${p.documentName || 'Document'}, page ${p.pageNumber}`
           );
+        }
+
+        // Reasoning/confidence fields (backward-compatible: only included when present)
+        if (typeof v.confidence === 'number') {
+          violation.confidence = v.confidence;
+          violation.confidenceLevel = v.confidenceLevel || null;
+        }
+        if (Array.isArray(v.reasoningSteps) && v.reasoningSteps.length > 0) {
+          violation.reasoningContext = v.reasoningSteps[0];
         }
 
         violations.push(violation);
@@ -392,6 +429,12 @@ Respond ONLY with valid JSON. No explanation outside the JSON.`;
             finding.evidenceCitation = `[${doc.documentName || 'Document'}]: ${a.quotedText}`;
           }
 
+          // Reasoning/confidence fields (backward-compatible: only included when present)
+          if (typeof a.confidence === 'number') {
+            finding.confidence = a.confidence;
+            finding.confidenceLevel = a.confidenceLevel || null;
+          }
+
           findings.push(finding);
         }
       }
@@ -423,6 +466,12 @@ Respond ONLY with valid JSON. No explanation outside the JSON.`;
 
         if (evidenceParts.length > 0) {
           finding.evidenceCitation = evidenceParts.join(' vs ');
+        }
+
+        // Reasoning/confidence fields (backward-compatible: only included when present)
+        if (typeof d.confidence === 'number') {
+          finding.confidence = d.confidence;
+          finding.confidenceLevel = d.confidenceLevel || null;
         }
 
         findings.push(finding);

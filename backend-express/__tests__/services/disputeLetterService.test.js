@@ -805,6 +805,177 @@ describe('_extractFindings — dual format support', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Upstream reasoning/confidence in prompts — Phase 52-05
+//
+// When violations or findings include confidence scores, the prompt must include
+// an "Analysis Confidence Context" section instructing Claude to modulate language
+// strength based on confidence level. When no confidence data is present, the
+// section must be omitted for backward compatibility.
+// ---------------------------------------------------------------------------
+
+describe('generateDisputeLetter — confidence context in prompts', () => {
+  function makeReportWithConfidence() {
+    return {
+      caseSummary: {
+        caseId: 'case-conf-001',
+        borrowerName: 'Jane Doe',
+        loanNumber: '12345',
+        servicerName: 'ABC Mortgage Servicing',
+        servicerAddress: '456 Corporate Blvd, Chicago, IL 60601'
+      },
+      documentAnalyses: [],
+      forensicReport: { discrepancies: [] },
+      complianceReport: {
+        violations: [
+          {
+            id: 'viol-001',
+            statuteName: 'RESPA',
+            citation: '12 U.S.C. § 2605(e)',
+            severity: 'high',
+            description: 'Failure to respond to QWR',
+            legalBasis: 'RESPA Section 6(e)',
+            confidence: 0.92,
+            confidenceLevel: 'high',
+            reasoningSteps: ['Step 1: QWR letter dated 2026-01-01 found in file', 'Step 2: No response documented within 30-day window']
+          },
+          {
+            id: 'viol-002',
+            statuteName: 'TILA',
+            citation: '15 U.S.C. § 1601',
+            severity: 'medium',
+            description: 'Disclosure timing violation',
+            confidence: 0.65,
+            confidenceLevel: 'medium'
+          }
+        ],
+        stateViolations: []
+      }
+    };
+  }
+
+  test('should include confidence context section when violations have confidence scores', async () => {
+    const mockResponse = makeMockLetterResponse();
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify(mockResponse) }],
+      usage: { input_tokens: 600, output_tokens: 900 }
+    });
+
+    await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeReportWithConfidence()
+    );
+
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt).toContain('Analysis Confidence Context');
+    expect(prompt).toContain('High-confidence findings');
+    expect(prompt).toContain('Medium-confidence findings');
+    expect(prompt).toContain('assertive, declarative language');
+    expect(prompt).toContain('measured language');
+    // High-confidence violation named
+    expect(prompt).toContain('RESPA');
+    // Medium-confidence violation named
+    expect(prompt).toContain('TILA');
+  });
+
+  test('should omit confidence context section when no confidence data is present', async () => {
+    const mockResponse = makeMockLetterResponse();
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify(mockResponse) }],
+      usage: { input_tokens: 500, output_tokens: 800 }
+    });
+
+    await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeUnenrichedConsolidatedReport()
+    );
+
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt).not.toContain('Analysis Confidence Context');
+    expect(prompt).not.toContain('High-confidence findings');
+    // Letter still generates successfully without confidence data
+    expect(prompt).toContain('TILA');
+    expect(prompt).toContain('15 U.S.C. § 1601');
+  });
+
+  test('_extractViolations includes confidence and confidenceLevel when present', () => {
+    const report = makeReportWithConfidence();
+    const violations = disputeLetterService._extractViolations(report);
+
+    const high = violations.find(v => v.statuteName === 'RESPA');
+    expect(high).toBeDefined();
+    expect(high.confidence).toBe(0.92);
+    expect(high.confidenceLevel).toBe('high');
+    expect(high.reasoningContext).toContain('Step 1');
+
+    const medium = violations.find(v => v.statuteName === 'TILA');
+    expect(medium).toBeDefined();
+    expect(medium.confidence).toBe(0.65);
+    expect(medium.confidenceLevel).toBe('medium');
+  });
+
+  test('_extractViolations omits confidence fields when not present (backward compat)', () => {
+    const report = makeUnenrichedConsolidatedReport();
+    const violations = disputeLetterService._extractViolations(report);
+
+    for (const v of violations) {
+      expect(v.confidence).toBeUndefined();
+      expect(v.confidenceLevel).toBeUndefined();
+      expect(v.reasoningContext).toBeUndefined();
+    }
+  });
+
+  test('_extractFindings includes confidence and confidenceLevel for anomalies when present', () => {
+    const report = {
+      documentAnalyses: [
+        {
+          documentName: 'statement.pdf',
+          anomalies: [
+            {
+              field: 'escrowBalance',
+              severity: 'high',
+              description: 'Escrow shortage',
+              confidence: 0.88,
+              confidenceLevel: 'high'
+            }
+          ]
+        }
+      ],
+      forensicReport: { discrepancies: [] }
+    };
+
+    const findings = disputeLetterService._extractFindings(report);
+
+    const anomaly = findings.find(f => f.type === 'anomaly');
+    expect(anomaly).toBeDefined();
+    expect(anomaly.confidence).toBe(0.88);
+    expect(anomaly.confidenceLevel).toBe('high');
+  });
+
+  test('_extractFindings includes confidence for discrepancies when present', () => {
+    const report = {
+      documentAnalyses: [],
+      forensicReport: {
+        discrepancies: [
+          {
+            severity: 'critical',
+            description: 'Payment mismatch',
+            confidence: 0.72,
+            confidenceLevel: 'medium'
+          }
+        ]
+      }
+    };
+
+    const findings = disputeLetterService._extractFindings(report);
+
+    const discrepancy = findings.find(f => f.type === 'discrepancy');
+    expect(discrepancy).toBeDefined();
+    expect(discrepancy.confidence).toBe(0.72);
+    expect(discrepancy.confidenceLevel).toBe('medium');
+  });
+});
+
 describe('Full letter generation from stored consolidated report', () => {
   test('generates letter from stored report with complianceFindings/documentAnalysis/forensicFindings', async () => {
     const mockResponse = makeMockLetterResponse();
