@@ -194,6 +194,22 @@ Key requirements:
 - Note that the servicer may not charge a fee for responding to the RFI`;
     }
 
+    // Check if enriched evidence is available
+    const hasEnrichedEvidence = violations.some(v => v.sourceDocuments || v.quotedEvidence || v.pageReferences) ||
+      findings.some(f => f.evidenceCitation);
+
+    const evidenceCitationInstructions = hasEnrichedEvidence
+      ? `
+## Evidence Citation Requirements
+
+The audit data below includes specific document references, page numbers, and quoted text from source documents. You MUST use these citations in the letter:
+- Reference specific documents by name and page number
+- Quote exact values and text from source documents to support each claim
+- Structure evidence citations as: (See [Document Name], page [X], stating '[quoted text]')
+- Every factual claim in the letter must be supported by a specific citation from the audit evidence
+- Do not fabricate or generalize evidence — use only the specific citations provided`
+      : '';
+
     return `You are a mortgage servicing law expert specializing in RESPA compliance. Generate a formal ${letterTypeName} that is litigation-grade and ready for immediate use.
 
 ## Letter Type
@@ -208,6 +224,7 @@ ${sections.map(s => `- **${s.title}**: ${s.description}`).join('\n')}
 - Property Address: ${propertyAddress}
 - Servicer: ${servicerName}
 - Servicer Address: ${servicerAddress}
+${evidenceCitationInstructions}
 
 ## Violations & Findings from Audit
 
@@ -239,7 +256,7 @@ Requirements:
 - Include all violations and findings as supporting evidence in the body
 - Make demands specific and actionable
 - Include appropriate response deadlines per the applicable regulation
-- The body should be comprehensive and ready to send without modification
+- The body should be comprehensive and ready to send without modification${hasEnrichedEvidence ? '\n- Include specific document citations with page numbers and quoted text for every factual claim' : ''}
 
 Respond ONLY with valid JSON. No explanation outside the JSON.`;
   }
@@ -260,9 +277,11 @@ Respond ONLY with valid JSON. No explanation outside the JSON.`;
 
   /**
    * Extract violations from the consolidated report for use in prompts.
+   * When enriched evidence fields are present (sourceDocuments, supportingFindings,
+   * pageReferences), they are included for citation-grade letter generation.
    *
    * @param {Object} report - Consolidated audit report
-   * @returns {Array} Simplified violation objects
+   * @returns {Array} Simplified violation objects with optional enriched evidence
    */
   _extractViolations(report) {
     const violations = [];
@@ -275,28 +294,62 @@ Respond ONLY with valid JSON. No explanation outside the JSON.`;
     // Federal violations
     if (Array.isArray(federalViolations)) {
       for (const v of federalViolations) {
-        violations.push({
+        const violation = {
           type: 'federal',
           statuteName: v.statuteName || 'Unknown Statute',
           citation: v.citation || '',
           severity: v.severity || 'medium',
           description: v.description || '',
           legalBasis: v.legalBasis || ''
-        });
+        };
+
+        // Enriched evidence fields (backward-compatible: only included when present)
+        if (Array.isArray(v.sourceDocuments) && v.sourceDocuments.length > 0) {
+          violation.sourceDocuments = v.sourceDocuments.map(d => d.name || d.id).filter(Boolean);
+        }
+        if (Array.isArray(v.supportingFindings) && v.supportingFindings.length > 0) {
+          violation.quotedEvidence = v.supportingFindings
+            .map(f => f.quotedText)
+            .filter(Boolean);
+        }
+        if (Array.isArray(v.pageReferences) && v.pageReferences.length > 0) {
+          violation.pageReferences = v.pageReferences.map(p =>
+            `${p.documentName || 'Document'}, page ${p.pageNumber}`
+          );
+        }
+
+        violations.push(violation);
       }
     }
 
     // State violations
     if (Array.isArray(stateViolations)) {
       for (const v of stateViolations) {
-        violations.push({
+        const violation = {
           type: 'state',
           jurisdiction: v.jurisdiction || '',
           statuteName: v.statuteName || 'Unknown Statute',
           citation: v.citation || '',
           severity: v.severity || 'medium',
           description: v.description || ''
-        });
+        };
+
+        // Enriched evidence fields (backward-compatible: only included when present)
+        if (Array.isArray(v.sourceDocuments) && v.sourceDocuments.length > 0) {
+          violation.sourceDocuments = v.sourceDocuments.map(d => d.name || d.id).filter(Boolean);
+        }
+        if (Array.isArray(v.supportingFindings) && v.supportingFindings.length > 0) {
+          violation.quotedEvidence = v.supportingFindings
+            .map(f => f.quotedText)
+            .filter(Boolean);
+        }
+        if (Array.isArray(v.pageReferences) && v.pageReferences.length > 0) {
+          violation.pageReferences = v.pageReferences.map(p =>
+            `${p.documentName || 'Document'}, page ${p.pageNumber}`
+          );
+        }
+
+        violations.push(violation);
       }
     }
 
@@ -305,9 +358,11 @@ Respond ONLY with valid JSON. No explanation outside the JSON.`;
 
   /**
    * Extract key findings (discrepancies, anomalies) from the consolidated report.
+   * When enriched evidence fields are present (pageReference, quotedText,
+   * sourceDocument, per-document evidence), they are included for citation support.
    *
    * @param {Object} report - Consolidated audit report
-   * @returns {Array} Simplified finding objects
+   * @returns {Array} Simplified finding objects with optional enriched evidence
    */
   _extractFindings(report) {
     const findings = [];
@@ -321,13 +376,23 @@ Respond ONLY with valid JSON. No explanation outside the JSON.`;
     for (const doc of documentAnalyses) {
       if (Array.isArray(doc.anomalies)) {
         for (const a of doc.anomalies) {
-          findings.push({
+          const finding = {
             type: 'anomaly',
             source: doc.documentName || 'Unknown Document',
             field: a.field || '',
             severity: a.severity || 'medium',
             description: a.description || ''
-          });
+          };
+
+          // Enriched evidence fields (backward-compatible)
+          if (a.pageReference != null) {
+            finding.evidenceCitation = `[${doc.documentName || 'Document'}, p.${a.pageReference}]` +
+              (a.quotedText ? `: ${a.quotedText}` : '');
+          } else if (a.quotedText) {
+            finding.evidenceCitation = `[${doc.documentName || 'Document'}]: ${a.quotedText}`;
+          }
+
+          findings.push(finding);
         }
       }
     }
@@ -335,11 +400,32 @@ Respond ONLY with valid JSON. No explanation outside the JSON.`;
     // Forensic discrepancies
     if (Array.isArray(discrepancies)) {
       for (const d of discrepancies) {
-        findings.push({
+        const finding = {
           type: 'discrepancy',
           severity: d.severity || 'medium',
           description: d.description || d.type || ''
-        });
+        };
+
+        // Enriched per-document evidence (backward-compatible)
+        const evidenceParts = [];
+        if (d.documentA && (d.documentA.documentName || d.documentA.quotedText)) {
+          const nameA = d.documentA.documentName || 'Document A';
+          const pageA = d.documentA.pageNumber != null ? `, p.${d.documentA.pageNumber}` : '';
+          const textA = d.documentA.quotedText || d.documentA.value || '';
+          evidenceParts.push(`[${nameA}${pageA}]: ${textA}`);
+        }
+        if (d.documentB && (d.documentB.documentName || d.documentB.quotedText)) {
+          const nameB = d.documentB.documentName || 'Document B';
+          const pageB = d.documentB.pageNumber != null ? `, p.${d.documentB.pageNumber}` : '';
+          const textB = d.documentB.quotedText || d.documentB.value || '';
+          evidenceParts.push(`[${nameB}${pageB}]: ${textB}`);
+        }
+
+        if (evidenceParts.length > 0) {
+          finding.evidenceCitation = evidenceParts.join(' vs ');
+        }
+
+        findings.push(finding);
       }
     }
 

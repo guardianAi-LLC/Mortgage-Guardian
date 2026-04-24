@@ -56,13 +56,42 @@ function makeConsolidatedReport() {
         documentName: 'statement-jan.pdf',
         type: 'mortgage_statement',
         anomalies: [
-          { id: 'anom-001', field: 'escrowBalance', severity: 'high', description: 'Escrow shortage not disclosed' }
+          {
+            id: 'anom-001',
+            field: 'escrowBalance',
+            severity: 'high',
+            description: 'Escrow shortage not disclosed',
+            sourceDocument: { id: 'doc-001', name: 'statement-jan.pdf', type: 'mortgage_statement' },
+            pageReference: 2,
+            quotedText: 'Escrow Balance: $1,245.00'
+          }
         ]
       }
     ],
     forensicReport: {
       discrepancies: [
-        { id: 'disc-001', type: 'payment_mismatch', severity: 'critical', description: 'Payment credited 5 days late' }
+        {
+          id: 'disc-001',
+          type: 'payment_mismatch',
+          severity: 'critical',
+          description: 'Payment credited 5 days late',
+          documentA: {
+            documentId: 'doc-001',
+            documentName: 'statement-jan.pdf',
+            field: 'paymentDate',
+            value: '2026-01-15',
+            pageNumber: 3,
+            quotedText: 'Payment received: 01/15/2026'
+          },
+          documentB: {
+            documentId: 'doc-002',
+            documentName: 'bank-records.pdf',
+            field: 'transactionDate',
+            value: '2026-01-10',
+            pageNumber: 1,
+            quotedText: 'ACH Debit 01/10/2026 $2,150.00'
+          }
+        }
       ],
       timeline: { violations: [] },
       paymentVerification: { verified: false }
@@ -75,7 +104,16 @@ function makeConsolidatedReport() {
           citation: '12 U.S.C. § 2605(e)',
           severity: 'high',
           description: 'Failure to respond to qualified written request within 30 days',
-          legalBasis: 'RESPA Section 6(e) requires a substantive response within 30 business days'
+          legalBasis: 'RESPA Section 6(e) requires a substantive response within 30 business days',
+          sourceDocuments: [
+            { id: 'doc-001', name: 'statement-jan.pdf', type: 'mortgage_statement' }
+          ],
+          supportingFindings: [
+            { findingId: 'anom-001', findingType: 'anomaly', quotedText: 'Escrow Balance: $1,245.00' }
+          ],
+          pageReferences: [
+            { documentId: 'doc-001', documentName: 'statement-jan.pdf', pageNumber: 2 }
+          ]
         }
       ],
       stateViolations: [
@@ -88,6 +126,52 @@ function makeConsolidatedReport() {
           description: 'Interest overcharge on escrow account'
         }
       ]
+    }
+  };
+}
+
+/**
+ * Consolidated report WITHOUT enriched evidence fields — used for backward compatibility testing.
+ */
+function makeUnenrichedConsolidatedReport() {
+  return {
+    caseSummary: {
+      caseId: 'case-002',
+      borrowerName: 'John Smith',
+      loanNumber: '67890',
+      propertyAddress: '456 Oak Ave, Chicago, IL 60601',
+      servicerName: 'XYZ Mortgage Corp',
+      servicerAddress: '789 Finance Dr, Suite 200, Dallas, TX 75201'
+    },
+    documentAnalyses: [
+      {
+        documentId: 'doc-010',
+        documentName: 'statement-feb.pdf',
+        type: 'mortgage_statement',
+        anomalies: [
+          { id: 'anom-010', field: 'lateCharge', severity: 'medium', description: 'Late charge assessed incorrectly' }
+        ]
+      }
+    ],
+    forensicReport: {
+      discrepancies: [
+        { id: 'disc-010', type: 'amount_mismatch', severity: 'high', description: 'Principal balance differs between documents' }
+      ],
+      timeline: { violations: [] },
+      paymentVerification: { verified: true }
+    },
+    complianceReport: {
+      violations: [
+        {
+          id: 'viol-010',
+          statuteName: 'TILA',
+          citation: '15 U.S.C. § 1601',
+          severity: 'medium',
+          description: 'Disclosure timing violation',
+          legalBasis: 'TILA requires timely disclosure of loan terms'
+        }
+      ],
+      stateViolations: []
     }
   };
 }
@@ -450,6 +534,161 @@ describe('generateDisputeLetter — content defaults', () => {
     expect(result.error).toBeUndefined();
     expect(result.letterType).toBe('notice_of_error');
     expect(result.recipientInfo.servicerName).toBe('Test Servicer');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Enriched evidence in prompts — Phase 51-05
+//
+// When enriched evidence fields (sourceDocuments, quotedText, pageReferences)
+// are present, the prompt must include document names, page numbers, and
+// quoted text for citation-grade letter generation.
+// ---------------------------------------------------------------------------
+
+describe('generateDisputeLetter — enriched evidence in prompts', () => {
+  test('prompt includes document names, page numbers, and quoted text from enriched evidence', async () => {
+    const mockResponse = makeMockLetterResponse();
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify(mockResponse) }],
+      usage: { input_tokens: 600, output_tokens: 900 }
+    });
+
+    await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeConsolidatedReport()
+    );
+
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+
+    // Verify enriched violation evidence in prompt
+    expect(prompt).toContain('statement-jan.pdf');
+    expect(prompt).toContain('Escrow Balance: $1,245.00');
+    expect(prompt).toContain('page 2');
+
+    // Verify enriched finding evidence in prompt (anomaly with page reference)
+    expect(prompt).toContain('[statement-jan.pdf, p.2]');
+
+    // Verify enriched discrepancy evidence in prompt (per-document citations)
+    expect(prompt).toContain('[bank-records.pdf, p.1]');
+    expect(prompt).toContain('ACH Debit 01/10/2026 $2,150.00');
+    expect(prompt).toContain('Payment received: 01/15/2026');
+
+    // Verify citation instruction is present when enriched evidence exists
+    expect(prompt).toContain('Evidence Citation Requirements');
+    expect(prompt).toContain('(See [Document Name], page [X]');
+    expect(prompt).toContain('Every factual claim');
+  });
+
+  test('prompt omits citation instructions when evidence is not enriched (backward compatibility)', async () => {
+    const mockResponse = makeMockLetterResponse();
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify(mockResponse) }],
+      usage: { input_tokens: 500, output_tokens: 800 }
+    });
+
+    await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeUnenrichedConsolidatedReport()
+    );
+
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+
+    // Verify the letter still generates successfully
+    expect(prompt).toContain('TILA');
+    expect(prompt).toContain('15 U.S.C. § 1601');
+    expect(prompt).toContain('Late charge assessed incorrectly');
+
+    // Verify citation instructions are NOT present for un-enriched data
+    expect(prompt).not.toContain('Evidence Citation Requirements');
+  });
+
+  test('generates letter successfully with un-enriched data', async () => {
+    const mockResponse = {
+      ...makeMockLetterResponse(),
+      subject: 'QWR Regarding Loan #67890'
+    };
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify(mockResponse) }],
+      usage: { input_tokens: 500, output_tokens: 800 }
+    });
+
+    const result = await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeUnenrichedConsolidatedReport()
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.letterType).toBe('qualified_written_request');
+    expect(result.content.subject).toBe('QWR Regarding Loan #67890');
+    expect(result.recipientInfo.servicerName).toBe('XYZ Mortgage Corp');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Enriched evidence extraction — Phase 51-05 unit tests
+// ---------------------------------------------------------------------------
+
+describe('_extractViolations — enriched evidence fields', () => {
+  test('includes sourceDocuments, quotedEvidence, pageReferences when present', () => {
+    const report = makeConsolidatedReport();
+    const violations = disputeLetterService._extractViolations(report);
+
+    const federal = violations.find(v => v.type === 'federal');
+    expect(federal).toBeDefined();
+    expect(federal.sourceDocuments).toEqual(['statement-jan.pdf']);
+    expect(federal.quotedEvidence).toEqual(['Escrow Balance: $1,245.00']);
+    expect(federal.pageReferences).toEqual(['statement-jan.pdf, page 2']);
+  });
+
+  test('omits enriched fields when not present (backward compatible)', () => {
+    const report = makeUnenrichedConsolidatedReport();
+    const violations = disputeLetterService._extractViolations(report);
+
+    const federal = violations.find(v => v.type === 'federal');
+    expect(federal).toBeDefined();
+    expect(federal.sourceDocuments).toBeUndefined();
+    expect(federal.quotedEvidence).toBeUndefined();
+    expect(federal.pageReferences).toBeUndefined();
+    // Base fields still present
+    expect(federal.statuteName).toBe('TILA');
+    expect(federal.citation).toBe('15 U.S.C. § 1601');
+  });
+});
+
+describe('_extractFindings — enriched evidence fields', () => {
+  test('includes evidenceCitation for anomalies with pageReference and quotedText', () => {
+    const report = makeConsolidatedReport();
+    const findings = disputeLetterService._extractFindings(report);
+
+    const anomaly = findings.find(f => f.type === 'anomaly');
+    expect(anomaly).toBeDefined();
+    expect(anomaly.evidenceCitation).toBe('[statement-jan.pdf, p.2]: Escrow Balance: $1,245.00');
+  });
+
+  test('includes evidenceCitation for discrepancies with per-document evidence', () => {
+    const report = makeConsolidatedReport();
+    const findings = disputeLetterService._extractFindings(report);
+
+    const discrepancy = findings.find(f => f.type === 'discrepancy');
+    expect(discrepancy).toBeDefined();
+    expect(discrepancy.evidenceCitation).toContain('[statement-jan.pdf, p.3]');
+    expect(discrepancy.evidenceCitation).toContain('[bank-records.pdf, p.1]');
+    expect(discrepancy.evidenceCitation).toContain('vs');
+  });
+
+  test('omits evidenceCitation when enriched fields are absent (backward compatible)', () => {
+    const report = makeUnenrichedConsolidatedReport();
+    const findings = disputeLetterService._extractFindings(report);
+
+    for (const finding of findings) {
+      expect(finding.evidenceCitation).toBeUndefined();
+    }
+    // Base fields still present
+    const anomaly = findings.find(f => f.type === 'anomaly');
+    expect(anomaly.source).toBe('statement-feb.pdf');
+    expect(anomaly.field).toBe('lateCharge');
   });
 });
 
