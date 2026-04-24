@@ -164,7 +164,7 @@ Plans:
 
 Plans:
 - [x] 52-01: Reasoning Config & Claude Service Foundation — completed 2026-04-23
-- [ ] 52-02: Document Analysis Reasoning Restructuring
+- [x] 52-02: Document Analysis Reasoning Restructuring — completed 2026-04-23
 - [ ] 52-03: Cross-Document Comparison Reasoning
 - [ ] 52-04: Compliance Analysis Reasoning
 - [ ] 52-05: Classification Enhancement & Dispute Letter Update
@@ -311,7 +311,7 @@ Plans:
 | 50. Production Build & Deployment | v7.0 | 3/3 | Complete | 2026-04-19 |
 
 | 51. Evidence Enrichment | v8.0 | 5/5 | Complete | 2026-04-24 |
-| 52. Structured Reasoning in Claude Prompts | v8.0 | 0/? | Not started | - |
+| 52. Structured Reasoning in Claude Prompts | v8.0 | 2/6 | In progress | - |
 | 53. Report Output Format | v8.0 | 0/? | Not started | - |
 | 54. Plaid Token Migration | v8.0 | 0/? | Not started | - |
 | 55. Upload Security & Malware Scanning | v8.0 | 0/? | Not started | - |
