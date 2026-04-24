@@ -9,6 +9,10 @@ const {
 const {
   ENRICHMENT_PROMPT_INSTRUCTIONS
 } = require('../config/evidenceEnrichmentConfig');
+const {
+  REASONING_PROMPT_INSTRUCTIONS,
+  getConfidenceLevel
+} = require('../config/structuredReasoningConfig');
 
 const logger = createLogger('document-analysis');
 
@@ -228,7 +232,9 @@ class DocumentAnalysisService {
       "expectedValue": "if applicable",
       "actualValue": "if applicable",
       "pageNumber": null,
-      "quotedText": "exact text from document supporting this finding, max 500 chars"
+      "quotedText": "exact text from document supporting this finding, max 500 chars",
+      "reasoningSteps": ["step 1 explanation", "step 2 explanation"],
+      "confidence": 0.0
     }
   ],
   "summary": {
@@ -301,7 +307,11 @@ ${specificChecks}
 
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.ANOMALY_EVIDENCE_INSTRUCTION}
 
+${REASONING_PROMPT_INSTRUCTIONS.ANOMALY_REASONING_INSTRUCTION}
+
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
+
+${REASONING_PROMPT_INSTRUCTIONS.GENERAL_REASONING_INSTRUCTION}
 
 Document text:
 ---
@@ -366,7 +376,11 @@ ${specificChecks}
 
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.ANOMALY_EVIDENCE_INSTRUCTION}
 
+${REASONING_PROMPT_INSTRUCTIONS.ANOMALY_REASONING_INSTRUCTION}
+
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
+
+${REASONING_PROMPT_INSTRUCTIONS.GENERAL_REASONING_INSTRUCTION}
 
 Document text:
 ---
@@ -429,7 +443,11 @@ ${specificChecks}
 
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.ANOMALY_EVIDENCE_INSTRUCTION}
 
+${REASONING_PROMPT_INSTRUCTIONS.ANOMALY_REASONING_INSTRUCTION}
+
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
+
+${REASONING_PROMPT_INSTRUCTIONS.GENERAL_REASONING_INSTRUCTION}
 
 Document text:
 ---
@@ -487,7 +505,11 @@ ${specificChecks}
 
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.ANOMALY_EVIDENCE_INSTRUCTION}
 
+${REASONING_PROMPT_INSTRUCTIONS.ANOMALY_REASONING_INSTRUCTION}
+
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
+
+${REASONING_PROMPT_INSTRUCTIONS.GENERAL_REASONING_INSTRUCTION}
 
 Document text:
 ---
@@ -542,7 +564,11 @@ ${specificChecks}
 
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.ANOMALY_EVIDENCE_INSTRUCTION}
 
+${REASONING_PROMPT_INSTRUCTIONS.ANOMALY_REASONING_INSTRUCTION}
+
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
+
+${REASONING_PROMPT_INSTRUCTIONS.GENERAL_REASONING_INSTRUCTION}
 
 Document text:
 ---
@@ -599,7 +625,11 @@ ${specificChecks}
 
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.ANOMALY_EVIDENCE_INSTRUCTION}
 
+${REASONING_PROMPT_INSTRUCTIONS.ANOMALY_REASONING_INSTRUCTION}
+
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
+
+${REASONING_PROMPT_INSTRUCTIONS.GENERAL_REASONING_INSTRUCTION}
 
 Document text:
 ---
@@ -634,7 +664,11 @@ Check for:
 
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.ANOMALY_EVIDENCE_INSTRUCTION}
 
+${REASONING_PROMPT_INSTRUCTIONS.ANOMALY_REASONING_INSTRUCTION}
+
 ${ENRICHMENT_PROMPT_INSTRUCTIONS.GENERAL_EVIDENCE_INSTRUCTION}
+
+${REASONING_PROMPT_INSTRUCTIONS.GENERAL_REASONING_INSTRUCTION}
 
 Document text:
 ---
@@ -847,6 +881,18 @@ Respond ONLY with valid JSON. No markdown, no explanation outside the JSON.`;
       // Truncate quotedText to 500 chars if needed
       if (enriched.quotedText && enriched.quotedText.length > 500) {
         enriched.quotedText = enriched.quotedText.substring(0, 500);
+      }
+
+      // Add reasoning enrichment fields with null/empty defaults
+      enriched.reasoningSteps = Array.isArray(anomaly.reasoningSteps) ? anomaly.reasoningSteps : [];
+
+      if (typeof anomaly.confidence === 'number') {
+        // Clamp to [0, 1] range
+        enriched.confidence = Math.min(1, Math.max(0, anomaly.confidence));
+        enriched.confidenceLevel = getConfidenceLevel(enriched.confidence);
+      } else {
+        enriched.confidence = null;
+        enriched.confidenceLevel = null;
       }
 
       return enriched;
