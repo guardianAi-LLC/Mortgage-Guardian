@@ -45,9 +45,9 @@ struct AIAffordabilityAnalyzer: View {
                     }
                 }
                 .padding()
-                .background(AppTheme.Colors.light.surface)
-                .cornerRadius(AppTheme.cornerRadiusMedium)
-                
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+
                 if let results = analysisResults {
                     // Affordability Score
                     affordabilityScoreCard(results)
@@ -131,8 +131,8 @@ struct AIAffordabilityAnalyzer: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private func incomeAnalysisChart(_ results: AffordabilityAnalysis) -> some View {
@@ -160,7 +160,6 @@ struct AIAffordabilityAnalyzer: View {
                 }
             }
             .frame(height: 250)
-            .chartAngleSelection(value: .constant(nil))
             .chartLegend(position: .bottom)
             
             // DTI Ratio Bar
@@ -199,8 +198,8 @@ struct AIAffordabilityAnalyzer: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private func stressTestVisualization(_ results: AffordabilityAnalysis) -> some View {
@@ -244,23 +243,23 @@ struct AIAffordabilityAnalyzer: View {
                     Text("Current Margin")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text("\(results.stressTestResult.currentMargin, format: .percent)")
+                    Text("\(results.stressTestResult.currentMargin * 100, specifier: "%.1f")%")
                         .fontWeight(.medium)
                 }
-                
+
                 VStack(alignment: .leading) {
                     Text("Passes Until")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text("\(results.stressTestResult.failedAt, format: .percent)% rate")
+                    Text("\(results.stressTestResult.failedAt, specifier: "%.1f")% rate")
                         .fontWeight(.medium)
                         .foregroundStyle(.red)
                 }
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private func recommendationsCard(_ results: AffordabilityAnalysis) -> some View {
@@ -297,8 +296,8 @@ struct AIAffordabilityAnalyzer: View {
             )
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private func monthlyBudgetBreakdown(_ results: AffordabilityAnalysis) -> some View {
@@ -331,8 +330,8 @@ struct AIAffordabilityAnalyzer: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     // Helper Views
@@ -402,7 +401,7 @@ struct AIAffordabilityAnalyzer: View {
     
     private func calculateAffordabilityScore() -> Double {
         let dtiScore = max(0, 100 - (calculateDTI() * 200))
-        let priceScore = targetHomePrice <= calculateMaxAffordable() ? 100 : 50
+        let priceScore: Double = targetHomePrice <= calculateMaxAffordable() ? 100 : 50
         return (dtiScore + priceScore) / 2
     }
     

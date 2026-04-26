@@ -16,7 +16,7 @@ test.describe('Global search', () => {
   })
 
   test('Cmd+K opens search dialog', async ({ page }) => {
-    const searchInput = page.getByPlaceholder(/search cases/i)
+    const searchInput = page.getByPlaceholder(/search cases & documents/i)
     await expect(searchInput).toBeVisible()
 
     // Focus via keyboard shortcut
@@ -25,14 +25,14 @@ test.describe('Global search', () => {
   })
 
   test('search input accepts text', async ({ page }) => {
-    const searchInput = page.getByPlaceholder(/search cases/i)
+    const searchInput = page.getByPlaceholder(/search cases & documents/i)
     await searchInput.click()
     await searchInput.fill('Smith')
     await expect(searchInput).toHaveValue('Smith')
   })
 
   test('search results appear with mock data', async ({ page }) => {
-    const searchInput = page.getByPlaceholder(/search cases/i)
+    const searchInput = page.getByPlaceholder(/search cases & documents/i)
     await searchInput.click()
     await searchInput.fill('Smith')
 
@@ -42,12 +42,12 @@ test.describe('Global search', () => {
 
     // Should show case results section header
     await expect(page.getByText('Cases').first()).toBeVisible()
-    // Should show the matching case name
-    await expect(page.getByText('Smith Mortgage Review')).toBeVisible()
+    // Should show the matching case name (scoped to dropdown to avoid table row ambiguity)
+    await expect(resultsDropdown.getByText('Smith Mortgage Review').first()).toBeVisible()
   })
 
   test('search results navigable with keyboard', async ({ page }) => {
-    const searchInput = page.getByPlaceholder(/search cases/i)
+    const searchInput = page.getByPlaceholder(/search cases & documents/i)
     await searchInput.click()
     await searchInput.fill('Smith')
 
@@ -62,7 +62,7 @@ test.describe('Global search', () => {
   })
 
   test('search result click navigates', async ({ page }) => {
-    const searchInput = page.getByPlaceholder(/search cases/i)
+    const searchInput = page.getByPlaceholder(/search cases & documents/i)
     await searchInput.click()
     await searchInput.fill('Smith')
 
@@ -70,15 +70,15 @@ test.describe('Global search', () => {
     const resultsDropdown = page.locator('[role="listbox"]')
     await expect(resultsDropdown).toBeVisible({ timeout: 5000 })
 
-    // Click the first case result
-    await page.getByText('Smith Mortgage Review').click()
+    // Click the first case result (scoped to dropdown to avoid table row ambiguity)
+    await resultsDropdown.getByText('Smith Mortgage Review').first().click()
 
     // Should navigate to the case detail page
     await expect(page).toHaveURL(/\/dashboard\/cases\/case-001/)
   })
 
   test('Escape closes search', async ({ page }) => {
-    const searchInput = page.getByPlaceholder(/search cases/i)
+    const searchInput = page.getByPlaceholder(/search cases & documents/i)
     await searchInput.click()
     await searchInput.fill('Smith')
 
@@ -94,7 +94,7 @@ test.describe('Global search', () => {
   })
 
   test('ARIA live region announces results', async ({ page }) => {
-    const searchInput = page.getByPlaceholder(/search cases/i)
+    const searchInput = page.getByPlaceholder(/search cases & documents/i)
     await searchInput.click()
     await searchInput.fill('Smith')
 

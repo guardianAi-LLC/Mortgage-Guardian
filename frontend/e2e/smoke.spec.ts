@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { signIn } from './fixtures/mock-data'
 
 test.describe('Smoke tests', () => {
   test('homepage loads', async ({ page }) => {
@@ -17,8 +18,7 @@ test.describe('Smoke tests', () => {
     // Requires Clerk test credentials:
     //   CLERK_SECRET_KEY and NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
     // See e2e/README.md for setup instructions.
-    const { setupAuth } = await import('./helpers/auth')
-    await setupAuth(page, context)
+    await signIn(page, context)
     await page.goto('/dashboard')
     await page.waitForLoadState('networkidle')
     await expect(page.locator('h1, h2, [role="heading"]')).toBeVisible()

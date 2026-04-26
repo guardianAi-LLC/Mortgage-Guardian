@@ -122,8 +122,8 @@ struct AIScenarioAnalyzer: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private var valuePredictionView: some View {
@@ -164,7 +164,7 @@ struct AIScenarioAnalyzer: View {
                     VStack(alignment: .trailing) {
                         Text("Percentage")
                             .font(.subheadline)
-                        Text(percentage, format: .percent.precision(.fractionLength(1)))
+                        Text("\(percentage, specifier: "%.1f")%")
                             .font(.title3)
                             .foregroundStyle(change >= 0 ? .green : .red)
                     }
@@ -184,8 +184,8 @@ struct AIScenarioAnalyzer: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private var recommendationsView: some View {
@@ -199,25 +199,23 @@ struct AIScenarioAnalyzer: View {
                     HStack {
                         recommendationCard(
                             title: "Loan Term",
-                            value: "\(recommendations.recommendedLoanTerm) years",
-                            current: "\(scenario.loanTermYears) years",
+                            formattedValue: "\(recommendations.recommendedLoanTerm) years",
+                            formattedCurrent: "\(scenario.loanTermYears) years",
                             isImprovement: recommendations.recommendedLoanTerm <= scenario.loanTermYears
                         )
-                        
+
                         recommendationCard(
                             title: "Down Payment",
-                            value: recommendations.recommendedDownPayment,
-                            format: .currency(code: "USD"),
-                            current: scenario.downPayment,
+                            formattedValue: recommendations.recommendedDownPayment.formatted(.currency(code: "USD")),
+                            formattedCurrent: scenario.downPayment.formatted(.currency(code: "USD")),
                             isImprovement: recommendations.recommendedDownPayment >= scenario.downPayment
                         )
                     }
-                    
+
                     recommendationCard(
                         title: "Interest Rate",
-                        value: recommendations.recommendedInterestRate,
-                        format: .percent,
-                        current: scenario.annualInterestRate / 100,
+                        formattedValue: recommendations.recommendedInterestRate.formatted(.percent.precision(.fractionLength(2))),
+                        formattedCurrent: (scenario.annualInterestRate / 100).formatted(.percent.precision(.fractionLength(2))),
                         isImprovement: recommendations.recommendedInterestRate <= scenario.annualInterestRate / 100
                     )
                 }
@@ -235,47 +233,34 @@ struct AIScenarioAnalyzer: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
-    private func recommendationCard<T: Numeric>(
+    private func recommendationCard(
         title: String,
-        value: T,
-        format: FloatingPointFormatStyle<Double> = .number,
-        current: T,
+        formattedValue: String,
+        formattedCurrent: String,
         isImprovement: Bool
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-            
+
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                if let value = value as? Double {
-                    Text(value, format: format)
-                        .font(.title3)
-                        .fontWeight(.medium)
-                } else {
-                    Text("\(value as! Int)")
-                        .font(.title3)
-                        .fontWeight(.medium)
-                }
-                
+                Text(formattedValue)
+                    .font(.title3)
+                    .fontWeight(.medium)
+
                 Image(systemName: isImprovement ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
                     .foregroundStyle(isImprovement ? .green : .red)
                     .font(.caption)
             }
-            
-            if let current = current as? Double {
-                Text("Current: \(current, format: format)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Current: \(current as! Int)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+
+            Text("Current: \(formattedCurrent)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()

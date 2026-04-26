@@ -204,7 +204,6 @@ export default function SettingsPage() {
         <div className="flex justify-end">
           <Button
             variant="destructive"
-            aria-label="Delete your account"
             onClick={() => setDeleteDialogOpen(true)}
           >
             Delete Account

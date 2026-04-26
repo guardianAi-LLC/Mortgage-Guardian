@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { signIn } from './fixtures/mock-data'
 
 test.describe('Authentication', () => {
   test('unauthenticated user redirected to sign-in from dashboard', async ({ page }) => {
@@ -40,8 +41,7 @@ test.describe('Authentication', () => {
   test('authenticated user accesses dashboard', async ({ page, context }) => {
     test.skip(!process.env.CLERK_SECRET_KEY, 'Requires CLERK_SECRET_KEY to be set')
 
-    const { setupAuth } = await import('./helpers/auth')
-    await setupAuth(page, context)
+    await signIn(page, context)
     await page.goto('/dashboard')
     await page.waitForLoadState('networkidle')
     await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible()
@@ -50,8 +50,7 @@ test.describe('Authentication', () => {
   test('authenticated user sees profile in sidebar', async ({ page, context }) => {
     test.skip(!process.env.CLERK_SECRET_KEY, 'Requires CLERK_SECRET_KEY to be set')
 
-    const { setupAuth } = await import('./helpers/auth')
-    await setupAuth(page, context)
+    await signIn(page, context)
     await page.goto('/dashboard')
     await page.waitForLoadState('networkidle')
     // Clerk UserButton renders in the header; verify it is present

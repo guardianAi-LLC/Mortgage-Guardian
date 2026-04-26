@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test'
+import { signIn } from './fixtures/mock-data'
 
 const hasClerkCredentials = !!process.env.CLERK_SECRET_KEY
 
 test.describe('Navigation', () => {
   test.beforeEach(async ({ page, context }) => {
     test.skip(!hasClerkCredentials, 'Requires CLERK_SECRET_KEY to be set')
-    const { setupAuth } = await import('./helpers/auth')
-    await setupAuth(page, context)
+    await signIn(page, context)
     await page.goto('/dashboard')
     await page.waitForLoadState('networkidle')
   })
@@ -65,8 +65,7 @@ test.describe('Navigation', () => {
 test.describe('Dashboard page', () => {
   test.beforeEach(async ({ page, context }) => {
     test.skip(!hasClerkCredentials, 'Requires CLERK_SECRET_KEY to be set')
-    const { setupAuth } = await import('./helpers/auth')
-    await setupAuth(page, context)
+    await signIn(page, context)
     await page.goto('/dashboard')
     await page.waitForLoadState('networkidle')
   })

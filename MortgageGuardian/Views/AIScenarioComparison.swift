@@ -136,8 +136,8 @@ struct AIScenarioComparison: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private func winnerCard(_ results: ComparisonResults) -> some View {
@@ -166,35 +166,31 @@ struct AIScenarioComparison: View {
                 categoryWinner(
                     title: "Lowest Payment",
                     scenario: results.lowestPayment,
-                    value: results.lowestPayment.monthlyPayment,
-                    format: .currency(code: "USD")
+                    formattedValue: results.lowestPayment.monthlyPayment.formatted(.currency(code: "USD"))
                 )
-                
+
                 categoryWinner(
                     title: "Lowest Risk",
                     scenario: results.lowestRisk,
-                    value: results.lowestRisk.riskAssessment?.riskScore ?? 0,
-                    format: .number
+                    formattedValue: "\(Int(results.lowestRisk.riskAssessment?.riskScore ?? 0))/100"
                 )
-                
+
                 categoryWinner(
                     title: "Best Equity",
                     scenario: results.bestEquity,
-                    value: calculateEquityAt5Years(results.bestEquity),
-                    format: .currency(code: "USD")
+                    formattedValue: calculateEquityAt5Years(results.bestEquity).formatted(.currency(code: "USD"))
                 )
-                
+
                 categoryWinner(
                     title: "Total Cost",
                     scenario: results.bestOverall,
-                    value: calculateTotalCost(results.bestOverall),
-                    format: .currency(code: "USD")
+                    formattedValue: calculateTotalCost(results.bestOverall).formatted(.currency(code: "USD"))
                 )
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private var comparisonChart: some View {
@@ -235,9 +231,10 @@ struct AIScenarioComparison: View {
                     
                 case .risk:
                     ForEach(Array(selectedScenarios)) { scenario in
-                        RadialMark(
+                        SectorMark(
                             angle: .value("Risk", scenario.riskAssessment?.riskScore ?? 50),
-                            innerRadius: .ratio(0.5)
+                            innerRadius: .ratio(0.5),
+                            angularInset: 2
                         )
                         .foregroundStyle(by: .value("Scenario", scenario.name))
                     }
@@ -246,8 +243,8 @@ struct AIScenarioComparison: View {
             .frame(height: 250)
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private var detailedBreakdown: some View {
@@ -301,8 +298,8 @@ struct AIScenarioComparison: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private func tradeoffsCard(_ results: ComparisonResults) -> some View {
@@ -332,8 +329,8 @@ struct AIScenarioComparison: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private func insightsCard(_ results: ComparisonResults) -> some View {
@@ -353,23 +350,23 @@ struct AIScenarioComparison: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     // Helper Views
-    private func categoryWinner(title: String, scenario: SavedMortgageScenario, value: Double, format: FloatingPointFormatStyle<Double>) -> some View {
+    private func categoryWinner(title: String, scenario: SavedMortgageScenario, formattedValue: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            
+
             Text(scenario.name)
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .lineLimit(1)
-            
-            Text(value, format: format)
+
+            Text(formattedValue)
                 .font(.caption)
                 .foregroundStyle(.blue)
         }

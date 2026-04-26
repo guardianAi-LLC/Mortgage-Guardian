@@ -40,9 +40,10 @@ test.describe('Settings page', () => {
     await page.waitForLoadState('networkidle')
 
     // Toggle the first preference off (it defaults to true)
+    // The input is sr-only; click the associated label to trigger the toggle
     const completeToggle = page.locator('#pref-complete')
     await expect(completeToggle).toBeChecked()
-    await completeToggle.click()
+    await page.locator('label[for="pref-complete"]').click()
     await expect(completeToggle).not.toBeChecked()
 
     // Reload the page and verify state persisted via localStorage
@@ -50,6 +51,8 @@ test.describe('Settings page', () => {
     await page.waitForLoadState('networkidle')
 
     const completeToggleAfter = page.locator('#pref-complete')
+    // Wait for client-side mount (toggles are in {mounted && ...} block)
+    await expect(completeToggleAfter).toBeVisible({ timeout: 10_000 })
     await expect(completeToggleAfter).not.toBeChecked()
 
     // Other toggles should still be checked (default true)

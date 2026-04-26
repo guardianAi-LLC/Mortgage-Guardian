@@ -108,8 +108,8 @@ struct AIMonitoringDashboard: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private var metricsChart: some View {
@@ -124,8 +124,8 @@ struct AIMonitoringDashboard: View {
         }
         .frame(height: 200)
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private var recentActivitiesCard: some View {
@@ -151,8 +151,8 @@ struct AIMonitoringDashboard: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private var systemHealthCard: some View {
@@ -178,8 +178,8 @@ struct AIMonitoringDashboard: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private func statusItem(title: String, value: String, trend: TrendDirection) -> some View {

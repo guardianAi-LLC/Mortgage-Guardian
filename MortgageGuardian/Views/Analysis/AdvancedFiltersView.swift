@@ -88,7 +88,8 @@ struct AdvancedFiltersView: View {
                             value: $viewModel.confidenceThreshold,
                             in: 0...1,
                             step: 0.1
-                        ) {
+                        )
+                        .onChange(of: viewModel.confidenceThreshold) {
                             hasUnsavedChanges = true
                         }
                         .accentColor(.blue)

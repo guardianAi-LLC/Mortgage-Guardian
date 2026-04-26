@@ -1,4 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
+import { config as dotenvConfig } from 'dotenv'
+import path from 'path'
+
+// Load .env.local so CLERK_SECRET_KEY and other vars are available during test runs
+dotenvConfig({ path: path.resolve(__dirname, '.env.local') })
 
 /**
  * Playwright configuration for Mortgage Guardian frontend E2E tests.
@@ -11,7 +16,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Limit workers locally to avoid Clerk API rate limits on concurrent sign-in token creation
+  workers: process.env.CI ? 1 : 2,
   timeout: 30_000,
 
   reporter: [['list'], ['html', { open: 'never' }]],

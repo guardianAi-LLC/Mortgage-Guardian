@@ -43,8 +43,13 @@ struct PropertyTrainingData: Codable {
 
 class TrainingDataManager {
     private let fileManager = FileManager.default
-    private let trainingDataURL: URL
-    private let validationDataURL: URL
+    let trainingDataURL: URL
+    let validationDataURL: URL
+
+    /// File path for the training data JSON file.
+    var trainingDataPath: String { trainingDataURL.path }
+    /// File path for the validation data JSON file.
+    var validationDataPath: String { validationDataURL.path }
     
     init() throws {
         let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]

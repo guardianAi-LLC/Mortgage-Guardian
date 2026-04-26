@@ -195,7 +195,7 @@ struct AIMarketTimingAnalyzer: View {
                 Spacer()
                 HStack(spacing: 4) {
                     Image(systemName: prediction.predictedPriceChange >= 0 ? "arrow.up" : "arrow.down")
-                    Text("\(abs(prediction.predictedPriceChange), format: .percent)")
+                    Text(abs(prediction.predictedPriceChange), format: .percent.precision(.fractionLength(1)))
                 }
                 .fontWeight(.bold)
                 .foregroundStyle(prediction.predictedPriceChange >= 0 ? .green : .red)
@@ -207,8 +207,8 @@ struct AIMarketTimingAnalyzer: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private var marketTrendsChart: some View {
@@ -247,27 +247,24 @@ struct AIMarketTimingAnalyzer: View {
                 HStack(spacing: 20) {
                     trendIndicator(
                         title: "MoM Change",
-                        value: marketData.marketTrends.monthOverMonthChange,
-                        format: .percent
+                        value: marketData.marketTrends.monthOverMonthChange
                     )
-                    
+
                     trendIndicator(
                         title: "YoY Change",
-                        value: marketData.marketTrends.yearOverYearChange,
-                        format: .percent
+                        value: marketData.marketTrends.yearOverYearChange
                     )
-                    
+
                     trendIndicator(
                         title: "Forecast",
-                        value: marketData.marketTrends.forecastedChange,
-                        format: .percent
+                        value: marketData.marketTrends.forecastedChange
                     )
                 }
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private var marketIndicatorsGrid: some View {
@@ -282,37 +279,33 @@ struct AIMarketTimingAnalyzer: View {
                 ], spacing: 12) {
                     indicatorCard(
                         title: "Median Price",
-                        value: marketData.regionalData.medianHomePrice,
-                        format: .currency(code: "USD"),
+                        formattedValue: marketData.regionalData.medianHomePrice.formatted(.currency(code: "USD")),
                         trend: .up
                     )
-                    
+
                     indicatorCard(
                         title: "Days on Market",
-                        value: Double(marketData.regionalData.averageDaysOnMarket),
-                        format: .number,
+                        formattedValue: "\(marketData.regionalData.averageDaysOnMarket)",
                         trend: .down
                     )
-                    
+
                     indicatorCard(
                         title: "Inventory",
-                        value: marketData.regionalData.inventoryLevel,
-                        format: .percent,
+                        formattedValue: marketData.regionalData.inventoryLevel.formatted(.percent.precision(.fractionLength(1))),
                         trend: marketData.regionalData.inventoryLevel > 0.5 ? .up : .down
                     )
-                    
+
                     indicatorCard(
                         title: "Interest Rate",
-                        value: marketData.averageMortgageRate,
-                        format: .percent,
+                        formattedValue: marketData.averageMortgageRate.formatted(.percent.precision(.fractionLength(2))),
                         trend: .neutral
                     )
                 }
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private func risksAndOpportunitiesCard(_ prediction: MarketPrediction) -> some View {
@@ -359,8 +352,8 @@ struct AIMarketTimingAnalyzer: View {
             }
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     private func timingRecommendationsCard(_ prediction: MarketPrediction) -> some View {
@@ -403,28 +396,28 @@ struct AIMarketTimingAnalyzer: View {
             .foregroundStyle(.secondary)
         }
         .padding()
-        .background(AppTheme.Colors.light.surface)
-        .cornerRadius(AppTheme.cornerRadiusMedium)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
     }
     
     // Helper Views
-    private func trendIndicator(title: String, value: Double, format: FloatingPointFormatStyle<Double>) -> some View {
+    private func trendIndicator(title: String, value: Double) -> some View {
         VStack(spacing: 4) {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            
+
             HStack(spacing: 2) {
                 Image(systemName: value >= 0 ? "arrow.up" : "arrow.down")
                     .font(.caption)
-                Text(abs(value), format: format)
+                Text(abs(value), format: .percent.precision(.fractionLength(1)))
             }
             .foregroundStyle(value >= 0 ? .green : .red)
             .fontWeight(.medium)
         }
     }
     
-    private func indicatorCard(title: String, value: Double, format: FloatingPointFormatStyle<Double>, trend: TrendDirection) -> some View {
+    private func indicatorCard(title: String, formattedValue: String, trend: TrendDirection) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(title)
@@ -435,8 +428,8 @@ struct AIMarketTimingAnalyzer: View {
                     .font(.caption)
                     .foregroundStyle(trend.color)
             }
-            
-            Text(value, format: format)
+
+            Text(formattedValue)
                 .font(.title3)
                 .fontWeight(.medium)
         }

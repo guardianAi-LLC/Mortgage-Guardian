@@ -339,3 +339,15 @@ frontend/.netlify/
 
 # Auto Claude data directory
 .auto-claude/
+
+# ── GSD baseline (auto-generated) ──
+.gsd
+.gsd-id
+.mcp.json
+.bg-shell/
+.env.*
+!.env.example
+*.pyc
+.venv/
+target/
+vendor/
