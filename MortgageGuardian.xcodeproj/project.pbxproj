@@ -48,6 +48,7 @@
 		API_BUILD001 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = API001 /* APIClient.swift */; };
 		AUTHPROBE_BUILD001 /* AuthenticatedProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = AUTHPROBE001 /* AuthenticatedProbe.swift */; };
 		PLAIDPROBE_BUILD001 /* PlaidProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = PLAIDPROBE001 /* PlaidProbe.swift */; };
+		FINDINGSPROBE_BUILD001 /* FindingsProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = FINDINGSPROBE001 /* FindingsProbe.swift */; };
 		DOCMGR_BUILD001 /* DocumentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DOCMGR001 /* DocumentManager.swift */; };
 		MTGACCTMGMT_BUILD001 /* MortgageAccountManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MTGACCTMGMT001 /* MortgageAccountManagementView.swift */; };
 		HELPFAQ_BUILD001 /* HelpFAQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = HELPFAQ001 /* HelpFAQView.swift */; };
@@ -164,6 +165,7 @@
 		API001 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		AUTHPROBE001 /* AuthenticatedProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticatedProbe.swift; sourceTree = "<group>"; };
 		PLAIDPROBE001 /* PlaidProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaidProbe.swift; sourceTree = "<group>"; };
+		FINDINGSPROBE001 /* FindingsProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindingsProbe.swift; sourceTree = "<group>"; };
 		DOCMGR001 /* DocumentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentManager.swift; sourceTree = "<group>"; };
 		APIDOC001 /* APIClient+Documents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClient+Documents.swift"; sourceTree = "<group>"; };
 		APIPLAID001 /* APIClient+Plaid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClient+Plaid.swift"; sourceTree = "<group>"; };
@@ -472,6 +474,7 @@
 				API001 /* APIClient.swift */,
 				AUTHPROBE001 /* AuthenticatedProbe.swift */,
 				PLAIDPROBE001 /* PlaidProbe.swift */,
+				FINDINGSPROBE001 /* FindingsProbe.swift */,
 				APIDOC001 /* APIClient+Documents.swift */,
 				APIPLAID001 /* APIClient+Plaid.swift */,
 				APIRPT001 /* APIClient+Reports.swift */,
@@ -781,6 +784,7 @@
 				API_BUILD001 /* APIClient.swift in Sources */,
 				AUTHPROBE_BUILD001 /* AuthenticatedProbe.swift in Sources */,
 				PLAIDPROBE_BUILD001 /* PlaidProbe.swift in Sources */,
+				FINDINGSPROBE_BUILD001 /* FindingsProbe.swift in Sources */,
 				DOCMGR_BUILD001 /* DocumentManager.swift in Sources */,
 				F4FD0A761798883E8200D80F /* PlaidLinkService.swift in Sources */,
 				4C4443BB4BE8184C58A49BFD /* RealPlaidConnectionView.swift in Sources */,

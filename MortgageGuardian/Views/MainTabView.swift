@@ -4,6 +4,7 @@ import SwiftUI
 struct MainTabView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var documentManager: DocumentManager
+    @EnvironmentObject var userStore: UserStore
 
     var body: some View {
         TabView {
@@ -30,6 +31,7 @@ struct MainTabView: View {
         .accentColor(.blue)
         .task { await AuthenticatedProbe.runOnce() }
         .task { await PlaidProbe.runOnce() }
+        .task { await FindingsProbe.runOnce(auditResults: userStore.auditResults) }
     }
 }
 
@@ -37,4 +39,5 @@ struct MainTabView: View {
     MainTabView()
         .environmentObject(AuthManager())
         .environmentObject(DocumentManager())
+        .environmentObject(UserStore())
 }

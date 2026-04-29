@@ -283,6 +283,9 @@ struct IssueDetailView: View {
                     EmptyEvidenceView()
                 }
 
+                // Bank Evidence (Plaid cross-reference) — M001/S04
+                bankEvidenceSection
+
                 // Supporting Documents Section
                 supportingDocumentsSection
 
@@ -301,6 +304,45 @@ struct IssueDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
+        }
+    }
+
+    // MARK: - Bank Evidence (Plaid cross-reference) — M001/S04
+    /// Renders matched Plaid transactions as bank-side evidence for this finding.
+    /// Hidden when `plaidEvidence` is nil or `matchedTransactions` is empty.
+    @ViewBuilder
+    private var bankEvidenceSection: some View {
+        let transactions = issue.plaidEvidence?.matchedTransactions ?? []
+        if !transactions.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 6) {
+                    Image(systemName: "building.columns")
+                        .font(.subheadline)
+                        .foregroundColor(.green)
+                        .accessibilityHidden(true)
+                    Text("Bank Evidence")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    Spacer()
+                    Text("\(transactions.count) transaction(s)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                ForEach(transactions) { txn in
+                    BankEvidenceRow(transaction: txn)
+                }
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.green.opacity(0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.green.opacity(0.2), lineWidth: 1)
+            )
+            .accessibilityElement(children: .contain)
         }
     }
 
@@ -802,6 +844,67 @@ struct ExpandableSection<Content: View>: View {
 
 // Additional supporting views would be implemented here...
 // (DetailTextSection, EvidenceTextView, CalculationDetailsView, etc.)
+
+// MARK: - Bank Evidence Row (M001/S04)
+
+/// Single row in the Bank Evidence section — shows date, amount, and merchant
+/// for one Plaid-matched transaction that corroborates a regulatory finding.
+struct BankEvidenceRow: View {
+    let transaction: MatchedTransaction
+
+    private static let currencyFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.currencyCode = "USD"
+        f.maximumFractionDigits = 2
+        return f
+    }()
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            // Bank icon
+            Image(systemName: "creditcard.fill")
+                .font(.caption)
+                .foregroundColor(.green)
+                .frame(width: 20)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 2) {
+                if let name = transaction.transactionName, !name.isEmpty {
+                    Text(name)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                }
+                Text(transaction.transactionDate)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+
+            Text(
+                Self.currencyFormatter.string(
+                    from: NSNumber(value: transaction.transactionAmount)
+                ) ?? "$\(transaction.transactionAmount)"
+            )
+            .font(.subheadline)
+            .fontWeight(.semibold)
+            .foregroundColor(transaction.transactionAmount < 0 ? .red : .primary)
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(bankEvidenceA11yLabel)
+    }
+
+    private var bankEvidenceA11yLabel: String {
+        let name = transaction.transactionName ?? "transaction"
+        let amount = Self.currencyFormatter.string(
+            from: NSNumber(value: transaction.transactionAmount)
+        ) ?? String(transaction.transactionAmount)
+        return "\(name), \(transaction.transactionDate), \(amount)"
+    }
+}
 
 #Preview {
     IssueDetailView(issue: AuditResult.sampleResult())

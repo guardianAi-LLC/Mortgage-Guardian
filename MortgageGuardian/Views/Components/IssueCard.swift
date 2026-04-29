@@ -28,6 +28,7 @@ struct EnhancedIssueCard: View {
                     VStack(alignment: .leading, spacing: 6) {
                         issueHeader
                         issueDescription
+                        citationBadge
                         issueMetadata
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -140,6 +141,25 @@ struct EnhancedIssueCard: View {
             .foregroundColor(.secondary)
             .lineLimit(2)
             .multilineTextAlignment(.leading)
+    }
+
+    // MARK: - Citation Badge
+    /// Regulatory citation chip (e.g. "12 CFR §1024.34"). Hidden when `citation` is nil.
+    @ViewBuilder
+    private var citationBadge: some View {
+        if let citation = issue.citation, !citation.isEmpty {
+            Text(citation)
+                .font(.system(.caption2, design: .monospaced))
+                .fontWeight(.medium)
+                .foregroundColor(.blue)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(
+                    Capsule()
+                        .fill(Color.blue.opacity(0.1))
+                )
+                .accessibilityLabel("Regulatory citation: \(citation)")
+        }
     }
 
     // MARK: - Issue Metadata

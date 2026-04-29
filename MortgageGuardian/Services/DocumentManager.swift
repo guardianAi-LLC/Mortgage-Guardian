@@ -84,7 +84,7 @@ class DocumentManager: ObservableObject {
         let response = try await APIClient.shared.uploadDocument(
             documentId: documentId,
             fileName: fileName,
-            documentType: "mortgage_document",
+            documentType: "mortgage_statement",
             content: base64Content,
             metadata: ocrText != nil ? [
                 "ocr_text": AnyCodable(ocrText!),
@@ -93,13 +93,35 @@ class DocumentManager: ObservableObject {
             ] : nil
         )
 
+        let uploadedDocumentId = response.documentId ?? documentId
+
+        // Step 2: Run the full audit pipeline (OCR → classify → analyze → audit + Plaid).
+        // Errors are named and surfaced loudly — no silent swallow per S03 hardening pattern.
+        var auditResults: [AuditResult] = []
+        do {
+            let processResponse = try await APIClient.shared.processDocument(
+                documentId: uploadedDocumentId,
+                documentText: ocrText,
+                documentType: "mortgage_statement"
+            )
+            // Map each backend finding into an iOS AuditResult.
+            if let report = processResponse.auditReport {
+                auditResults = report.findings.map { AuditResult.from(backendFinding: $0) }
+            }
+        } catch let err as APIError {
+            throw DocumentError.auditPipelineFailed(err.localizedDescription ?? "audit error")
+        } catch {
+            throw DocumentError.auditPipelineFailed(error.localizedDescription)
+        }
+
         return DocumentUploadResult(
             success: response.success,
             document: DocumentInfo(
-                id: response.documentId ?? documentId,
+                id: uploadedDocumentId,
                 filename: fileName,
                 status: "uploaded"
-            )
+            ),
+            auditResults: auditResults
         )
     }
 
@@ -147,9 +169,12 @@ struct OCRResult {
     let confidence: Float
 }
 
-struct DocumentUploadResult: Decodable {
+struct DocumentUploadResult {
     let success: Bool
     let document: DocumentInfo
+    /// Audit findings mapped from the backend pipeline. Empty when the
+    /// pipeline ran without errors but produced no findings.
+    var auditResults: [AuditResult] = []
 }
 
 struct DocumentInfo: Decodable, Identifiable {
@@ -167,8 +192,19 @@ struct Document: Decodable, Identifiable {
     let updated_at: String
 }
 
-enum DocumentError: Error {
+enum DocumentError: LocalizedError {
     case invalidImage
     case compressionFailed
     case uploadFailed
+    case auditPipelineFailed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidImage:       return "The selected image is invalid."
+        case .compressionFailed:  return "Failed to compress the image."
+        case .uploadFailed:       return "Document upload failed."
+        case .auditPipelineFailed(let msg):
+            return "Audit pipeline error: \(msg)"
+        }
+    }
 }

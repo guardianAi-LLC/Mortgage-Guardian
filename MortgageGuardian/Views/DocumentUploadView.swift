@@ -4,6 +4,7 @@ import PhotosUI
 
 struct DocumentUploadView: View {
     @EnvironmentObject var documentManager: DocumentManager
+    @EnvironmentObject var userStore: UserStore
     @State private var selectedImage: UIImage?
     @State private var showingImagePicker = false
     @State private var uploadResult: String?
@@ -52,7 +53,16 @@ struct DocumentUploadView: View {
 
         do {
             let result = try await documentManager.processDocument(image)
-            uploadResult = "Document uploaded! ID: \(result.document.id)"
+            // Push any audit findings from the pipeline into the shared store.
+            for auditResult in result.auditResults {
+                userStore.addAuditResult(auditResult)
+            }
+            let findingsCount = result.auditResults.count
+            if findingsCount > 0 {
+                uploadResult = "Document uploaded! ID: \(result.document.id) — \(findingsCount) finding(s) detected."
+            } else {
+                uploadResult = "Document uploaded! ID: \(result.document.id)"
+            }
         } catch {
             uploadResult = "Error: \(error.localizedDescription)"
         }

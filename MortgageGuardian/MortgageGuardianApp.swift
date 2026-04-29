@@ -6,6 +6,7 @@ struct MortgageAnalyzerApp: App {
     @State private var clerk = Clerk.shared
     @StateObject private var authManager = AuthManager()
     @StateObject private var documentManager = DocumentManager()
+    @StateObject private var userStore = UserStore()
 
     var body: some Scene {
         WindowGroup {
@@ -16,6 +17,7 @@ struct MortgageAnalyzerApp: App {
                     MainTabView()
                         .environmentObject(authManager)
                         .environmentObject(documentManager)
+                        .environmentObject(userStore)
                 } else {
                     // Clerk's prebuilt AuthView owns sign-in / sign-up / email
                     // verification / password reset, including the WebView CAPTCHA
