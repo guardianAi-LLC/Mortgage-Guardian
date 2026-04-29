@@ -1,0 +1,42 @@
+[
+  {
+    "transactionId": "tx-s04-001",
+    "accountId": "acct-s04-checking",
+    "date": "2026-03-01",
+    "amount": 1420.00,
+    "name": "ACME MORTGAGE SERVICING PMT",
+    "merchantName": "ACME Mortgage Servicing",
+    "category": ["Payment", "Loan"],
+    "pending": false
+  },
+  {
+    "transactionId": "tx-s04-002",
+    "accountId": "acct-s04-checking",
+    "date": "2026-02-01",
+    "amount": 1420.00,
+    "name": "ACME MORTGAGE SERVICING PMT",
+    "merchantName": "ACME Mortgage Servicing",
+    "category": ["Payment", "Loan"],
+    "pending": false
+  },
+  {
+    "transactionId": "tx-s04-003",
+    "accountId": "acct-s04-checking",
+    "date": "2026-01-02",
+    "amount": 1420.00,
+    "name": "ACME MORTGAGE SERVICING PMT",
+    "merchantName": "ACME Mortgage Servicing",
+    "category": ["Payment", "Loan"],
+    "pending": false
+  },
+  {
+    "transactionId": "tx-s04-004",
+    "accountId": "acct-s04-checking",
+    "date": "2026-03-15",
+    "amount": 50.00,
+    "name": "ACME MORTGAGE LATE FEE",
+    "merchantName": "ACME Mortgage Servicing",
+    "category": ["Service", "Financial", "Fees"],
+    "pending": false
+  }
+]

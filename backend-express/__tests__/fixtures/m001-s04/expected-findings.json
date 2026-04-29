@@ -1,0 +1,19 @@
+{
+  "minViolations": 1,
+  "minMatchedTransactions": 1,
+  "citationRegex": "12 CFR § 102[46]",
+  "severityEnum": ["critical", "high", "medium", "low", "info"],
+  "confidenceRange": [0.0, 1.0],
+  "expectedRuleIds": [
+    "rule-respa-001",
+    "rule-respa-004",
+    "rule-cfpb-006"
+  ],
+  "expectedSectionIds": [
+    "respa_s10",
+    "respa_s8",
+    "cfpb_early_intervention"
+  ],
+  "documentPaymentDates": ["2026-01-02", "2026-02-01", "2026-03-01"],
+  "documentPaymentAmount": 1420.00
+}

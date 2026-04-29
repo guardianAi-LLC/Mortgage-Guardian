@@ -1,0 +1,47 @@
+ACME MORTGAGE SERVICING, LLC
+Periodic Mortgage Statement
+
+Borrower:        Jane Q. Sample
+Property:        123 Main Street, Springfield, IL 62701
+Loan Number:     0001234567
+Statement Date:  2026-03-15
+Payment Due:     2026-04-01
+
+----------------------------------------------------------
+Loan Information
+----------------------------------------------------------
+Original Principal:        $250,000.00
+Current Principal Balance: $221,430.18
+Interest Rate:             6.500%
+Maturity Date:             2055-04-01
+
+----------------------------------------------------------
+Payment Breakdown (Due 2026-04-01)
+----------------------------------------------------------
+Principal & Interest:      $1,000.00
+Escrow (Taxes & Insurance):   $420.00
+Late Fee Assessed:            $50.00
+----------------------------------------------------------
+Total Amount Due:          $1,470.00
+
+----------------------------------------------------------
+Escrow Account Summary
+----------------------------------------------------------
+Escrow shortage of $1,260.00 identified during annual escrow
+analysis. Shortage will be collected via increased monthly
+payment beginning 2026-05-01. (Note: required disclosure of
+shortage allocation period is not provided in this statement.)
+
+----------------------------------------------------------
+Recent Payment Activity
+----------------------------------------------------------
+2026-03-01   Payment Received   $1,420.00
+2026-02-01   Payment Received   $1,420.00
+2026-01-02   Payment Received   $1,420.00
+
+----------------------------------------------------------
+Notice
+----------------------------------------------------------
+Periodic statement transaction activity does not reconcile
+with prior statement ending balance (inconsistency in
+reported escrow balance carry-forward).
