@@ -73,6 +73,7 @@ const mockUpsertAccounts = jest.fn();
 const mockCreateNotification = jest.fn();
 const mockRemoveTransactions = jest.fn();
 const mockUpdateItemStatus = jest.fn();
+const mockGetItemsForUser = jest.fn();
 
 jest.mock('../../services/plaidDataService', () => ({
   upsertPlaidItem: mockUpsertPlaidItem,
@@ -81,7 +82,8 @@ jest.mock('../../services/plaidDataService', () => ({
   upsertAccounts: mockUpsertAccounts,
   createNotification: mockCreateNotification,
   removeTransactions: mockRemoveTransactions,
-  updateItemStatus: mockUpdateItemStatus
+  updateItemStatus: mockUpdateItemStatus,
+  getItemsForUser: mockGetItemsForUser
 }));
 
 // Set env vars so modules initialize properly
@@ -170,6 +172,7 @@ beforeEach(() => {
   mockCreateNotification.mockResolvedValue({ success: true });
   mockRemoveTransactions.mockResolvedValue({ success: true });
   mockUpdateItemStatus.mockResolvedValue({ success: true });
+  mockGetItemsForUser.mockResolvedValue({ success: true, items: [] });
 });
 
 // ============================================================
@@ -188,20 +191,22 @@ describe('POST /v1/plaid/link_token', () => {
     expect(res.body.request_id).toBe('req-link-001');
   });
 
-  it('passes userId and optional params to service', async () => {
+  it('passes Clerk-derived userId and optional params to service (ignores body user_id)', async () => {
     await request(app)
       .post('/v1/plaid/link_token')
       .set('Authorization', AUTH)
       .send({
-        user_id: 'user-456',
+        user_id: 'attacker-supplied-user-id',
         client_name: 'Mortgage Guardian',
         redirect_uri: 'https://app.example.com/callback',
         access_token: 'access-sandbox-update',
         products: ['transactions', 'auth']
       });
 
+    // T02: identity is sourced from req.user.id (mock auth returns mock-user-id-12345),
+    // never the body — the attacker-supplied user_id MUST be ignored.
     expect(mockCreateLinkToken).toHaveBeenCalledWith({
-      userId: 'user-456',
+      userId: 'mock-user-id-12345',
       clientName: 'Mortgage Guardian',
       redirectUri: 'https://app.example.com/callback',
       accessToken: 'access-sandbox-update',
@@ -209,21 +214,23 @@ describe('POST /v1/plaid/link_token', () => {
     });
   });
 
-  it('returns 400 when user_id is missing', async () => {
+  it('succeeds when body has no user_id (T02: schema is now optional)', async () => {
     const res = await request(app)
       .post('/v1/plaid/link_token')
       .set('Authorization', AUTH)
       .send({});
 
-    expect(res.status).toBe(400);
-    expect(res.body.error).toBe('Bad Request');
+    expect(res.status).toBe(200);
+    expect(mockCreateLinkToken).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'mock-user-id-12345' })
+    );
   });
 
-  it('returns 400 when user_id is empty string', async () => {
+  it('returns 400 when user_id is provided but exceeds max length', async () => {
     const res = await request(app)
       .post('/v1/plaid/link_token')
       .set('Authorization', AUTH)
-      .send({ user_id: '' });
+      .send({ user_id: 'x'.repeat(256) });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Bad Request');
@@ -233,7 +240,7 @@ describe('POST /v1/plaid/link_token', () => {
     const res = await request(app)
       .post('/v1/plaid/link_token')
       .set('Authorization', AUTH)
-      .send({ user_id: 'user-123', redirect_uri: 'not-a-url' });
+      .send({ redirect_uri: 'not-a-url' });
 
     expect(res.status).toBe(400);
   });
@@ -282,32 +289,43 @@ describe('POST /v1/plaid/exchange_token', () => {
     expect(res.body.warning).toBeDefined();
   });
 
-  it('stores item in database when user_id is provided', async () => {
+  it('persists item under JWT-derived userId, ignoring body user_id (T02)', async () => {
     await request(app)
       .post('/v1/plaid/exchange_token')
       .set('Authorization', AUTH)
       .send({
         public_token: 'public-sandbox-token123',
-        user_id: 'user-789',
+        user_id: 'attacker_user_id',
         institution_id: 'ins_109508'
       });
 
+    // The handler MUST persist under the authenticated Clerk user's id,
+    // NOT the attacker-supplied body user_id. See T02 negative-test contract.
     expect(mockUpsertPlaidItem).toHaveBeenCalledWith({
       itemId: 'item-exchange-001',
-      userId: 'user-789',
+      userId: 'mock-user-id-12345',
       accessToken: 'access-sandbox-exchanged',
       status: 'active',
       institutionId: 'ins_109508'
     });
   });
 
-  it('does not store item when user_id is missing', async () => {
+  it('persists item under JWT-derived userId even when body has no user_id (T02)', async () => {
     await request(app)
       .post('/v1/plaid/exchange_token')
       .set('Authorization', AUTH)
       .send({ public_token: 'public-sandbox-token123' });
 
-    expect(mockUpsertPlaidItem).not.toHaveBeenCalled();
+    // Was previously gated on body user_id (no upsert without it). Now the
+    // upsert is unconditional and keys on req.user.id.
+    expect(mockUpsertPlaidItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        itemId: 'item-exchange-001',
+        userId: 'mock-user-id-12345',
+        accessToken: 'access-sandbox-exchanged',
+        status: 'active'
+      })
+    );
   });
 
   it('sets institutionId to null when not provided', async () => {
@@ -798,6 +816,82 @@ describe('POST /v1/plaid/item/webhook', () => {
         access_token: 'access-sandbox-token123',
         webhook: 'https://example.com/webhook'
       });
+
+    expect(res.status).toBe(500);
+  });
+});
+
+// ============================================================
+// GET /v1/plaid/items  (T02 — JWT-derived ownership)
+// ============================================================
+describe('GET /v1/plaid/items', () => {
+  it('returns 200 with empty items array when user has no linked items', async () => {
+    mockGetItemsForUser.mockResolvedValue({ success: true, items: [] });
+
+    const res = await request(app)
+      .get('/v1/plaid/items')
+      .set('Authorization', AUTH);
+
+    // Boundary: empty list is 200 + { items: [] }, never 404.
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ items: [] });
+  });
+
+  it('returns 200 with items list shaped for iOS consumption', async () => {
+    const items = [
+      {
+        itemId: 'item-001',
+        institutionId: 'ins_109508',
+        status: 'active',
+        updatedAt: '2026-04-28T00:00:00.000Z',
+        accounts: []
+      }
+    ];
+    mockGetItemsForUser.mockResolvedValue({ success: true, items });
+
+    const res = await request(app)
+      .get('/v1/plaid/items')
+      .set('Authorization', AUTH);
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toEqual(items);
+  });
+
+  it('queries plaidDataService with the JWT-derived userId, not a body field', async () => {
+    await request(app)
+      .get('/v1/plaid/items')
+      .set('Authorization', AUTH);
+
+    expect(mockGetItemsForUser).toHaveBeenCalledTimes(1);
+    expect(mockGetItemsForUser).toHaveBeenCalledWith('mock-user-id-12345');
+  });
+
+  it('returns 401 without auth token', async () => {
+    const res = await request(app).get('/v1/plaid/items');
+    expect(res.status).toBe(401);
+    expect(mockGetItemsForUser).not.toHaveBeenCalled();
+  });
+
+  it('returns 500 with structured error when data layer rejects', async () => {
+    mockGetItemsForUser.mockResolvedValue({
+      success: false,
+      error: 'Database error: connection lost'
+    });
+
+    const res = await request(app)
+      .get('/v1/plaid/items')
+      .set('Authorization', AUTH);
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('plaid_items_fetch_failed');
+  });
+
+  it('returns 500 when getItemsForUser throws unexpectedly', async () => {
+    mockGetItemsForUser.mockRejectedValue(new Error('Unexpected boom'));
+
+    const res = await request(app)
+      .get('/v1/plaid/items')
+      .set('Authorization', AUTH);
 
     expect(res.status).toBe(500);
   });
@@ -1593,14 +1687,17 @@ describe('Plaid error handler', () => {
 // ============================================================
 describe('Sanitization middleware', () => {
   it('strips script tags from request body strings', async () => {
+    // Note: body user_id is ignored post-T02 (identity comes from Clerk JWT).
+    // Validate sanitization on client_name, which is still threaded through.
     await request(app)
       .post('/v1/plaid/link_token')
       .set('Authorization', AUTH)
-      .send({ user_id: 'user-<script>alert(1)</script>safe' });
+      .send({ client_name: 'MG-<script>alert(1)</script>safe' });
 
     expect(mockCreateLinkToken).toHaveBeenCalledWith(
       expect.objectContaining({
-        userId: 'user-safe'
+        userId: 'mock-user-id-12345',
+        clientName: 'MG-safe'
       })
     );
   });

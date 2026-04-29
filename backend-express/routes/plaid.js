@@ -63,15 +63,24 @@ router.use(sanitizeInput);
 router.post('/link_token', validate(linkTokenSchema), async (req, res, next) => {
   try {
     const {
-      user_id,
       client_name,
       redirect_uri,
       access_token,
       products
     } = req.body;
 
+    // Identity comes from the verified Clerk JWT, NOT the request body.
+    // A body-supplied user_id is silently ignored — see schemas/plaid.js.
+    const userId = req.user && req.user.id;
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Authenticated user identity required'
+      });
+    }
+
     const result = await plaidService.createLinkToken({
-      userId: user_id,
+      userId,
       clientName: client_name,
       redirectUri: redirect_uri,
       accessToken: access_token,
@@ -112,24 +121,33 @@ router.post('/link_token', validate(linkTokenSchema), async (req, res, next) => 
  */
 router.post('/exchange_token', validate(exchangeTokenSchema), async (req, res, next) => {
   try {
-    const { public_token, user_id, institution_id } = req.body;
+    const { public_token, institution_id } = req.body;
+
+    // Identity comes from the verified Clerk JWT. A body-supplied user_id (still
+    // accepted by the schema for backwards compatibility) is intentionally
+    // ignored — persisting an item under any id other than req.user.id would
+    // let a malicious client store under a victim's account.
+    const userId = req.user && req.user.id;
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Authenticated user identity required'
+      });
+    }
 
     const result = await plaidService.exchangePublicToken(public_token);
 
-    // Store the item in database with access token
-    if (user_id) {
-      await plaidDataService.upsertPlaidItem({
-        itemId: result.itemId,
-        userId: user_id,
-        accessToken: result.accessToken,
-        status: 'active',
-        institutionId: institution_id || null
-      });
+    // Persist item under the authenticated user — unconditional now (was
+    // previously gated on body-supplied user_id, see T02).
+    await plaidDataService.upsertPlaidItem({
+      itemId: result.itemId,
+      userId,
+      accessToken: result.accessToken,
+      status: 'active',
+      institutionId: institution_id || null
+    });
 
-      logger.info('Plaid item stored', { itemId: result.itemId, userId: user_id });
-    } else {
-      logger.warn('No user_id provided - item not stored in database');
-    }
+    logger.info('Plaid item stored', { itemId: result.itemId, userId });
 
     // WARNING: In production, store access_token in database, don't return to client
     // For this mortgage auditing use case, we're returning it so iOS can store locally
@@ -252,6 +270,52 @@ router.post('/item', validate(itemSchema), async (req, res, next) => {
 
   } catch (error) {
     logger.error('Get item error', { error: error.message, type: error.type, code: error.code });
+    next(error);
+  }
+});
+
+/**
+ * GET /v1/plaid/items
+ * List Plaid items linked to the authenticated Clerk user.
+ *
+ * Used by iOS to answer "is bank already linked?" without trusting client-side
+ * keychain state (per MEM024 — backend Supabase is the sole source of truth).
+ *
+ * Response:
+ * - items: Array<{ itemId, institutionId, status, updatedAt, accounts: [] }>
+ *   Empty array (200) when the user has no linked items — NOT 404.
+ *
+ * Errors:
+ * - 401 if req.user.id is missing (unreachable in practice — requireAuth catches it first)
+ * - 500 with `{ error: 'plaid_items_fetch_failed' }` if the data layer fails
+ */
+router.get('/items', async (req, res, next) => {
+  try {
+    const userId = req.user && req.user.id;
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Authenticated user identity required'
+      });
+    }
+
+    const result = await plaidDataService.getItemsForUser(userId);
+
+    if (!result.success) {
+      logger.error('Plaid items fetch failed', { userId, error: result.error });
+      return res.status(500).json({
+        error: 'plaid_items_fetch_failed',
+        message: 'Unable to list Plaid items for the current user'
+      });
+    }
+
+    const items = Array.isArray(result.items) ? result.items : [];
+    logger.info('Plaid items listed', { userId, count: items.length });
+
+    res.json({ items });
+
+  } catch (error) {
+    logger.error('Get items error', { error: error.message, userId: req.user && req.user.id });
     next(error);
   }
 });

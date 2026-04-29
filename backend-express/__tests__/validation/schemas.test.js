@@ -228,10 +228,9 @@ describe('Plaid schemas', () => {
       expect(error.details[0].path).toContain('products');
     });
 
-    test('rejects missing user_id', () => {
+    test('accepts missing user_id (T02: schema is optional, identity comes from Clerk JWT)', () => {
       const { error } = linkTokenSchema.validate({});
-      expect(error).toBeDefined();
-      expect(error.details[0].path).toContain('user_id');
+      expect(error).toBeUndefined();
     });
 
     test('rejects invalid redirect_uri', () => {

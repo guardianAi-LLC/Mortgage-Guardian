@@ -5,7 +5,10 @@ const Joi = require('joi');
  * Create Plaid Link token for bank connection.
  */
 const linkTokenSchema = Joi.object({
-  user_id: Joi.string().trim().max(255).required(),
+  // user_id is accepted for backwards compatibility with older clients but is
+  // ignored by the handler — the authenticated Clerk user (req.user.id) is the
+  // sole source of truth for ownership. See routes/plaid.js POST /link_token.
+  user_id: Joi.string().trim().max(255).optional(),
   client_name: Joi.string().trim().optional(),
   redirect_uri: Joi.string().trim().uri().optional(),
   access_token: Joi.string().trim().optional(),

@@ -242,6 +242,51 @@ class PlaidDataService {
   }
 
   /**
+   * List Plaid items for a given Clerk-derived userId.
+   *
+   * Used by GET /v1/plaid/items so iOS can answer "is bank already linked?"
+   * without trusting client-side keychain state. Returns an empty list (not an
+   * error) when the user has no linked items — that is the expected steady state
+   * before the first Plaid Link flow completes.
+   *
+   * @param {string} userId - Clerk JWT sub (req.user.id), never client-supplied
+   * @returns {Promise<{ success: boolean, items?: Array, error?: string }>}
+   */
+  async getItemsForUser(userId) {
+    if (!userId || typeof userId !== 'string') {
+      return { success: false, error: 'userId is required' };
+    }
+
+    if (!supabase) {
+      return this.mockGetItemsForUser(userId);
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('plaid_items')
+        .select('item_id, institution_id, status, updated_at')
+        .eq('user_id', userId);
+
+      if (error) {
+        throw new Error(`Database error: ${error.message}`);
+      }
+
+      const items = (data || []).map((row) => ({
+        itemId: row.item_id,
+        institutionId: row.institution_id,
+        status: row.status,
+        updatedAt: row.updated_at,
+        accounts: [] // accounts hydration deferred to /v1/plaid/accounts
+      }));
+
+      return { success: true, items };
+    } catch (error) {
+      logger.error('Error fetching items for user', { error: error.message, userId });
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Create notification for user action required
    */
   async createNotification({ userId, itemId, type, message, priority = 'medium' }) {
@@ -332,6 +377,23 @@ class PlaidDataService {
       return { success: true, mock: true, data: item };
     }
     return { success: false, error: 'Item not found' };
+  }
+
+  mockGetItemsForUser(userId) {
+    const items = [];
+    for (const item of this.mockItems.values()) {
+      if (item.userId === userId) {
+        items.push({
+          itemId: item.itemId,
+          institutionId: item.institutionId || null,
+          status: item.status || 'active',
+          updatedAt: item.updatedAt,
+          accounts: []
+        });
+      }
+    }
+    logger.debug('Mock: listed items for user', { userId, count: items.length });
+    return { success: true, mock: true, items };
   }
 }
 
