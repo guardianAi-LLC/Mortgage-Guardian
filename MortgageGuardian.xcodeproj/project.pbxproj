@@ -116,7 +116,6 @@
 		VIEW_BF_010 /* DocumentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_010 /* DocumentsView.swift */; };
 		VIEW_BF_011 /* DocumentUploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_011 /* DocumentUploadView.swift */; };
 		VIEW_BF_012 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_012 /* EmptyStateView.swift */; };
-		VIEW_BF_013 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_013 /* LoginView.swift */; };
 		VIEW_BF_014 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_014 /* MainTabView.swift */; };
 		VIEW_BF_015 /* PlaidConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_015 /* PlaidConnectionView.swift */; };
 		VIEW_BF_016 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = VIEW_FR_016 /* ProfileView.swift */; };
@@ -255,7 +254,6 @@
 		VIEW_FR_010 /* DocumentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentsView.swift; sourceTree = "<group>"; };
 		VIEW_FR_011 /* DocumentUploadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentUploadView.swift; sourceTree = "<group>"; };
 		VIEW_FR_012 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
-		VIEW_FR_013 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		VIEW_FR_014 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		VIEW_FR_015 /* PlaidConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaidConnectionView.swift; sourceTree = "<group>"; };
 		VIEW_FR_016 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
@@ -522,7 +520,6 @@
 				VIEW_FR_010 /* DocumentsView.swift */,
 				VIEW_FR_011 /* DocumentUploadView.swift */,
 				VIEW_FR_012 /* EmptyStateView.swift */,
-				VIEW_FR_013 /* LoginView.swift */,
 				VIEW_FR_014 /* MainTabView.swift */,
 				VIEW_FR_015 /* PlaidConnectionView.swift */,
 				VIEW_FR_016 /* ProfileView.swift */,
@@ -855,7 +852,6 @@
 				VIEW_BF_010 /* DocumentsView.swift in Sources */,
 				VIEW_BF_011 /* DocumentUploadView.swift in Sources */,
 				VIEW_BF_012 /* EmptyStateView.swift in Sources */,
-				VIEW_BF_013 /* LoginView.swift in Sources */,
 				VIEW_BF_014 /* MainTabView.swift in Sources */,
 				VIEW_BF_015 /* PlaidConnectionView.swift in Sources */,
 				VIEW_BF_016 /* ProfileView.swift in Sources */,

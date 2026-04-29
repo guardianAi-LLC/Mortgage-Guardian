@@ -17,8 +17,11 @@ struct MortgageAnalyzerApp: App {
                         .environmentObject(authManager)
                         .environmentObject(documentManager)
                 } else {
-                    LoginView()
-                        .environmentObject(authManager)
+                    // Clerk's prebuilt AuthView owns sign-in / sign-up / email
+                    // verification / password reset, including the WebView CAPTCHA
+                    // challenge that the previous hand-rolled sign-in screen
+                    // could not satisfy.
+                    AuthView(isDismissable: false)
                 }
             }
             .task {

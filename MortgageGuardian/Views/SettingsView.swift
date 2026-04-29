@@ -1,6 +1,7 @@
 import SwiftUI
 import StoreKit
 import LocalAuthentication
+import Clerk
 
 struct SettingsView: View {
     @EnvironmentObject var userStore: UserStore
@@ -366,9 +367,13 @@ struct SettingsView: View {
         // Reset UserStore to defaults
         userStore.resetToDefaults()
 
-        // Sign out via Clerk
+        // Sign out via Clerk directly — instantiating a fresh AuthManager
+        // here just to call signOut() was a smell (it would spin up its own
+        // event-subscription Task only to be deallocated). Calling
+        // Clerk.shared.signOut() routes through the shared session and the
+        // singleton AuthManager observes the resulting `.signedOut` event.
         Task {
-            try? await AuthManager().signOut()
+            try? await Clerk.shared.signOut()
         }
     }
 

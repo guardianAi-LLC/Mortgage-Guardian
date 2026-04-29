@@ -116,7 +116,7 @@ class SecureDocumentManager: ObservableObject {
 
 // MARK: - Authentication Flow Example
 
-struct ExampleLoginView: View {
+struct ExampleSecuritySignInView: View {
     @StateObject private var securityService = SecurityService.shared
     @State private var showingBiometricAuth = false
     @State private var authenticationError: String?
