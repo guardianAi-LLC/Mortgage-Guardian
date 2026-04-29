@@ -287,6 +287,55 @@ class PlaidDataService {
   }
 
   /**
+   * Resolve the first Plaid access_token for a user, server-side.
+   *
+   * Per MEM030 the access token MUST be derived from server records and
+   * MUST NEVER be accepted from a request body. Used by the single-doc
+   * audit pipeline (M001/S04/T02) to call plaidService.getTransactions.
+   *
+   * @param {string} userId
+   * @returns {Promise<string|null>} access token, or null if user has no
+   *   Plaid items linked. Errors are logged and surface as null so the
+   *   audit pipeline can degrade gracefully (no Plaid evidence) rather
+   *   than fail the whole document.
+   */
+  async getAccessTokenForUser(userId) {
+    if (!userId || typeof userId !== 'string') {
+      return null;
+    }
+
+    if (!supabase) {
+      // Mock mode: scan in-memory items and return the first one for the user.
+      for (const item of this.mockItems.values()) {
+        if (item.userId === userId && item.accessToken) {
+          return item.accessToken;
+        }
+      }
+      return null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('plaid_items')
+        .select('access_token')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .limit(1);
+
+      if (error) {
+        logger.error('getAccessTokenForUser db error', { error: error.message, userId });
+        return null;
+      }
+
+      const row = (data || [])[0];
+      return row?.access_token || null;
+    } catch (error) {
+      logger.error('getAccessTokenForUser error', { error: error.message, userId });
+      return null;
+    }
+  }
+
+  /**
    * Create notification for user action required
    */
   async createNotification({ userId, itemId, type, message, priority = 'medium' }) {

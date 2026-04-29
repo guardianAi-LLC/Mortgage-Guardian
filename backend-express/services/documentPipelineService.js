@@ -6,6 +6,11 @@ const ocrService = require('./ocrService');
 const classificationService = require('./classificationService');
 const caseFileService = require('./caseFileService');
 const documentAnalysisService = require('./documentAnalysisService');
+const plaidDataService = require('./plaidDataService');
+const plaidService = require('./plaidService');
+const plaidCrossReferenceService = require('./plaidCrossReferenceService');
+const complianceRuleEngine = require('./complianceRuleEngine');
+const { withProductReadyRetry } = require('./plaidRetry');
 const logger = createLogger('document-pipeline');
 
 /**
@@ -32,6 +37,7 @@ const PIPELINE_STATES = {
   CLASSIFYING: 'classifying',    // AI document classification
   ANALYZING: 'analyzing',
   ANALYZED: 'analyzed',
+  AUDITING: 'auditing',
   REVIEW: 'review',
   COMPLETE: 'complete',
   FAILED: 'failed'
@@ -43,7 +49,8 @@ const STATE_TRANSITIONS = {
   [PIPELINE_STATES.OCR]: PIPELINE_STATES.CLASSIFYING,
   [PIPELINE_STATES.CLASSIFYING]: PIPELINE_STATES.ANALYZING,
   [PIPELINE_STATES.ANALYZING]: PIPELINE_STATES.ANALYZED,
-  [PIPELINE_STATES.ANALYZED]: PIPELINE_STATES.REVIEW,
+  [PIPELINE_STATES.ANALYZED]: PIPELINE_STATES.AUDITING,
+  [PIPELINE_STATES.AUDITING]: PIPELINE_STATES.REVIEW,
   [PIPELINE_STATES.REVIEW]: PIPELINE_STATES.COMPLETE
 };
 
@@ -424,7 +431,29 @@ class DocumentPipelineService {
         this._advanceState(pipeline, PIPELINE_STATES.ANALYZED);
       }
 
-      // Step 5: Ready for user review (cross-reference with Plaid happens here)
+      // Step 5: AUDITING — Plaid cross-reference + rule-engine evaluation.
+      // Failures here are captured into pipeline.auditReport.error and do
+      // NOT fail the whole pipeline — REVIEW is still reached.
+      if (this._shouldRunStep(pipeline, PIPELINE_STATES.AUDITING)) {
+        try {
+          await this._runAudit(pipeline);
+        } catch (auditError) {
+          logger.error('Audit step failed (non-fatal)', {
+            documentId,
+            error: auditError.message
+          });
+          pipeline.auditReport = {
+            findings: [],
+            error: { code: auditError.code || 'AUDIT_FAILED', message: auditError.message }
+          };
+          // Force state advance so REVIEW is still reachable.
+          if (pipeline.status === PIPELINE_STATES.ANALYZED) {
+            this._advanceState(pipeline, PIPELINE_STATES.AUDITING);
+          }
+        }
+      }
+
+      // Step 6: Ready for user review.
       if (this._shouldRunStep(pipeline, PIPELINE_STATES.REVIEW)) {
         this._advanceState(pipeline, PIPELINE_STATES.REVIEW);
         logger.info('Document ready for review', { documentId });
@@ -436,6 +465,7 @@ class DocumentPipelineService {
         status: pipeline.status,
         classificationResults: pipeline.classificationResults,
         analysisResults: pipeline.analysisResults,
+        auditReport: pipeline.auditReport,
         caseId: pipeline.caseId,
         steps: pipeline.steps
       };
@@ -723,6 +753,164 @@ class DocumentPipelineService {
       riskLevel: analysisResult?.summary?.riskLevel || 'unknown',
       completenessScore: analysisResult?.completeness?.score || null,
       anomalyCount: analysisResult?.anomalies?.length || 0
+    });
+  }
+
+  /**
+   * Step 5 (AUDITING): Plaid cross-reference + compliance rule-engine evaluation.
+   *
+   * Produces pipeline.auditReport = {
+   *   findings: [{ ...violation, plaidEvidence: {matchedTransactions, unmatchedDocumentPayments} }],
+   *   summary: { findingsCount, matchedTxCount },
+   *   _metadata: { durationMs, skipAiAnalysis }
+   * }
+   *
+   * Plaid access token is resolved server-side via plaidDataService
+   * (MEM030 — never read from request body). If the user has no linked
+   * Plaid item, the pipeline runs the rule engine on document evidence
+   * alone with empty paymentVerification.
+   *
+   * @param {Object} pipeline
+   * @param {Object} [options]
+   * @param {boolean} [options.skipAiAnalysis=true] - skip the slower AI
+   *   compliance analysis pass; tests rely on the deterministic rule
+   *   engine output. Plumbed through the route for future opt-in.
+   */
+  async _runAudit(pipeline, { skipAiAnalysis = true } = {}) {
+    this._advanceState(pipeline, PIPELINE_STATES.AUDITING);
+    const startedAt = Date.now();
+
+    logger.info('audit.pipeline.start', {
+      caseId: pipeline.caseId,
+      documentId: pipeline.documentId,
+      skipAiAnalysis
+    });
+
+    // 1. Resolve Plaid access token server-side (MEM030).
+    let accessToken = null;
+    try {
+      accessToken = await plaidDataService.getAccessTokenForUser(pipeline.userId);
+    } catch (err) {
+      logger.warn('audit.pipeline plaid token resolution failed', {
+        documentId: pipeline.documentId,
+        error: err.message
+      });
+    }
+
+    // 2. Pull transactions for the trailing 12 months when a token exists.
+    let transactions = [];
+    if (accessToken) {
+      const endDate = new Date();
+      const startDate = new Date(endDate);
+      startDate.setFullYear(startDate.getFullYear() - 1);
+      const fmt = (d) => d.toISOString().slice(0, 10);
+
+      try {
+        const txnResult = await withProductReadyRetry(
+          () => plaidService.getTransactions({
+            accessToken,
+            startDate: fmt(startDate),
+            endDate: fmt(endDate)
+          }),
+          {
+            onRetry: ({ attempt, elapsedMs }) => {
+              logger.info('audit.pipeline plaid retry', {
+                documentId: pipeline.documentId,
+                attempt,
+                elapsedMs
+              });
+            }
+          }
+        );
+        transactions = txnResult?.transactions || [];
+      } catch (err) {
+        logger.warn('audit.pipeline plaid getTransactions failed', {
+          documentId: pipeline.documentId,
+          error: err.message
+        });
+        transactions = [];
+      }
+    }
+
+    // 3. Extract document payments and cross-reference.
+    const documentPayments = plaidCrossReferenceService.extractPaymentsFromAnalysis(
+      [pipeline.analysisResults]
+    );
+    const paymentVerification = plaidCrossReferenceService.crossReferencePayments(
+      documentPayments,
+      transactions
+    );
+
+    // 4. Build minimal forensicReport surface for the rule engine.
+    const forensicReport = {
+      caseId: pipeline.caseId || `case-${pipeline.documentId}`,
+      discrepancies: [],
+      timeline: { events: [], violations: [] },
+      paymentVerification
+    };
+
+    // 5. Evaluate via deterministic rule engine.
+    const evalResult = complianceRuleEngine.evaluateFindings(
+      forensicReport,
+      [pipeline.analysisResults]
+    );
+    const violations = (evalResult && evalResult.violations) || [];
+
+    // 6. Optionally augment with AI compliance analysis (off by default).
+    if (!skipAiAnalysis) {
+      try {
+        // Lazy require to avoid pulling Anthropic SDK during deterministic tests.
+        const complianceAnalysisService = require('./complianceAnalysisService');
+        if (typeof complianceAnalysisService.analyzeViolations === 'function') {
+          await complianceAnalysisService.analyzeViolations(violations, forensicReport);
+        }
+      } catch (err) {
+        logger.warn('audit.pipeline AI compliance analysis skipped', {
+          documentId: pipeline.documentId,
+          error: err.message
+        });
+      }
+    }
+
+    // 7. Attach Plaid evidence to each finding.
+    const matchedTransactions = paymentVerification?.matchedPayments || [];
+    const unmatchedDocumentPayments = paymentVerification?.unmatchedDocumentPayments || [];
+
+    const findings = violations.map((v) => ({
+      ...v,
+      plaidEvidence: {
+        matchedTransactions,
+        unmatchedDocumentPayments
+      }
+    }));
+
+    const durationMs = Date.now() - startedAt;
+    pipeline.auditReport = {
+      findings,
+      summary: {
+        findingsCount: findings.length,
+        matchedTxCount: matchedTransactions.length
+      },
+      _metadata: { durationMs, skipAiAnalysis }
+    };
+
+    pipeline.steps.auditing = {
+      completedAt: new Date().toISOString(),
+      findingsCount: findings.length,
+      matchedTxCount: matchedTransactions.length,
+      durationMs
+    };
+    pipeline.updatedAt = new Date().toISOString();
+    this.pipelineState.set(pipeline.documentId, pipeline);
+    this._persistPipeline(pipeline).catch(() => {});
+
+    logger.info('audit.pipeline.complete', {
+      caseId: forensicReport.caseId,
+      documentId: pipeline.documentId,
+      findingsCount: findings.length,
+      matchedTxCount: matchedTransactions.length,
+      durationMs,
+      skipAiAnalysis
     });
   }
 

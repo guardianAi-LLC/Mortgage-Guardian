@@ -209,7 +209,10 @@ router.delete('/:documentId', validate(deleteDocumentSchema, 'query'), async (re
 // ============================================
 
 // POST /v1/documents/process
-// Triggers the full processing pipeline: OCR → classify → analyze → review
+// Triggers the full processing pipeline: OCR → classify → analyze → audit → review.
+// Response payload includes `auditReport` (rule-engine findings + Plaid evidence).
+// Plaid access tokens are resolved server-side from the user's linked items —
+// per MEM030, NEVER read access tokens from the request body.
 router.post('/process', validate(processDocumentSchema), async (req, res, next) => {
   try {
     const { documentId, documentText, fileBuffer, documentType } = req.body;
