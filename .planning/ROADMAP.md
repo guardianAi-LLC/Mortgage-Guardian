@@ -175,10 +175,14 @@ Plans:
 **Goal**: Extend schemas, update consolidated report and dispute letters with enriched citations
 **Depends on**: Phase 52
 **Research**: Unlikely (schema extension, internal patterns)
-**Plans**: TBD
+**Plans**: 5
 
 Plans:
-- [ ] 53-01: TBD
+- [x] 53-01: Report Formatters Service (canonical citation/reasoning/confidence formatters) — completed 2026-04-29
+- [ ] 53-02: Consolidated Report Executive Summary & Per-Finding Display Fields
+- [ ] 53-03: Dispute Letter Structured Evidence Footnotes
+- [ ] 53-04: Frontend Types & Finding-Card Enrichment Display
+- [ ] 53-05: Wire Backend Output into Report-Summary and Letter-Viewer Components
 
 #### Phase 54: Plaid Token Migration
 
@@ -312,7 +316,7 @@ Plans:
 
 | 51. Evidence Enrichment | v8.0 | 5/5 | Complete | 2026-04-24 |
 | 52. Structured Reasoning in Claude Prompts | v8.0 | 6/6 | Complete | 2026-04-24 |
-| 53. Report Output Format | v8.0 | 0/? | Not started | - |
+| 53. Report Output Format | v8.0 | 1/5 | In progress | - |
 | 54. Plaid Token Migration | v8.0 | 0/? | Not started | - |
 | 55. Upload Security & Malware Scanning | v8.0 | 0/? | Not started | - |
 | 56. Auth Hardening & Encryption Audit | v8.0 | 0/? | Not started | - |
@@ -321,5 +325,5 @@ Plans:
 | 59. Onboarding & Empty States | v8.0 | 0/? | Not started | - |
 | 60. Landing Page & Public Presence | v8.0 | 0/? | Not started | - |
 
-**Completed:** 190 plans across 50 phases, 6 milestones
-**In progress:** v8.0 Enterprise Readiness — 10 phases (51-60)
+**Completed:** 191 plans across 52 phases, 6 milestones (52 phases fully complete + 1 plan into Phase 53)
+**In progress:** v8.0 Enterprise Readiness — Phase 53 (1/5 plans)
