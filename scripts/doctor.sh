@@ -86,7 +86,9 @@ if [[ ! -f "${ENV_FILE}" ]]; then
   fails=$((fails + 1))
 else
   # SUPABASE_URL — must start with https://
-  SUPABASE_URL_VAL="$(read_env SUPABASE_URL)"
+  # Uses get_val() so env-var override works for synthetic injection testing:
+  #   SUPABASE_URL=not-a-valid-url make doctor
+  SUPABASE_URL_VAL="$(get_val SUPABASE_URL)"
   if [[ "${SUPABASE_URL_VAL}" == https://* ]]; then
     pass "SUPABASE_URL starts with https://"
   else
@@ -96,7 +98,7 @@ else
   fi
 
   # SUPABASE_ANON_KEY — must be non-empty
-  SUPABASE_ANON_KEY_VAL="$(read_env SUPABASE_ANON_KEY)"
+  SUPABASE_ANON_KEY_VAL="$(get_val SUPABASE_ANON_KEY)"
   if [[ -n "${SUPABASE_ANON_KEY_VAL}" ]]; then
     pass "SUPABASE_ANON_KEY is set"
   else
@@ -106,7 +108,7 @@ else
   fi
 
   # SUPABASE_SERVICE_KEY — must be non-empty
-  SUPABASE_SERVICE_KEY_VAL="$(read_env SUPABASE_SERVICE_KEY)"
+  SUPABASE_SERVICE_KEY_VAL="$(get_val SUPABASE_SERVICE_KEY)"
   if [[ -n "${SUPABASE_SERVICE_KEY_VAL}" ]]; then
     pass "SUPABASE_SERVICE_KEY is set"
   else
@@ -116,7 +118,9 @@ else
   fi
 
   # DOCUMENT_ENCRYPTION_KEY — must be exactly 64 hex chars
-  ENCRYPTION_KEY_VAL="$(read_env DOCUMENT_ENCRYPTION_KEY)"
+  # Uses get_val() so env-var override works for synthetic injection testing:
+  #   DOCUMENT_ENCRYPTION_KEY=tooshort make doctor
+  ENCRYPTION_KEY_VAL="$(get_val DOCUMENT_ENCRYPTION_KEY)"
   if [[ "${ENCRYPTION_KEY_VAL}" =~ ^[0-9a-fA-F]{64}$ ]]; then
     pass "DOCUMENT_ENCRYPTION_KEY is a valid 64-char hex string"
   else
