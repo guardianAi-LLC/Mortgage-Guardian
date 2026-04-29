@@ -28,6 +28,7 @@ struct MainTabView: View {
                 }
         }
         .accentColor(.blue)
+        .task { await AuthenticatedProbe.runOnce() }
     }
 }
 
