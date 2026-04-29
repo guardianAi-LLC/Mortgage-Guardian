@@ -24,7 +24,10 @@ public final class PlaidLinkService: ObservableObject {
 
     // MARK: - Private Properties
     private let logger = Logger(subsystem: "com.mortgageguardian", category: "PlaidLinkService")
-    private let secureKeyManager = SecureKeyManager.shared
+    // NOTE: SecureKeyManager intentionally not held here — per MEM024 / R006 the
+    // backend Supabase `plaid_items.access_token` is the sole source of truth and
+    // iOS does not cache it. EnhancedPlaidService still uses the keychain for its
+    // own legacy flow; this service no longer does.
 
     // Plaid Link Handler
     #if canImport(LinkKit)
@@ -143,13 +146,41 @@ public final class PlaidLinkService: ObservableObject {
 
     // MARK: - Private Implementation
 
-    private var currentUserId: String {
-        Clerk.shared.user?.id ?? "mortgage_guardian_user"
+    /// Resolve the signed-in Clerk user id. The backend ignores body-supplied `user_id`
+    /// and derives ownership from the verified JWT (per MEM026), but we still pass the
+    /// id so older route variants and request logs stay informative. Refuses both nil
+    /// and empty-string identities — the previous fallback to a shared literal id
+    /// (a hard-coded shared-id string) would let unsigned-in callers write across
+    /// users' Plaid items on any non-JWT-derived backend path. That fallback is gone.
+    private func currentUserId() throws -> String {
+        guard let id = Clerk.shared.user?.id, !id.isEmpty else {
+            throw PlaidError.notSignedIn
+        }
+        return id
+    }
+
+    /// Multi-scene-safe key-window lookup for iOS 15+. Walks
+    /// `UIApplication.shared.connectedScenes`, picks the foreground-active
+    /// `UIWindowScene`, and returns its key window's root view controller.
+    /// Replaces the deprecated single-window app-level accessor that warns on
+    /// iOS 15+ and returns the wrong scene under multi-window iPad. Mirrors
+    /// `ShareUtility.topViewController()`'s pattern.
+    private func keyWindowRootViewController() -> UIViewController? {
+        guard let windowScene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }),
+              let rootVC = windowScene.windows
+                .first(where: { $0.isKeyWindow })?.rootViewController
+        else {
+            return nil
+        }
+        return rootVC
     }
 
     private func fetchLinkToken() async throws {
+        let userId = try currentUserId()
         let response = try await APIClient.shared.createPlaidLinkToken(
-            userId: currentUserId,
+            userId: userId,
             clientName: "Mortgage Guardian"
         )
 
@@ -208,7 +239,7 @@ public final class PlaidLinkService: ObservableObject {
                 }
             case .success(let handler):
                 self.linkHandler = handler
-                if let topViewController = UIApplication.shared.windows.first?.rootViewController {
+                if let topViewController = self.keyWindowRootViewController() {
                     handler.open(presentUsing: .viewController(topViewController))
                 } else {
                     Task { @MainActor in
@@ -230,14 +261,22 @@ public final class PlaidLinkService: ObservableObject {
     }
 
     private func handleLinkSuccess(publicToken: String, metadata: Any) async throws {
+        let userId = try currentUserId()
         let response = try await APIClient.shared.exchangePlaidToken(
             publicToken: publicToken,
-            userId: currentUserId
+            userId: userId
         )
 
-        // Store the access token securely for future API calls
-        try secureKeyManager.saveAPIKey(response.accessToken, forService: .plaidAccessToken)
-        logger.info("Stored Plaid access token securely (item: \(response.itemId))")
+        // NOTE: We deliberately do NOT cache `response.accessToken` in the keychain.
+        // Per M001 boundary map / R006 / MEM024, the backend Supabase
+        // `plaid_items.access_token` is the sole source of truth. Caching on iOS
+        // creates a stale-cache footgun if the backend rotates or revokes the item
+        // and duplicates the secret across two trust boundaries. The exchange
+        // response is acknowledged here (response.itemId) but the token itself is
+        // dropped — downstream account/transaction reads should derive the token
+        // server-side from the JWT-authenticated user identity (see GET /v1/plaid/items
+        // from S03 T02; full identity-derived /accounts and /transactions arrive in S04).
+        logger.info("Plaid item exchanged and persisted backend-side (item: \(response.itemId))")
 
         // Track connection date for compliance reporting
         if UserDefaults.standard.object(forKey: "plaid_first_connected") == nil {
@@ -245,49 +284,68 @@ public final class PlaidLinkService: ObservableObject {
         }
         UserDefaults.standard.set(Date(), forKey: "plaid_last_activity")
 
-        // Fetch accounts with the access token
-        try await fetchAccountsWithAccessToken(accessToken: response.accessToken)
+        // Refresh the locally-displayed accounts list from the backend item store
+        // (no client-held access token; backend resolves from the signed-in user).
+        try await refreshAccountsFromBackendItems()
     }
 
-    private func fetchAccountsWithAccessToken(accessToken: String) async throws {
-        let response = try await APIClient.shared.getPlaidAPIAccounts(accessToken: accessToken)
-
-        let plaidAccounts = response.accounts.map { bridgePlaidAccount($0, institutionName: "Connected Bank") }
+    /// Pull the signed-in user's linked Plaid items (with their accounts) from the
+    /// backend (`GET /v1/plaid/items`) and project them into the iOS-side
+    /// `accounts` array. Replaces the prior keychain-token-based path.
+    private func refreshAccountsFromBackendItems() async throws {
+        let response = try await APIClient.shared.getPlaidItems()
+        let mappedAccounts: [PlaidAccount] = response.items.flatMap { item -> [PlaidAccount] in
+            (item.accounts ?? []).map { acct in
+                PlaidAccount(
+                    id: acct.accountId,
+                    name: acct.name,
+                    type: acct.type,
+                    subtype: acct.subtype ?? "",
+                    mask: "",
+                    institutionName: item.institutionId ?? "Connected Bank",
+                    balance: acct.balances.available ?? acct.balances.current,
+                    isActive: true
+                )
+            }
+        }
 
         await MainActor.run {
-            for account in plaidAccounts {
+            for account in mappedAccounts {
                 self.addAccount(account)
             }
-            self.isConnected = true
-            self.logger.info("Successfully fetched \(plaidAccounts.count) accounts from Plaid")
+            self.isConnected = !self.accounts.isEmpty
+            self.logger.info("Refreshed \(mappedAccounts.count) accounts from backend items endpoint")
         }
     }
 
     private func removeAccountFromBackend(accountId: String) async throws {
-        let accessToken = try secureKeyManager.getAPIKey(forService: .plaidAccessToken)
-        try await APIClient.shared.deletePlaidItem(accessToken: accessToken)
-        logger.info("Removed Plaid item from backend for account \(accountId)")
+        // TODO(S04): Add a JWT-identity-derived `DELETE /v1/plaid/items/:itemId`
+        // route on the backend so iOS can remove a linked item without holding
+        // the access token. Until then, this path is unsupported on the
+        // post-keychain client (per MEM024 / R006).
+        logger.error("removeAccountFromBackend(\(accountId)) is unsupported until the JWT-derived DELETE /v1/plaid/items/:itemId route exists (S04)")
+        throw PlaidError.notSignedIn
     }
 
     private func fetchAccountsFromBackend() async throws -> [PlaidAccount] {
-        let accessToken = try secureKeyManager.getAPIKey(forService: .plaidAccessToken)
-        let response = try await APIClient.shared.getPlaidAPIAccounts(accessToken: accessToken)
-        return response.accounts.map { bridgePlaidAccount($0, institutionName: "Connected Bank") }
-    }
-
-    // MARK: - Bridging
-
-    private func bridgePlaidAccount(_ apiAccount: PlaidAPIAccount, institutionName: String) -> PlaidAccount {
-        PlaidAccount(
-            id: apiAccount.accountId,
-            name: apiAccount.name,
-            type: apiAccount.type,
-            subtype: apiAccount.subtype ?? "",
-            mask: "",
-            institutionName: institutionName,
-            balance: apiAccount.balances.available ?? apiAccount.balances.current,
-            isActive: true
-        )
+        // Pull from the JWT-authenticated `GET /v1/plaid/items` endpoint instead
+        // of the legacy access-token-in-body path. Returns whatever items the
+        // current Clerk user has linked (empty array is a valid 200).
+        let response = try await APIClient.shared.getPlaidItems()
+        return response.items.flatMap { item -> [PlaidAccount] in
+            (item.accounts ?? []).map { acct in
+                PlaidAccount(
+                    id: acct.accountId,
+                    name: acct.name,
+                    type: acct.type,
+                    subtype: acct.subtype ?? "",
+                    mask: "",
+                    institutionName: item.institutionId ?? "Connected Bank",
+                    balance: acct.balances.available ?? acct.balances.current,
+                    isActive: true
+                )
+            }
+        }
     }
 
     // MARK: - Local Storage
@@ -316,6 +374,7 @@ enum PlaidError: LocalizedError {
     case tokenExchangeFailed
     case accountsFetchFailed
     case linkKitUnavailable
+    case notSignedIn
 
     var errorDescription: String? {
         switch self {
@@ -329,6 +388,8 @@ enum PlaidError: LocalizedError {
             return "Failed to fetch account data"
         case .linkKitUnavailable:
             return "Plaid LinkKit framework is not available. Please ensure the app is properly configured."
+        case .notSignedIn:
+            return "You must be signed in to connect a bank account."
         }
     }
 }

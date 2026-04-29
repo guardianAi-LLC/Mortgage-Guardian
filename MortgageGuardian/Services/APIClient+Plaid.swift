@@ -179,6 +179,24 @@ struct PlaidDeleteItemRequest: Encodable {
     }
 }
 
+// MARK: - GET /v1/plaid/items (JWT-derived ownership; no body)
+
+/// Mirrors the response shape from `backend-express/routes/plaid.js`'s
+/// `GET /v1/plaid/items`: `{ items: [{ itemId, institutionId, status,
+/// updatedAt, accounts }] }`. Accounts are an empty array until S04 hydrates
+/// them — that's intentional, not a parse error.
+struct PlaidItemSummary: Decodable {
+    let itemId: String
+    let institutionId: String?
+    let status: String?
+    let updatedAt: String?
+    let accounts: [PlaidAPIAccount]?
+}
+
+struct PlaidItemsResponse: Decodable {
+    let items: [PlaidItemSummary]
+}
+
 struct PlaidDeleteItemResponse: Decodable {
     let removed: Bool
     let requestId: String?
@@ -258,6 +276,18 @@ extension APIClient {
             method: .DELETE,
             body: body,
             responseType: PlaidDeleteItemResponse.self
+        )
+    }
+
+    /// List the signed-in Clerk user's Plaid items via `GET /v1/plaid/items`.
+    /// Backend derives ownership from the verified JWT (no body, no `access_token`)
+    /// per MEM024 / MEM026. Returns `{ items: [] }` (200) when nothing is linked.
+    func getPlaidItems() async throws -> PlaidItemsResponse {
+        return try await request(
+            endpoint: "/v1/plaid/items",
+            method: .GET,
+            body: nil,
+            responseType: PlaidItemsResponse.self
         )
     }
 

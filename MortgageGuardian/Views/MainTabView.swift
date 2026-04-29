@@ -17,7 +17,7 @@ struct MainTabView: View {
                     Label("Analysis", systemImage: "chart.bar.doc.horizontal")
                 }
 
-            PlaidConnectionView()
+            RealPlaidConnectionView()
                 .tabItem {
                     Label("Accounts", systemImage: "building.columns")
                 }
@@ -29,6 +29,7 @@ struct MainTabView: View {
         }
         .accentColor(.blue)
         .task { await AuthenticatedProbe.runOnce() }
+        .task { await PlaidProbe.runOnce() }
     }
 }
 
