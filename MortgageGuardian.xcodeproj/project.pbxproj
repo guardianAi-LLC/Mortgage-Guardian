@@ -20,6 +20,7 @@
 		TEST_BF_PS001 /* PlaidServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_PS001 /* PlaidServiceTests.swift */; };
 		TEST_BF_SK001 /* SecureKeyManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_SK001 /* SecureKeyManagerTests.swift */; };
 		TEST_BF_SS001 /* SecurityServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_SS001 /* SecurityServiceTests.swift */; };
+		TEST_BF_AC401 /* APIClient401RetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_AC401 /* APIClient401RetryTests.swift */; };
 		TEST_BF_TH001 /* TestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_TH001 /* TestHelpers.swift */; };
 		TEST_BF_TC001 /* TestConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_TC001 /* TestConfiguration.swift */; };
 		TEST_BF_TG001 /* MortgageTestDataGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_TG001 /* MortgageTestDataGenerator.swift */; };
@@ -43,6 +44,7 @@
 		PLAID001 /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = PLAID002 /* LinkKit */; };
 		AUTH_BUILD001 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AUTH001 /* AuthManager.swift */; };
 		API_BUILD001 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = API001 /* APIClient.swift */; };
+		AUTHPROBE_BUILD001 /* AuthenticatedProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = AUTHPROBE001 /* AuthenticatedProbe.swift */; };
 		DOCMGR_BUILD001 /* DocumentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DOCMGR001 /* DocumentManager.swift */; };
 		MTGACCTMGMT_BUILD001 /* MortgageAccountManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MTGACCTMGMT001 /* MortgageAccountManagementView.swift */; };
 		HELPFAQ_BUILD001 /* HelpFAQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = HELPFAQ001 /* HelpFAQView.swift */; };
@@ -157,6 +159,7 @@
 		DD7495A955FAFF22E8195003 /* SecureKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureKeyManager.swift; sourceTree = "<group>"; };
 		AUTH001 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		API001 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		AUTHPROBE001 /* AuthenticatedProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticatedProbe.swift; sourceTree = "<group>"; };
 		DOCMGR001 /* DocumentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentManager.swift; sourceTree = "<group>"; };
 		APIDOC001 /* APIClient+Documents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClient+Documents.swift"; sourceTree = "<group>"; };
 		APIPLAID001 /* APIClient+Plaid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClient+Plaid.swift"; sourceTree = "<group>"; };
@@ -176,6 +179,7 @@
 		TEST_FR_PS001 /* PlaidServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaidServiceTests.swift; sourceTree = "<group>"; };
 		TEST_FR_SK001 /* SecureKeyManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureKeyManagerTests.swift; sourceTree = "<group>"; };
 		TEST_FR_SS001 /* SecurityServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityServiceTests.swift; sourceTree = "<group>"; };
+		TEST_FR_AC401 /* APIClient401RetryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient401RetryTests.swift; sourceTree = "<group>"; };
 		TEST_FR_TH001 /* TestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestHelpers.swift; sourceTree = "<group>"; };
 		TEST_FR_TC001 /* TestConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestConfiguration.swift; sourceTree = "<group>"; };
 		TEST_FR_TG001 /* MortgageTestDataGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MortgageTestDataGenerator.swift; sourceTree = "<group>"; };
@@ -365,6 +369,7 @@
 				TEST_FR_PS001 /* PlaidServiceTests.swift */,
 				TEST_FR_SK001 /* SecureKeyManagerTests.swift */,
 				TEST_FR_SS001 /* SecurityServiceTests.swift */,
+				TEST_FR_AC401 /* APIClient401RetryTests.swift */,
 			);
 			path = UnitTests;
 			sourceTree = "<group>";
@@ -457,6 +462,7 @@
 			children = (
 				AUTH001 /* AuthManager.swift */,
 				API001 /* APIClient.swift */,
+				AUTHPROBE001 /* AuthenticatedProbe.swift */,
 				APIDOC001 /* APIClient+Documents.swift */,
 				APIPLAID001 /* APIClient+Plaid.swift */,
 				APIRPT001 /* APIClient+Reports.swift */,
@@ -764,6 +770,7 @@
 				1D000001294B8F5A00C8A8A8 /* MortgageGuardianApp.swift in Sources */,
 				AUTH_BUILD001 /* AuthManager.swift in Sources */,
 				API_BUILD001 /* APIClient.swift in Sources */,
+				AUTHPROBE_BUILD001 /* AuthenticatedProbe.swift in Sources */,
 				DOCMGR_BUILD001 /* DocumentManager.swift in Sources */,
 				F4FD0A761798883E8200D80F /* PlaidLinkService.swift in Sources */,
 				4C4443BB4BE8184C58A49BFD /* RealPlaidConnectionView.swift in Sources */,
@@ -890,6 +897,7 @@
 				TEST_BF_PS001 /* PlaidServiceTests.swift in Sources */,
 				TEST_BF_SK001 /* SecureKeyManagerTests.swift in Sources */,
 				TEST_BF_SS001 /* SecurityServiceTests.swift in Sources */,
+				TEST_BF_AC401 /* APIClient401RetryTests.swift in Sources */,
 				TEST_BF_TH001 /* TestHelpers.swift in Sources */,
 				TEST_BF_TC001 /* TestConfiguration.swift in Sources */,
 				TEST_BF_TG001 /* MortgageTestDataGenerator.swift in Sources */,

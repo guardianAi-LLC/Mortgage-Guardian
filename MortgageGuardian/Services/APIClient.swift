@@ -70,6 +70,13 @@ class APIClient {
         self.urlSession = URLSession(configuration: config)
     }
 
+    /// Internal initializer for tests. Allows injecting a `URLSession` whose
+    /// configuration includes a `URLProtocol` mock so the 401-retry behavior
+    /// can be exercised without real network I/O. Not for production use.
+    internal init(testSession: URLSession) {
+        self.urlSession = testSession
+    }
+
     func setAuthToken(_ token: String) {
         self.authToken = token
     }
@@ -87,18 +94,28 @@ class APIClient {
             method: method,
             body: body,
             responseType: responseType,
-            attempt: 1
+            attempt: 1,
+            didRefreshAuth: false
         )
     }
 
     // MARK: - Private retry logic
 
+    /// - Parameters:
+    ///   - attempt: Current attempt number for the 5xx/429 retry budget. Starts at 1.
+    ///   - didRefreshAuth: True when this call is the post-401-refresh retry. Used to
+    ///     bound the auth-refresh path to a single retry — a second 401 throws unconditionally.
+    ///     The 5xx/429 retry budget (`attempt`/`maxRetries`) is independent of this flag.
+    ///
+    /// Note on the auth hook: `await onAuthenticationRequired?()` is awaited; if the hook
+    /// throws, the throw propagates to the caller (matching prior behavior).
     private func performRequest<T: Decodable>(
         endpoint: String,
         method: HTTPMethod,
         body: Data?,
         responseType: T.Type,
-        attempt: Int
+        attempt: Int,
+        didRefreshAuth: Bool = false
     ) async throws -> T {
         guard let url = URL(string: "\(baseURL)\(endpoint)") else {
             throw APIError.invalidURL
@@ -124,7 +141,7 @@ class APIClient {
                 throw APIError.invalidResponse
             }
 
-            // Retry on retryable status codes
+            // Retry on retryable status codes (5xx/429) — independent of the 401 refresh path.
             if retryableStatusCodes.contains(httpResponse.statusCode) && attempt <= maxRetries {
                 let delay = calculateBackoffDelay(for: attempt)
                 logger.warning("Retryable error (status \(httpResponse.statusCode)), retrying in \(delay)s")
@@ -134,7 +151,8 @@ class APIClient {
                     method: method,
                     body: body,
                     responseType: responseType,
-                    attempt: attempt + 1
+                    attempt: attempt + 1,
+                    didRefreshAuth: didRefreshAuth
                 )
             }
 
@@ -142,9 +160,26 @@ class APIClient {
             case 200...299:
                 break
             case 401:
-                logger.error("Authentication required - token may be expired")
-                await onAuthenticationRequired?()
-                throw APIError.authenticationRequired
+                if !didRefreshAuth {
+                    // First 401 on this outermost request: trigger the refresh hook
+                    // (typically AuthManager.refreshToken()), then re-issue exactly once.
+                    logger.info("401 received — refreshing token, retrying once")
+                    await onAuthenticationRequired?()
+                    return try await performRequest(
+                        endpoint: endpoint,
+                        method: method,
+                        body: body,
+                        responseType: responseType,
+                        attempt: 1,
+                        didRefreshAuth: true
+                    )
+                } else {
+                    // Second 401 after refresh — give up. Caller (and AuthManager via the
+                    // hook, which already cleared the token) will route the user back
+                    // to AuthView through the standard signed-out branch.
+                    logger.error("Second 401 after refresh — giving up")
+                    throw APIError.authenticationRequired
+                }
             default:
                 let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
                 throw APIError.serverError(httpResponse.statusCode, errorMessage)
@@ -161,7 +196,7 @@ class APIClient {
         } catch let error as APIError {
             throw error
         } catch {
-            // Network errors: retry with backoff
+            // Network errors: retry with backoff (independent of auth-refresh flag).
             if attempt <= maxRetries {
                 let delay = calculateBackoffDelay(for: attempt)
                 logger.warning("Network error, retrying in \(delay)s: \(error.localizedDescription)")
@@ -171,7 +206,8 @@ class APIClient {
                     method: method,
                     body: body,
                     responseType: responseType,
-                    attempt: attempt + 1
+                    attempt: attempt + 1,
+                    didRefreshAuth: didRefreshAuth
                 )
             }
             logger.error("Request failed after \(attempt) attempts: \(error.localizedDescription)")
