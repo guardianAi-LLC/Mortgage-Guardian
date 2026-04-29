@@ -12,6 +12,8 @@
 		USERPROFILE_BUILD001 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = USERPROFILE001 /* UserProfile.swift */; };
 		MORTGAGEDOC_BUILD001 /* MortgageDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = MORTGAGEDOC001 /* MortgageDocument.swift */; };
 		AUDITRESULT_BUILD001 /* AuditResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = AUDITRESULT001 /* AuditResult.swift */; };
+		BACKENDFINDING_BUILD001 /* BackendFinding.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACKENDFINDING001 /* BackendFinding.swift */; };
+		BACKENDAUDITREPORT_BUILD001 /* BackendAuditReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACKENDAUDITREPORT001 /* BackendAuditReport.swift */; };
 		TRANSACTION_BUILD001 /* Transaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = TRANSACTION001 /* Transaction.swift */; };
 		USERSTORE_BUILD001 /* UserStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = USERSTORE001 /* UserStore.swift */; };
 		TEST_BF_AI001 /* AIAnalysisServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_AI001 /* AIAnalysisServiceTests.swift */; };
@@ -173,6 +175,8 @@
 		USERPROFILE001 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		MORTGAGEDOC001 /* MortgageDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MortgageDocument.swift; sourceTree = "<group>"; };
 		AUDITRESULT001 /* AuditResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuditResult.swift; sourceTree = "<group>"; };
+		BACKENDFINDING001 /* BackendFinding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendFinding.swift; sourceTree = "<group>"; };
+		BACKENDAUDITREPORT001 /* BackendAuditReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendAuditReport.swift; sourceTree = "<group>"; };
 		TRANSACTION001 /* Transaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transaction.swift; sourceTree = "<group>"; };
 		USERSTORE001 /* UserStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStore.swift; sourceTree = "<group>"; };
 		TEST_FR_AI001 /* AIAnalysisServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAnalysisServiceTests.swift; sourceTree = "<group>"; };
@@ -440,6 +444,8 @@
 				USERPROFILE001 /* UserProfile.swift */,
 				MORTGAGEDOC001 /* MortgageDocument.swift */,
 				AUDITRESULT001 /* AuditResult.swift */,
+				BACKENDFINDING001 /* BackendFinding.swift */,
+				BACKENDAUDITREPORT001 /* BackendAuditReport.swift */,
 				TRANSACTION001 /* Transaction.swift */,
 				MODELS_FR_001 /* ErrorCategorizationModels.swift */,
 				MODELS_FR_002 /* LetterTemplate.swift */,
@@ -791,6 +797,8 @@
 				USERPROFILE_BUILD001 /* UserProfile.swift in Sources */,
 				MORTGAGEDOC_BUILD001 /* MortgageDocument.swift in Sources */,
 				AUDITRESULT_BUILD001 /* AuditResult.swift in Sources */,
+				BACKENDFINDING_BUILD001 /* BackendFinding.swift in Sources */,
+				BACKENDAUDITREPORT_BUILD001 /* BackendAuditReport.swift in Sources */,
 				TRANSACTION_BUILD001 /* Transaction.swift in Sources */,
 				USERSTORE_BUILD001 /* UserStore.swift in Sources */,
 				CORE_BF_001 /* AppState.swift in Sources */,

@@ -131,6 +131,30 @@ struct DocumentProcessRequest: Encodable {
     let documentType: String?
 }
 
+// MARK: - Document Process Response (M001/S04)
+
+/// Wire-format envelope for `POST /v1/documents/process`. Mirrors the
+/// shape `documentPipelineService.processDocument` returns:
+///   { success, documentId, status, classificationResults,
+///     analysisResults, auditReport, caseId, steps }
+///
+/// `auditReport` is optional because audits run lazily and the route
+/// can return early in degraded modes (Plaid down, AI quota exceeded,
+/// etc.). All decoded fields are typed as `AnyCodable` for the still-
+/// fluid sub-objects (classification/analysis/steps) — only the
+/// audit-report shape is locked down for S04, since that's what the
+/// iOS UI consumes.
+struct DocumentProcessResponse: Decodable {
+    let success: Bool?
+    let documentId: String?
+    let status: String?
+    let caseId: String?
+    let auditReport: BackendAuditReport?
+    let classificationResults: AnyCodable?
+    let analysisResults: AnyCodable?
+    let steps: AnyCodable?
+}
+
 // MARK: - Delete Response
 
 struct DeleteResponse: Decodable {
@@ -245,22 +269,32 @@ extension APIClient {
 
     // MARK: Process Document
 
+    /// POST `/v1/documents/process` — runs the full backend pipeline
+    /// (OCR → classify → analyze → audit) for a previously-uploaded
+    /// document and returns the structured response, including the
+    /// `auditReport` produced by `_runAudit` (M001/S04).
+    ///
+    /// Marked `@discardableResult` because most existing call sites
+    /// (DocumentCaptureViewModel, DocumentsView, EnhancedPlaidService)
+    /// fire-and-forget; only the new audit-aware UI in T04 will read
+    /// the response.
+    @discardableResult
     func processDocument(
         documentId: String,
         documentText: String? = nil,
         documentType: String? = nil
-    ) async throws {
+    ) async throws -> DocumentProcessResponse {
         let requestBody = DocumentProcessRequest(
             documentId: documentId,
             documentText: documentText,
             documentType: documentType
         )
         let body = try JSONEncoder().encode(requestBody)
-        let _: DeleteResponse = try await request(
+        return try await request(
             endpoint: "/v1/documents/process",
             method: .POST,
             body: body,
-            responseType: DeleteResponse.self
+            responseType: DocumentProcessResponse.self
         )
     }
 

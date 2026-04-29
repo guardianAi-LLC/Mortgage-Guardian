@@ -17,6 +17,13 @@ struct AuditResult: Identifiable, Codable {
     var supportingDocuments: [SupportingDocument] = []
     let createdDate: Date
 
+    // M001/S04 — regulatory evidence carried over from the backend audit
+    // pipeline. Optional so existing fixtures and the locally-generated
+    // `sampleResult()` continue to compile without these fields.
+    var citation: String? = nil
+    var legalBasis: String? = nil
+    var plaidEvidence: PlaidEvidence? = nil
+
     enum IssueType: String, CaseIterable, Codable {
         case misappliedPayment = "misapplied_payment"
         case latePaymentError = "late_payment_error"
@@ -298,5 +305,118 @@ extension AuditResult {
             ],
             createdDate: Date()
         )
+    }
+}
+
+// MARK: - BackendFinding → AuditResult presenter (M001/S04/T03)
+
+extension AuditResult {
+    /// Map a wire-format `BackendFinding` (from the audit pipeline) into
+    /// the iOS-side `AuditResult` consumed by existing UI components.
+    ///
+    /// - Severity: backend's lowercase string → `Severity` enum, defaulting
+    ///   to `.medium` when the backend emits an unknown value.
+    /// - IssueType: derived from `ruleId` via a small known-rule map; falls
+    ///   back to `.unauthorizedFee` (a generic "something looks wrong"
+    ///   bucket) when the rule isn't recognized so the UI never crashes
+    ///   on a new backend rule shipping ahead of an iOS update.
+    /// - DetectionMethod: `.plaidVerification` when at least one matched
+    ///   transaction is attached, otherwise `.aiAnalysis` (the rule engine
+    ///   acted on document-extracted evidence alone).
+    /// - Confidence: passed through when present; defaults to 0.85 to
+    ///   match the iOS UI contract (S04 PLAN, step 1).
+    static func from(backendFinding f: BackendFinding) -> AuditResult {
+        let severity = mapSeverity(f.severity)
+        let issueType = mapIssueType(ruleId: f.ruleId, citation: f.citation, statute: f.statuteName)
+        let matched = f.plaidEvidence.matchedTransactions
+        let detectionMethod: DetectionMethod = matched.isEmpty ? .aiAnalysis : .plaidVerification
+        let confidence = f.confidence ?? 0.85
+
+        let title = "\(f.statuteName) — \(f.sectionTitle)"
+        let detailedExplanation: String = {
+            var parts: [String] = []
+            if !f.description.isEmpty { parts.append(f.description) }
+            if let basis = f.legalBasis, !basis.isEmpty { parts.append(basis) }
+            return parts.joined(separator: "\n\n")
+        }()
+        let suggestedAction = "Review the cited regulatory provision and dispute via Notice of Error if applicable."
+
+        let supportingDocs: [SupportingDocument] = f.sourceDocuments.map { docName in
+            SupportingDocument(
+                documentId: nil,
+                documentName: docName,
+                documentType: "PDF"
+            )
+        }
+
+        return AuditResult(
+            issueType: issueType,
+            severity: severity,
+            title: title,
+            description: f.description,
+            detailedExplanation: detailedExplanation,
+            suggestedAction: suggestedAction,
+            affectedAmount: nil,
+            detectionMethod: detectionMethod,
+            confidence: confidence,
+            evidenceText: f.legalBasis,
+            calculationDetails: nil,
+            supportingDocuments: supportingDocs,
+            createdDate: Date(),
+            citation: f.citation,
+            legalBasis: f.legalBasis,
+            plaidEvidence: f.plaidEvidence
+        )
+    }
+
+    // MARK: - Private mapping helpers
+
+    private static func mapSeverity(_ raw: String) -> Severity {
+        switch raw.lowercased() {
+        case "critical": return .critical
+        case "high": return .high
+        case "medium": return .medium
+        case "low": return .low
+        // Backend emits "info" (see expected-findings.json severityEnum)
+        // but the iOS enum has no `.info` case — treat as low so the
+        // UI still renders something instead of crashing.
+        case "info": return .low
+        default: return .medium
+        }
+    }
+
+    /// Heuristic mapping from backend `ruleId` (and citation/statute as
+    /// hints) to the iOS `IssueType` enum. The iOS enum predates the
+    /// rule-engine taxonomy by months and is not 1:1 — for unknown
+    /// rules we pick a sensible RESPA/TILA bucket from the citation
+    /// prefix, falling back to `.unauthorizedFee` ("something is
+    /// wrong on the statement") so the UI always has an icon and a
+    /// display name.
+    private static func mapIssueType(ruleId: String, citation: String, statute: String) -> IssueType {
+        // Known rule-engine ruleIds. Extend as new rules ship.
+        switch ruleId {
+        case "rule-respa-001":
+            // RESPA §10 — escrow accounting violations.
+            return .respaEscrowDisclosureViolation
+        case "rule-respa-004":
+            // RESPA §8 — kickbacks/unearned fees.
+            return .respaSection8Violation
+        case "rule-cfpb-006":
+            // CFPB early intervention requirement.
+            return .respaInformationRequestViolation
+        default:
+            break
+        }
+
+        // Citation-prefix heuristics for unknown ruleIds.
+        let cit = citation.uppercased()
+        if cit.contains("12 CFR § 1024") || statute.uppercased().contains("RESPA") {
+            return .respaNoticeOfErrorViolation
+        }
+        if cit.contains("12 CFR § 1026") || statute.uppercased().contains("TILA") {
+            return .tilaPeriodicStatementViolation
+        }
+
+        return .unauthorizedFee
     }
 }
