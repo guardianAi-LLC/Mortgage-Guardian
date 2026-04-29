@@ -23,6 +23,7 @@ const { createLogger } = require('../utils/logger');
 const reportAggregationService = require('./reportAggregationService');
 const confidenceScoringService = require('./confidenceScoringService');
 const disputeLetterService = require('./disputeLetterService');
+const formatters = require('./reportFormattersService');
 const { validateConsolidatedReport } = require('../schemas/consolidatedReportSchema');
 const { RECOMMENDATION_PRIORITY } = require('../config/consolidatedReportConfig');
 
@@ -377,6 +378,12 @@ class ConsolidatedReportService {
           if (a.pageReference != null) anomaly.pageReference = a.pageReference;
           if (a.quotedText != null) anomaly.quotedText = a.quotedText;
           if (a.sourceDocument != null) anomaly.sourceDocument = a.sourceDocument;
+          // Preserve structured reasoning fields (Plan 52-06)
+          if (Array.isArray(a.reasoningSteps) && a.reasoningSteps.length > 0) {
+            anomaly.reasoningSteps = a.reasoningSteps;
+          }
+          if (a.confidence != null) anomaly.confidence = a.confidence;
+          if (a.confidenceLevel != null) anomaly.confidenceLevel = a.confidenceLevel;
           return anomaly;
         }),
         keyFindings: da.keyFindings || []
@@ -414,6 +421,19 @@ class ConsolidatedReportService {
           documentAnomalies: detailAnomalyCount
         }
       });
+    }
+
+    // Phase 53-02: attach pre-formatted display fields and an executiveSummary
+    // to the assembled report. Wrapped in try/catch — graceful degradation:
+    // any formatter failure is logged as a warning, executiveSummary falls
+    // back to null, and report generation continues uninterrupted.
+    try {
+      this._attachDisplayFields(report);
+      report.executiveSummary = this._buildExecutiveSummary(report);
+    } catch (e) {
+      warnings.push(`Display field generation failed: ${e.message}`);
+      report.executiveSummary = null;
+      logger.warn('Display field generation failed', { caseId, error: e.message });
     }
 
     stepMeta.assemble = {
@@ -618,6 +638,13 @@ class ConsolidatedReportService {
         };
       }
 
+      // Preserve structured reasoning fields (Plan 52-06)
+      if (Array.isArray(disc.reasoningSteps) && disc.reasoningSteps.length > 0) {
+        normalized.reasoningSteps = disc.reasoningSteps;
+      }
+      if (disc.confidence != null) normalized.confidence = disc.confidence;
+      if (disc.confidenceLevel != null) normalized.confidenceLevel = disc.confidenceLevel;
+
       return normalized;
     });
   }
@@ -670,6 +697,262 @@ class ConsolidatedReportService {
       matchedCount,
       unmatchedCount,
       findings
+    };
+  }
+
+  /**
+   * Phase 53-02: walk every finding (anomaly, forensic discrepancy, federal
+   * and state compliance violation) and attach pre-formatted display strings:
+   *   - formattedCitation  (canonical `[DocName, p.N]: "quotedText"` form)
+   *   - reasoningSummary   (joined reasoning chain)
+   *   - confidenceLabel    (canonical `Tier (0.NN)` form)
+   *
+   * Mutates `report` in place. Each formatter returns null on insufficient
+   * input — un-enriched findings produce null display fields, which the
+   * schema accepts as valid defaults.
+   *
+   * @param {Object} report - Assembled consolidated report
+   * @private
+   */
+  _attachDisplayFields(report) {
+    if (!report || typeof report !== 'object') return;
+
+    // Local helpers — pick first-non-null source/page/quote for each finding type
+    const pickAnomalyName = (a) =>
+      (a.sourceDocument && a.sourceDocument.name) || null;
+    const pickAnomalyPage = (a) =>
+      a.pageReference != null ? a.pageReference : null;
+
+    const pickDiscrepancyEvidence = (d) => {
+      // Prefer documentA, fall back to documentB
+      if (d.documentA && d.documentA.documentName) {
+        return {
+          name: d.documentA.documentName,
+          page: d.documentA.pageNumber != null ? d.documentA.pageNumber : null,
+          quote: d.documentA.quotedText || null
+        };
+      }
+      if (d.documentB && d.documentB.documentName) {
+        return {
+          name: d.documentB.documentName,
+          page: d.documentB.pageNumber != null ? d.documentB.pageNumber : null,
+          quote: d.documentB.quotedText || null
+        };
+      }
+      return { name: null, page: null, quote: null };
+    };
+
+    const pickViolationEvidence = (v) => {
+      // Prefer pageReferences[0], fall back to sourceDocuments[0]
+      if (Array.isArray(v.pageReferences) && v.pageReferences.length > 0) {
+        const pr = v.pageReferences[0];
+        // Look for a matching supportingFinding quote
+        let quote = null;
+        if (Array.isArray(v.supportingFindings) && v.supportingFindings.length > 0) {
+          const q = v.supportingFindings.find((sf) => sf && sf.quotedText);
+          if (q) quote = q.quotedText;
+        }
+        return {
+          name: pr.documentName || null,
+          page: pr.pageNumber != null ? pr.pageNumber : null,
+          quote
+        };
+      }
+      if (Array.isArray(v.sourceDocuments) && v.sourceDocuments.length > 0) {
+        const sd = v.sourceDocuments[0];
+        let quote = null;
+        if (Array.isArray(v.supportingFindings) && v.supportingFindings.length > 0) {
+          const q = v.supportingFindings.find((sf) => sf && sf.quotedText);
+          if (q) quote = q.quotedText;
+        }
+        return {
+          name: sd.name || null,
+          page: null,
+          quote
+        };
+      }
+      return { name: null, page: null, quote: null };
+    };
+
+    // ----- documentAnalysis[*].anomalies -----
+    if (Array.isArray(report.documentAnalysis)) {
+      for (const da of report.documentAnalysis) {
+        if (!Array.isArray(da.anomalies)) continue;
+        for (const anomaly of da.anomalies) {
+          anomaly.formattedCitation = formatters.formatCitation({
+            documentName: pickAnomalyName(anomaly),
+            pageNumber: pickAnomalyPage(anomaly),
+            quotedText: anomaly.quotedText
+          });
+          anomaly.reasoningSummary = formatters.formatReasoningChain(anomaly.reasoningSteps);
+          anomaly.confidenceLabel = formatters.formatConfidenceLabel(
+            anomaly.confidence,
+            anomaly.confidenceLevel
+          );
+        }
+      }
+    }
+
+    // ----- forensicFindings.discrepancies -----
+    if (report.forensicFindings && Array.isArray(report.forensicFindings.discrepancies)) {
+      for (const disc of report.forensicFindings.discrepancies) {
+        const ev = pickDiscrepancyEvidence(disc);
+        disc.formattedCitation = formatters.formatCitation({
+          documentName: ev.name,
+          pageNumber: ev.page,
+          quotedText: ev.quote
+        });
+        disc.reasoningSummary = formatters.formatReasoningChain(disc.reasoningSteps);
+        disc.confidenceLabel = formatters.formatConfidenceLabel(
+          disc.confidence,
+          disc.confidenceLevel
+        );
+      }
+    }
+
+    // ----- complianceFindings.federalViolations + stateViolations -----
+    if (report.complianceFindings) {
+      const violationGroups = [
+        report.complianceFindings.federalViolations,
+        report.complianceFindings.stateViolations
+      ];
+      for (const group of violationGroups) {
+        if (!Array.isArray(group)) continue;
+        for (const v of group) {
+          const ev = pickViolationEvidence(v);
+          v.formattedCitation = formatters.formatCitation({
+            documentName: ev.name,
+            pageNumber: ev.page,
+            quotedText: ev.quote
+          });
+          v.reasoningSummary = formatters.formatReasoningChain(v.reasoningSteps);
+          v.confidenceLabel = formatters.formatConfidenceLabel(
+            v.confidence,
+            v.confidenceLevel
+          );
+        }
+      }
+    }
+  }
+
+  /**
+   * Phase 53-02: build a top-level executive summary from the assembled report.
+   * Returns `null` when the report has zero findings (nothing to summarize).
+   *
+   * Returns:
+   *   {
+   *     headline:     string  — `"<RISK> risk: <N> finding(s) across <M> document(s)"`,
+   *     narrative:    string  — markdown, 2-3 paragraphs (case identity, severity, top findings),
+   *     keyFindings:  string[] — up to 5 highest-severity finding lines,
+   *     generatedAt:  string  — ISO-8601
+   *   }
+   *
+   * @param {Object} report
+   * @returns {Object|null}
+   * @private
+   */
+  _buildExecutiveSummary(report) {
+    if (!report || typeof report !== 'object') return null;
+
+    const totalFindings = (report.findingSummary && report.findingSummary.totalFindings) || 0;
+    if (totalFindings === 0) return null;
+
+    const documentCount = (report.caseSummary && report.caseSummary.documentCount) || 0;
+    const riskLevel = (report.overallRiskLevel || 'unknown').toUpperCase();
+
+    // Headline ----------------------------------------------------------------
+    const headline = `${riskLevel} risk: ${totalFindings} finding(s) across ${documentCount} document(s)`;
+
+    // Collect every finding into a flat list with severity for ranking --------
+    const allFindings = [];
+    if (Array.isArray(report.documentAnalysis)) {
+      for (const da of report.documentAnalysis) {
+        if (!Array.isArray(da.anomalies)) continue;
+        for (const a of da.anomalies) {
+          allFindings.push({
+            severity: a.severity,
+            title: a.description,
+            sourceDocument: a.sourceDocument || (da.documentName ? { name: da.documentName } : null),
+            pageReference: a.pageReference != null ? a.pageReference : null,
+            confidence: a.confidence,
+            confidenceLevel: a.confidenceLevel
+          });
+        }
+      }
+    }
+    if (report.forensicFindings && Array.isArray(report.forensicFindings.discrepancies)) {
+      for (const d of report.forensicFindings.discrepancies) {
+        const docA = d.documentA || {};
+        allFindings.push({
+          severity: d.severity,
+          title: d.description,
+          sourceDocument: docA.documentName ? { name: docA.documentName } : null,
+          pageReference: docA.pageNumber != null ? docA.pageNumber : null,
+          confidence: d.confidence,
+          confidenceLevel: d.confidenceLevel
+        });
+      }
+    }
+    if (report.complianceFindings) {
+      const groups = [
+        report.complianceFindings.federalViolations,
+        report.complianceFindings.stateViolations
+      ];
+      for (const group of groups) {
+        if (!Array.isArray(group)) continue;
+        for (const v of group) {
+          const firstSrc = (Array.isArray(v.sourceDocuments) && v.sourceDocuments.length > 0)
+            ? v.sourceDocuments[0]
+            : null;
+          const firstPage = (Array.isArray(v.pageReferences) && v.pageReferences.length > 0)
+            ? v.pageReferences[0]
+            : null;
+          allFindings.push({
+            severity: v.severity,
+            title: v.description,
+            sourceDocument: firstSrc ? { name: firstSrc.name } : (firstPage ? { name: firstPage.documentName } : null),
+            pageReference: firstPage ? firstPage.pageNumber : null,
+            confidence: v.confidence,
+            confidenceLevel: v.confidenceLevel
+          });
+        }
+      }
+    }
+
+    // Sort by severity (highest first) ---------------------------------------
+    allFindings.sort((a, b) => {
+      return (SEVERITY_RANK[b.severity] || 0) - (SEVERITY_RANK[a.severity] || 0);
+    });
+
+    // keyFindings: top 5 lines via canonical formatter -----------------------
+    const keyFindings = allFindings.slice(0, 5).map((f) => formatters.formatExecutiveSummaryLine(f));
+
+    // Narrative: 3 paragraphs ------------------------------------------------
+    const cs = report.caseSummary || {};
+    const para1 = `Case for borrower **${cs.borrowerName || 'Unknown'}** on loan **${cs.loanNumber || 'Unknown'}** serviced by **${cs.servicerName || 'Unknown'}**, covering ${documentCount} document(s).`;
+
+    const sev = (report.findingSummary && report.findingSummary.bySeverity) || {};
+    const sevParts = [];
+    if (sev.critical) sevParts.push(`${sev.critical} critical`);
+    if (sev.high) sevParts.push(`${sev.high} high`);
+    if (sev.medium) sevParts.push(`${sev.medium} medium`);
+    if (sev.low) sevParts.push(`${sev.low} low`);
+    if (sev.info) sevParts.push(`${sev.info} info`);
+    const sevText = sevParts.length > 0 ? sevParts.join(', ') : 'none';
+    const para2 = `Severity breakdown: ${sevText}. Overall risk level: **${riskLevel}**.`;
+
+    const top3Lines = allFindings.slice(0, 3).map((f) => `- ${formatters.formatExecutiveSummaryLine(f)}`);
+    const para3 = top3Lines.length > 0
+      ? `Top findings:\n${top3Lines.join('\n')}`
+      : 'No findings to highlight.';
+
+    const narrative = `${para1}\n\n${para2}\n\n${para3}`;
+
+    return {
+      headline,
+      narrative,
+      keyFindings,
+      generatedAt: new Date().toISOString()
     };
   }
 

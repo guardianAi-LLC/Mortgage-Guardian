@@ -376,8 +376,11 @@ describe('Report Pipeline End-to-End Integrity', () => {
     expect(doc1).toBeDefined();
     expect(doc1.anomalies).toHaveLength(2);
 
+    // Use toMatchObject — Phase 53-02 attaches additional null display fields
+    // (formattedCitation, reasoningSummary, confidenceLabel) that are not part
+    // of this test's contract.
     const anom1 = doc1.anomalies.find(a => a.id === 'anom-e2e-001');
-    expect(anom1).toEqual({
+    expect(anom1).toMatchObject({
       id: 'anom-e2e-001',
       field: 'escrowBalance',
       type: 'amount_mismatch',
@@ -386,7 +389,7 @@ describe('Report Pipeline End-to-End Integrity', () => {
     });
 
     const anom2 = doc1.anomalies.find(a => a.id === 'anom-e2e-002');
-    expect(anom2).toEqual({
+    expect(anom2).toMatchObject({
       id: 'anom-e2e-002',
       field: 'interestRate',
       type: 'calculation_error',

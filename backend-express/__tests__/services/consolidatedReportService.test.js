@@ -786,4 +786,209 @@ describe('ConsolidatedReportService', () => {
       expect(complianceRec.relatedFindingIds).toContain('sv-001');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Phase 53-02: executive summary and per-finding display fields
+  // -------------------------------------------------------------------------
+  describe('executive summary and display fields (Phase 53-02)', () => {
+
+    it('populates executiveSummary and per-finding display fields when findings are enriched', async () => {
+      const enrichedData = makeAggregatedData({
+        documentAnalyses: [
+          {
+            documentId: 'doc-001',
+            documentName: 'statement.pdf',
+            type: 'mortgage_statement',
+            subtype: 'monthly',
+            completenessScore: 85,
+            anomalyCount: 1,
+            anomalies: [
+              {
+                id: 'anom-001',
+                field: 'escrowBalance',
+                type: 'amount_mismatch',
+                severity: 'high',
+                description: 'Escrow mismatch',
+                pageReference: 3,
+                quotedText: 'Escrow Balance: $5,000.00',
+                sourceDocument: { id: 'doc-001', name: 'statement.pdf', type: 'mortgage_statement', subtype: 'monthly' },
+                reasoningSteps: ['expected $5,450', 'observed $5,000', 'difference of $450'],
+                confidence: 0.92,
+                confidenceLevel: 'high'
+              }
+            ],
+            keyFindings: ['Escrow issue']
+          }
+        ],
+        forensicReport: {
+          caseId: 'case-001',
+          discrepancies: [
+            {
+              id: 'disc-001',
+              type: 'amount_mismatch',
+              severity: 'critical',
+              description: 'Payment differs',
+              documentA: {
+                documentId: 'doc-001',
+                documentName: 'statement.pdf',
+                pageNumber: 2,
+                quotedText: 'Monthly Payment: $1,500'
+              },
+              documentB: {
+                documentId: 'doc-002',
+                documentName: 'disclosure.pdf',
+                pageNumber: 5,
+                quotedText: 'Monthly Payment: $1,800'
+              },
+              reasoningSteps: ['statement shows $1,500', 'disclosure shows $1,800'],
+              confidence: 0.85,
+              confidenceLevel: 'high'
+            }
+          ],
+          timeline: { events: [], violations: [] },
+          paymentVerification: null
+        },
+        complianceReport: {
+          violations: [
+            {
+              id: 'viol-001',
+              statuteId: 'RESPA',
+              sectionId: 'sec-6',
+              statuteName: 'RESPA',
+              sectionTitle: 'Section 6',
+              citation: '12 U.S.C. § 2605(e)',
+              severity: 'critical',
+              description: 'Failure to acknowledge QWR',
+              legalBasis: 'RESPA Section 6(e)',
+              recommendations: ['Send QWR'],
+              sourceDocuments: [{ id: 'doc-001', name: 'response-letter.pdf', type: 'correspondence' }],
+              supportingFindings: [{ findingId: 'anom-001', findingType: 'anomaly', quotedText: 'No response received' }],
+              pageReferences: [{ documentId: 'doc-001', documentName: 'response-letter.pdf', pageNumber: 1 }],
+              reasoningSteps: ['QWR sent on day 0', 'no ack within 5 days', 'thus violation'],
+              confidence: 0.95,
+              confidenceLevel: 'high'
+            }
+          ],
+          stateViolations: [],
+          jurisdiction: null
+        }
+      });
+      reportAggregationService.gatherCaseFindings.mockResolvedValue(enrichedData);
+
+      const result = await consolidatedReportService.generateReport('case-001', 'user-001', { skipPersistence: true });
+
+      expect(result.error).toBeUndefined();
+
+      // Executive summary populated
+      expect(result.executiveSummary).not.toBeNull();
+      expect(result.executiveSummary.headline).toMatch(/HIGH risk/);
+      expect(result.executiveSummary.headline).toMatch(/3 finding\(s\)/);
+      expect(result.executiveSummary.narrative).toEqual(expect.any(String));
+      expect(result.executiveSummary.narrative.length).toBeGreaterThan(0);
+      expect(result.executiveSummary.keyFindings).toEqual(expect.any(Array));
+      expect(result.executiveSummary.keyFindings.length).toBeGreaterThan(0);
+      expect(result.executiveSummary.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+
+      // Anomaly display fields
+      const anomaly = result.documentAnalysis[0].anomalies[0];
+      expect(anomaly.formattedCitation).toBe('[statement.pdf, p.3]: "Escrow Balance: $5,000.00"');
+      expect(anomaly.reasoningSummary).toMatch(/expected \$5,450/);
+      expect(anomaly.confidenceLabel).toBe('High (0.92)');
+
+      // Discrepancy display fields (uses documentA)
+      const disc = result.forensicFindings.discrepancies[0];
+      expect(disc.formattedCitation).toBe('[statement.pdf, p.2]: "Monthly Payment: $1,500"');
+      expect(disc.reasoningSummary).toMatch(/statement shows/);
+      expect(disc.confidenceLabel).toBe('High (0.85)');
+
+      // Violation display fields (uses pageReferences[0] + supportingFindings[0].quotedText)
+      const viol = result.complianceFindings.federalViolations[0];
+      expect(viol.formattedCitation).toBe('[response-letter.pdf, p.1]: "No response received"');
+      expect(viol.reasoningSummary).toMatch(/no ack within 5 days/);
+      expect(viol.confidenceLabel).toBe('High (0.95)');
+    });
+
+    it('produces executiveSummary headline+narrative even when findings have no enrichment, and per-finding display fields are null', async () => {
+      // Default fixture: anomalies/discrepancies/violations have no
+      // page/quote/reasoning/confidence — display fields should degrade to null.
+      const result = await consolidatedReportService.generateReport('case-001', 'user-001', { skipPersistence: true });
+
+      expect(result.error).toBeUndefined();
+
+      // Executive summary still has headline + narrative + keyFindings
+      expect(result.executiveSummary).not.toBeNull();
+      expect(result.executiveSummary.headline).toMatch(/risk/);
+      expect(result.executiveSummary.narrative.length).toBeGreaterThan(0);
+      expect(Array.isArray(result.executiveSummary.keyFindings)).toBe(true);
+
+      // Per-finding display fields are null (no enrichment present)
+      const anomaly = result.documentAnalysis[0].anomalies[0];
+      expect(anomaly.formattedCitation).toBeNull();
+      expect(anomaly.reasoningSummary).toBeNull();
+      expect(anomaly.confidenceLabel).toBeNull();
+
+      const disc = result.forensicFindings.discrepancies[0];
+      expect(disc.formattedCitation).toBeNull();
+      expect(disc.reasoningSummary).toBeNull();
+      expect(disc.confidenceLabel).toBeNull();
+
+      const viol = result.complianceFindings.federalViolations[0];
+      expect(viol.formattedCitation).toBeNull();
+      expect(viol.reasoningSummary).toBeNull();
+      expect(viol.confidenceLabel).toBeNull();
+    });
+
+    it('returns executiveSummary=null when there are zero findings', async () => {
+      const emptyData = makeAggregatedData({
+        documentAnalyses: [],
+        forensicReport: null,
+        complianceReport: null
+      });
+      reportAggregationService.gatherCaseFindings.mockResolvedValue(emptyData);
+      reportAggregationService.extractFindingSummary.mockReturnValue({
+        totalFindings: 0,
+        bySeverity: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
+        byCategory: {
+          documentAnomalies: 0,
+          crossDocDiscrepancies: 0,
+          timelineViolations: 0,
+          paymentIssues: 0,
+          federalViolations: 0,
+          stateViolations: 0
+        }
+      });
+      confidenceScoringService.determineRiskLevel.mockReturnValue('clean');
+
+      const result = await consolidatedReportService.generateReport('case-001', 'user-001', { skipPersistence: true });
+
+      expect(result.error).toBeUndefined();
+      expect(result.findingSummary.totalFindings).toBe(0);
+      expect(result.executiveSummary).toBeNull();
+      expect(result.documentAnalysis).toHaveLength(0);
+    });
+
+    it('degrades gracefully when a formatter throws — executiveSummary=null, warning logged, generation completes', async () => {
+      // Force formatExecutiveSummaryLine to throw so _buildExecutiveSummary
+      // bombs out and the try/catch fallback kicks in.
+      const formatters = require('../../services/reportFormattersService');
+      const spy = jest.spyOn(formatters, 'formatExecutiveSummaryLine').mockImplementation(() => {
+        throw new Error('Formatter exploded');
+      });
+
+      try {
+        const result = await consolidatedReportService.generateReport('case-001', 'user-001', { skipPersistence: true });
+
+        expect(result.error).toBeUndefined();
+        expect(result.executiveSummary).toBeNull();
+        expect(result._metadata.warnings).toEqual(
+          expect.arrayContaining([expect.stringContaining('Display field generation failed')])
+        );
+        expect(result._metadata.warnings).toEqual(
+          expect.arrayContaining([expect.stringContaining('Formatter exploded')])
+        );
+      } finally {
+        spy.mockRestore();
+      }
+    });
+  });
 });
