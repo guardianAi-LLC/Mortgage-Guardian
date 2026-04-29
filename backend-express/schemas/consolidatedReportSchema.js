@@ -129,6 +129,26 @@ const findingSummarySchema = Joi.object({
 }).required();
 
 // ---------------------------------------------------------------------------
+// Section: executiveSummary
+// Pre-rendered narrative summary of the report (Phase 53-02).
+// Optional — when present, gives downstream consumers a uniform headline +
+// markdown narrative + key-findings list without re-implementing formatting.
+// ---------------------------------------------------------------------------
+const executiveSummarySchema = Joi.object({
+  /** Single-line headline summarizing risk + finding counts */
+  headline: Joi.string().allow('').optional(),
+
+  /** Multi-paragraph markdown narrative (case identity, severity, top findings) */
+  narrative: Joi.string().allow('').optional(),
+
+  /** Up to N pre-formatted finding lines (highest severity first) */
+  keyFindings: Joi.array().items(Joi.string()).optional().default([]),
+
+  /** ISO-8601 timestamp of summary generation */
+  generatedAt: Joi.string().isoDate().optional()
+}).allow(null).default(null);
+
+// ---------------------------------------------------------------------------
 // Section: documentAnalysis
 // Per-document summary from individual document analysis.
 // ---------------------------------------------------------------------------
@@ -181,7 +201,17 @@ const documentAnalysisItemSchema = Joi.object({
     confidence: Joi.number().min(0).max(1).optional().allow(null).default(null),
 
     /** Human-readable confidence tier derived from score */
-    confidenceLevel: Joi.string().valid('high', 'medium', 'low').optional().allow(null).default(null)
+    confidenceLevel: Joi.string().valid('high', 'medium', 'low').optional().allow(null).default(null),
+
+    // Derived Display Fields (Phase 53-02 — pre-formatted strings for downstream consumers)
+    /** Pre-formatted citation string `[DocName, p.N]: "quotedText"` */
+    formattedCitation: Joi.string().allow(null).optional().default(null),
+
+    /** Pre-formatted reasoning chain summary */
+    reasoningSummary: Joi.string().allow(null).optional().default(null),
+
+    /** Pre-formatted confidence label like `"High (0.92)"` */
+    confidenceLabel: Joi.string().allow(null).optional().default(null)
   })).default([]),
 
   /** Top findings from individual analysis */
@@ -237,7 +267,17 @@ const forensicDiscrepancySchema = Joi.object({
   confidence: Joi.number().min(0).max(1).optional().allow(null).default(null),
 
   /** Human-readable confidence tier derived from score */
-  confidenceLevel: Joi.string().valid('high', 'medium', 'low').optional().allow(null).default(null)
+  confidenceLevel: Joi.string().valid('high', 'medium', 'low').optional().allow(null).default(null),
+
+  // Derived Display Fields (Phase 53-02 — pre-formatted strings for downstream consumers)
+  /** Pre-formatted citation string `[DocName, p.N]: "quotedText"` */
+  formattedCitation: Joi.string().allow(null).optional().default(null),
+
+  /** Pre-formatted reasoning chain summary */
+  reasoningSummary: Joi.string().allow(null).optional().default(null),
+
+  /** Pre-formatted confidence label like `"High (0.92)"` */
+  confidenceLabel: Joi.string().allow(null).optional().default(null)
 });
 
 const forensicTimelineViolationSchema = Joi.object({
@@ -352,7 +392,17 @@ const complianceViolationSchema = Joi.object({
   confidence: Joi.number().min(0).max(1).optional().allow(null).default(null),
 
   /** Human-readable confidence tier derived from score */
-  confidenceLevel: Joi.string().valid('high', 'medium', 'low').optional().allow(null).default(null)
+  confidenceLevel: Joi.string().valid('high', 'medium', 'low').optional().allow(null).default(null),
+
+  // Derived Display Fields (Phase 53-02 — pre-formatted strings for downstream consumers)
+  /** Pre-formatted citation string `[DocName, p.N]: "quotedText"` */
+  formattedCitation: Joi.string().allow(null).optional().default(null),
+
+  /** Pre-formatted reasoning chain summary */
+  reasoningSummary: Joi.string().allow(null).optional().default(null),
+
+  /** Pre-formatted confidence label like `"High (0.92)"` */
+  confidenceLabel: Joi.string().allow(null).optional().default(null)
 });
 
 const stateComplianceViolationSchema = complianceViolationSchema.keys({
@@ -508,6 +558,7 @@ const metadataSchema = Joi.object({
  *  - overallRiskLevel:      composite risk assessment
  *  - confidenceScore:       weighted confidence with per-layer breakdown
  *  - findingSummary:        aggregate finding counts
+ *  - executiveSummary:      pre-rendered narrative summary (53-02, nullable)
  *  - documentAnalysis:      per-document analysis summaries
  *  - forensicFindings:      cross-document forensic results
  *  - complianceFindings:    federal + state compliance results
@@ -544,6 +595,9 @@ const consolidatedReportSchema = Joi.object({
 
   /** Aggregate finding counts by severity and category */
   findingSummary: findingSummarySchema,
+
+  /** Pre-rendered executive summary (Phase 53-02 — optional, null when no findings) */
+  executiveSummary: executiveSummarySchema,
 
   /** Per-document analysis summaries */
   documentAnalysis: Joi.array().items(documentAnalysisItemSchema).default([]),
