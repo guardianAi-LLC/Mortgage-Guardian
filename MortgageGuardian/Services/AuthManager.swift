@@ -16,8 +16,9 @@ class AuthManager: ObservableObject {
     }
 
     private func setupClerk() {
-        Clerk.shared.configure(publishableKey: "pk_test_Zm9uZC1tYWtvLTcxLmNsZXJrLmFjY291bnRzLmRldiQ")
-
+        // NOTE: Clerk.shared.configure(...) is now called by MortgageGuardianApp.swift's
+        // .task modifier, which also calls clerk.load() to fetch the environment (CAPTCHA
+        // settings, etc). AuthManager remains responsible for token-bridge concerns only.
         Task {
             if Clerk.shared.user != nil {
                 updateUserInfo()
