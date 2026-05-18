@@ -232,6 +232,11 @@ export default function ReportPage({
                                 type={a.type}
                                 severity={a.severity}
                                 description={a.description}
+                                formattedCitation={a.formattedCitation}
+                                confidenceLabel={a.confidenceLabel}
+                                confidenceLevel={a.confidenceLevel}
+                                reasoningSteps={a.reasoningSteps}
+                                reasoningSummary={a.reasoningSummary}
                               />
                             ))}
                           </div>
@@ -266,6 +271,11 @@ export default function ReportPage({
                         type={d.type}
                         severity={d.severity}
                         description={d.description}
+                        formattedCitation={d.formattedCitation}
+                        confidenceLabel={d.confidenceLabel}
+                        confidenceLevel={d.confidenceLevel}
+                        reasoningSteps={d.reasoningSteps}
+                        reasoningSummary={d.reasoningSummary}
                       />
                     ))}
                   </div>
@@ -329,6 +339,11 @@ export default function ReportPage({
                             Citation: v.citation,
                             Section: v.sectionTitle,
                           }}
+                          formattedCitation={v.formattedCitation}
+                          confidenceLabel={v.confidenceLabel}
+                          confidenceLevel={v.confidenceLevel}
+                          reasoningSteps={v.reasoningSteps}
+                          reasoningSummary={v.reasoningSummary}
                         />
                       )
                     )}
@@ -351,6 +366,11 @@ export default function ReportPage({
                           Citation: v.citation,
                           Jurisdiction: v.jurisdiction ?? '',
                         }}
+                        formattedCitation={v.formattedCitation}
+                        confidenceLabel={v.confidenceLabel}
+                        confidenceLevel={v.confidenceLevel}
+                        reasoningSteps={v.reasoningSteps}
+                        reasoningSummary={v.reasoningSummary}
                       />
                     ))}
                   </div>

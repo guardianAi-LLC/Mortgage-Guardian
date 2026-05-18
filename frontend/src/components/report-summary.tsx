@@ -9,11 +9,56 @@ interface ReportSummaryProps {
 }
 
 export function ReportSummary({ report }: ReportSummaryProps) {
-  const { overallRiskLevel, confidenceScore, findingSummary, caseSummary } =
-    report
+  const {
+    overallRiskLevel,
+    confidenceScore,
+    findingSummary,
+    caseSummary,
+    executiveSummary,
+  } = report
+
+  const hasExecutiveSummary =
+    !!executiveSummary &&
+    (!!executiveSummary.headline ||
+      !!executiveSummary.narrative ||
+      (executiveSummary.keyFindings?.length ?? 0) > 0)
 
   return (
     <div className="space-y-6">
+      {/* Executive Summary (Phase 53-02) */}
+      {hasExecutiveSummary && executiveSummary && (
+        <Card className="bg-gray-900 border-gray-800">
+          <CardContent className="space-y-3 py-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
+              Executive Summary
+            </h2>
+            {executiveSummary.headline && (
+              <p className="text-base font-medium text-white">
+                {executiveSummary.headline}
+              </p>
+            )}
+            {executiveSummary.narrative && (
+              <div className="whitespace-pre-line text-sm leading-relaxed text-gray-300">
+                {executiveSummary.narrative}
+              </div>
+            )}
+            {executiveSummary.keyFindings &&
+              executiveSummary.keyFindings.length > 0 && (
+                <div className="space-y-1.5 border-t border-gray-800 pt-3">
+                  <span className="text-xs uppercase tracking-wider text-gray-500">
+                    Key Findings
+                  </span>
+                  <ul className="list-disc pl-5 space-y-1 text-sm text-gray-200">
+                    {executiveSummary.keyFindings.map((kf, i) => (
+                      <li key={i}>{kf}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Summary stats grid */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {/* Risk Level */}
