@@ -14,8 +14,11 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const { createLogger } = require('../utils/logger');
 const { LETTER_TYPES, LETTER_SECTIONS } = require('../config/consolidatedReportConfig');
+const formatters = require('./reportFormattersService');
 
 const logger = createLogger('dispute-letter');
+
+const FOOTNOTE_CONTEXT_MAX_CHARS = 300;
 
 const DEFAULT_MODEL = 'claude-sonnet-4-5-20250514';
 const DEFAULT_TEMPERATURE = 0.1;
@@ -102,6 +105,10 @@ class DisputeLetterService {
         outputTokens: response.usage?.output_tokens
       });
 
+      // Phase 53-03: Normalize evidenceFootnotes from Claude's response.
+      // Never throws — on any error log a warning and fall back to [].
+      const evidenceFootnotes = this._normalizeEvidenceFootnotes(parsed.evidenceFootnotes, letterType);
+
       return {
         letterType,
         generatedAt: new Date().toISOString(),
@@ -112,7 +119,8 @@ class DisputeLetterService {
           demands: Array.isArray(parsed.demands) ? parsed.demands : [],
           legalCitations: Array.isArray(parsed.legalCitations) ? parsed.legalCitations : [],
           responseDeadline: parsed.responseDeadline || '',
-          closingStatement: parsed.closingStatement || ''
+          closingStatement: parsed.closingStatement || '',
+          evidenceFootnotes
         },
         recipientInfo
       };
@@ -207,7 +215,19 @@ The audit data below includes specific document references, page numbers, and qu
 - Quote exact values and text from source documents to support each claim
 - Structure evidence citations as: (See [Document Name], page [X], stating '[quoted text]')
 - Every factual claim in the letter must be supported by a specific citation from the audit evidence
-- Do not fabricate or generalize evidence — use only the specific citations provided`
+- Do not fabricate or generalize evidence — use only the specific citations provided
+
+### Structured Footnotes Array (REQUIRED)
+
+In addition to citing evidence inline in the body, you MUST also include an \`evidenceFootnotes\` array in your JSON output. For EVERY quoted citation that appears in the body, add a corresponding entry to this array:
+- Each entry shape: \`{ findingId, documentName, pageNumber, quotedText, citation, context }\`
+- \`findingId\` (optional): the id of the source finding/violation if available in the audit data
+- \`documentName\` (required): exact source document name from the audit data
+- \`pageNumber\` (optional): integer page number, or null if not known
+- \`quotedText\` (optional): the verbatim quoted text from the document (no surrounding quotes)
+- \`citation\` (required): canonical format \`[DocName, p.X]: "quotedText"\` — must match the in-body citation
+- \`context\` (optional): a single-sentence note (max 300 chars) explaining why this evidence supports the finding
+- Use ONLY the documents, pages, and quotes provided in the audit data — do not invent citations`
       : '';
 
     // Check if upstream reasoning/confidence data is available
@@ -227,6 +247,20 @@ The audit findings include AI-assigned confidence scores. Use these to modulate 
 - **Medium-confidence findings** (confidence 0.50\u20130.84): Use supported but measured language — "The evidence indicates...", "The records suggest..."
 - **Low-confidence findings** (confidence < 0.50): Use measured language — "There are indications that...", "The available evidence raises concerns about..."
 ${highConfViolations.length > 0 ? `\nThese findings are supported by strong documentary evidence (confidence: high): ${highConfViolations.join(', ')}` : ''}${medConfViolations.length > 0 ? `\nThese findings are supported by evidence requiring some interpretation (confidence: medium): ${medConfViolations.join(', ')}` : ''}${lowConfViolations.length > 0 ? `\nThese findings have limited direct evidence (confidence: low): ${lowConfViolations.join(', ')}` : ''}`
+      : '';
+
+    const footnotesJsonSchemaSnippet = hasEnrichedEvidence
+      ? `,
+  "evidenceFootnotes": [
+    {
+      "findingId": "anom-001",
+      "documentName": "statement-jan.pdf",
+      "pageNumber": 2,
+      "quotedText": "Escrow Balance: $1,245.00",
+      "citation": "[statement-jan.pdf, p.2]: \\"Escrow Balance: $1,245.00\\"",
+      "context": "Servicer reported escrow balance contradicts disclosed amount."
+    }
+  ]`
       : '';
 
     return `You are a mortgage servicing law expert specializing in RESPA compliance. Generate a formal ${letterTypeName} that is litigation-grade and ready for immediate use.
@@ -265,7 +299,7 @@ Generate the dispute letter content. Respond with valid JSON in this exact forma
   "demands": ["Specific demand 1", "Specific demand 2"],
   "legalCitations": ["12 U.S.C. § 2605(e)", "12 CFR 1024.35"],
   "responseDeadline": "30 business days from receipt of this letter",
-  "closingStatement": "Professional closing statement with signature block"
+  "closingStatement": "Professional closing statement with signature block"${footnotesJsonSchemaSnippet}
 }
 \`\`\`
 
@@ -275,7 +309,7 @@ Requirements:
 - Include all violations and findings as supporting evidence in the body
 - Make demands specific and actionable
 - Include appropriate response deadlines per the applicable regulation
-- The body should be comprehensive and ready to send without modification${hasEnrichedEvidence ? '\n- Include specific document citations with page numbers and quoted text for every factual claim' : ''}
+- The body should be comprehensive and ready to send without modification${hasEnrichedEvidence ? '\n- Include specific document citations with page numbers and quoted text for every factual claim\n- Include a populated evidenceFootnotes array mirroring every in-body citation, using ONLY documents/pages/quotes provided in the audit data' : '\n- Omit the evidenceFootnotes field entirely from your response'}
 
 Respond ONLY with valid JSON. No explanation outside the JSON.`;
   }
@@ -479,6 +513,77 @@ Respond ONLY with valid JSON. No explanation outside the JSON.`;
     }
 
     return findings;
+  }
+
+  /**
+   * Phase 53-03: Normalize the evidenceFootnotes array from Claude's parsed
+   * response into the canonical schema shape.
+   *
+   * Contract:
+   *   - Drops malformed entries (missing documentName)
+   *   - Derives the canonical citation string when Claude omitted it
+   *     (uses reportFormattersService.formatCitation); drops the entry if
+   *     derivation still yields null
+   *   - Truncates `context` to 300 chars
+   *   - Returns [] on any error (never throws)
+   *
+   * @param {*} raw - parsed.evidenceFootnotes from Claude (any shape)
+   * @param {string} letterType - for warning context
+   * @returns {Array<Object>} Normalized footnotes array, possibly empty
+   */
+  _normalizeEvidenceFootnotes(raw, letterType) {
+    try {
+      const incoming = Array.isArray(raw) ? raw : [];
+      const normalized = [];
+
+      for (const entry of incoming) {
+        if (!entry || typeof entry !== 'object') continue;
+        if (!entry.documentName || typeof entry.documentName !== 'string') continue;
+
+        let citation = (typeof entry.citation === 'string' && entry.citation.length > 0)
+          ? entry.citation
+          : null;
+
+        if (!citation) {
+          citation = formatters.formatCitation({
+            documentName: entry.documentName,
+            pageNumber: entry.pageNumber,
+            quotedText: entry.quotedText
+          });
+        }
+
+        if (!citation) continue;
+
+        const normalizedEntry = {
+          findingId: entry.findingId || null,
+          documentName: entry.documentName,
+          pageNumber: (entry.pageNumber === undefined || entry.pageNumber === null)
+            ? null
+            : entry.pageNumber,
+          quotedText: (typeof entry.quotedText === 'string' && entry.quotedText.length > 0)
+            ? entry.quotedText
+            : null,
+          citation,
+          context: ''
+        };
+
+        if (typeof entry.context === 'string' && entry.context.length > 0) {
+          normalizedEntry.context = entry.context.length > FOOTNOTE_CONTEXT_MAX_CHARS
+            ? entry.context.slice(0, FOOTNOTE_CONTEXT_MAX_CHARS)
+            : entry.context;
+        }
+
+        normalized.push(normalizedEntry);
+      }
+
+      return normalized;
+    } catch (err) {
+      logger.warn('Failed to normalize evidenceFootnotes — defaulting to []', {
+        letterType,
+        error: err.message
+      });
+      return [];
+    }
   }
 
   /**

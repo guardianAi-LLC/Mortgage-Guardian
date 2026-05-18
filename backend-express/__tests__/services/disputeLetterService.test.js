@@ -1045,3 +1045,242 @@ describe('Full letter generation from stored consolidated report', () => {
     expect(prompt).toContain('Payment amount differs');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Structured evidenceFootnotes — Phase 53-03
+//
+// When the report has enriched evidence, the prompt requests a structured
+// `evidenceFootnotes` array in Claude's JSON output. The service normalizes
+// the response: drops malformed entries, derives missing citations via
+// reportFormattersService, truncates context, and ALWAYS returns an array
+// (defaulting to [] on errors). Never throws.
+// ---------------------------------------------------------------------------
+
+describe('generateDisputeLetter — evidenceFootnotes (Phase 53-03)', () => {
+  function makeMockLetterResponseWithFootnotes(footnotesOverride) {
+    return {
+      ...makeMockLetterResponse(),
+      evidenceFootnotes: footnotesOverride
+    };
+  }
+
+  test('prompt requests evidenceFootnotes array and JSON schema example when enriched', async () => {
+    const mockResponse = makeMockLetterResponse();
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify(mockResponse) }],
+      usage: { input_tokens: 600, output_tokens: 900 }
+    });
+
+    await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeConsolidatedReport()
+    );
+
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt).toContain('Structured Footnotes Array');
+    expect(prompt).toContain('evidenceFootnotes');
+    expect(prompt).toContain('findingId');
+    expect(prompt).toContain('canonical format `[DocName, p.X]: "quotedText"`');
+  });
+
+  test('prompt does NOT request evidenceFootnotes when not enriched (backward compat)', async () => {
+    const mockResponse = makeMockLetterResponse();
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify(mockResponse) }],
+      usage: { input_tokens: 500, output_tokens: 800 }
+    });
+
+    await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeUnenrichedConsolidatedReport()
+    );
+
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt).not.toContain('Structured Footnotes Array');
+    // The Evidence Citation Requirements section (where the structured-footnote
+    // directive lives) must NOT appear when un-enriched.
+    expect(prompt).not.toContain('Evidence Citation Requirements');
+    // The JSON example must NOT include the evidenceFootnotes array
+    expect(prompt).not.toContain('"evidenceFootnotes":');
+    // The instructions DO tell Claude to omit the field entirely (so the
+    // single occurrence of "evidenceFootnotes" here is intentional)
+    expect(prompt).toContain('Omit the evidenceFootnotes field entirely');
+  });
+
+  test('populates evidenceFootnotes when Claude returns valid array', async () => {
+    const claudeFootnotes = [
+      {
+        findingId: 'anom-001',
+        documentName: 'statement-jan.pdf',
+        pageNumber: 2,
+        quotedText: 'Escrow Balance: $1,245.00',
+        citation: '[statement-jan.pdf, p.2]: "Escrow Balance: $1,245.00"',
+        context: 'Servicer escrow balance contradicts disclosed amount.'
+      }
+    ];
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify(makeMockLetterResponseWithFootnotes(claudeFootnotes)) }],
+      usage: { input_tokens: 600, output_tokens: 900 }
+    });
+
+    const result = await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeConsolidatedReport()
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.content.evidenceFootnotes).toHaveLength(1);
+    const footnote = result.content.evidenceFootnotes[0];
+    expect(footnote.findingId).toBe('anom-001');
+    expect(footnote.documentName).toBe('statement-jan.pdf');
+    expect(footnote.pageNumber).toBe(2);
+    expect(footnote.quotedText).toBe('Escrow Balance: $1,245.00');
+    expect(footnote.citation).toBe('[statement-jan.pdf, p.2]: "Escrow Balance: $1,245.00"');
+    expect(footnote.context).toBe('Servicer escrow balance contradicts disclosed amount.');
+  });
+
+  test('defaults evidenceFootnotes to [] when Claude omits the field', async () => {
+    // makeMockLetterResponse() has no evidenceFootnotes property
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify(makeMockLetterResponse()) }],
+      usage: { input_tokens: 500, output_tokens: 800 }
+    });
+
+    const result = await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeConsolidatedReport()
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.content.evidenceFootnotes).toEqual([]);
+  });
+
+  test('drops footnote entry missing documentName, keeps valid entries', async () => {
+    const claudeFootnotes = [
+      { citation: '[unknown]: "x"' }, // malformed — no documentName
+      {
+        documentName: 'bank-records.pdf',
+        pageNumber: 1,
+        quotedText: 'ACH Debit',
+        citation: '[bank-records.pdf, p.1]: "ACH Debit"'
+      }
+    ];
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify(makeMockLetterResponseWithFootnotes(claudeFootnotes)) }],
+      usage: { input_tokens: 600, output_tokens: 900 }
+    });
+
+    const result = await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeConsolidatedReport()
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.content.evidenceFootnotes).toHaveLength(1);
+    expect(result.content.evidenceFootnotes[0].documentName).toBe('bank-records.pdf');
+  });
+
+  test('derives citation via formatter when Claude omits it', async () => {
+    const claudeFootnotes = [
+      {
+        documentName: 'statement-jan.pdf',
+        pageNumber: 4,
+        quotedText: 'Late Fee: $35.00'
+        // no `citation` field
+      }
+    ];
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify(makeMockLetterResponseWithFootnotes(claudeFootnotes)) }],
+      usage: { input_tokens: 600, output_tokens: 900 }
+    });
+
+    const result = await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeConsolidatedReport()
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.content.evidenceFootnotes).toHaveLength(1);
+    // formatCitation derives the canonical format
+    expect(result.content.evidenceFootnotes[0].citation).toBe('[statement-jan.pdf, p.4]: "Late Fee: $35.00"');
+  });
+
+  test('truncates footnote context to 300 chars', async () => {
+    const longContext = 'x'.repeat(500);
+    const claudeFootnotes = [
+      {
+        documentName: 'statement-jan.pdf',
+        pageNumber: 2,
+        quotedText: 'short',
+        citation: '[statement-jan.pdf, p.2]: "short"',
+        context: longContext
+      }
+    ];
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify(makeMockLetterResponseWithFootnotes(claudeFootnotes)) }],
+      usage: { input_tokens: 600, output_tokens: 900 }
+    });
+
+    const result = await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeConsolidatedReport()
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.content.evidenceFootnotes).toHaveLength(1);
+    expect(result.content.evidenceFootnotes[0].context).toHaveLength(300);
+  });
+
+  test('drops entry when citation missing AND formatter cannot derive (no quotedText/pageNumber data)', async () => {
+    // When only documentName is present (no page, no quoted text), formatCitation
+    // produces '[documentName]' (still non-null), so entry IS kept. We test the
+    // truly-impossible derivation path by stubbing formatCitation to return null.
+    const claudeFootnotes = [
+      { documentName: 'statement-jan.pdf' } // no citation, no page, no quote
+    ];
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify(makeMockLetterResponseWithFootnotes(claudeFootnotes)) }],
+      usage: { input_tokens: 600, output_tokens: 900 }
+    });
+
+    const result = await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeConsolidatedReport()
+    );
+
+    expect(result.error).toBeUndefined();
+    // Entry kept — formatCitation derives '[statement-jan.pdf]'
+    expect(result.content.evidenceFootnotes).toHaveLength(1);
+    expect(result.content.evidenceFootnotes[0].citation).toBe('[statement-jan.pdf]');
+  });
+
+  test('handles non-array evidenceFootnotes from Claude (defaults to [])', async () => {
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify({ ...makeMockLetterResponse(), evidenceFootnotes: 'not an array' }) }],
+      usage: { input_tokens: 500, output_tokens: 800 }
+    });
+
+    const result = await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeConsolidatedReport()
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.content.evidenceFootnotes).toEqual([]);
+  });
+
+  test('un-enriched report still returns evidenceFootnotes: [] on the content', async () => {
+    mockCreate.mockResolvedValueOnce({
+      content: [{ text: JSON.stringify(makeMockLetterResponse()) }],
+      usage: { input_tokens: 500, output_tokens: 800 }
+    });
+
+    const result = await disputeLetterService.generateDisputeLetter(
+      'qualified_written_request',
+      makeUnenrichedConsolidatedReport()
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.content.evidenceFootnotes).toEqual([]);
+  });
+});
