@@ -387,3 +387,114 @@ describe('per-finding display fields (Phase 53-02)', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// disputeLetterContent.evidenceFootnotes (Phase 53-03)
+// ---------------------------------------------------------------------------
+
+describe('disputeLetterContent.evidenceFootnotes (Phase 53-03)', () => {
+  function makeReportWithLetter(contentOverrides = {}) {
+    return makeValidReport({
+      disputeLetterAvailable: true,
+      disputeLetter: {
+        letterType: 'qualified_written_request',
+        generatedAt: '2026-04-29T00:00:00.000Z',
+        content: {
+          subject: 'QWR re: Loan LN-12345',
+          salutation: 'Dear Servicing Department:',
+          body: 'Body of the letter.',
+          demands: ['Provide payment history'],
+          legalCitations: ['12 U.S.C. § 2605(e)'],
+          responseDeadline: '30 business days from receipt',
+          closingStatement: 'Sincerely,',
+          ...contentOverrides
+        },
+        recipientInfo: {
+          servicerName: 'Test Servicer',
+          servicerAddress: '123 Main St'
+        }
+      }
+    });
+  }
+
+  test('validates letter content with evidenceFootnotes: [] (explicit empty)', () => {
+    const report = makeReportWithLetter({ evidenceFootnotes: [] });
+    const { error, value } = consolidatedReportSchema.validate(report, { abortEarly: false });
+    expect(error).toBeUndefined();
+    expect(value.disputeLetter.content.evidenceFootnotes).toEqual([]);
+  });
+
+  test('validates letter content omitting evidenceFootnotes (default [] applied)', () => {
+    const report = makeReportWithLetter(); // no evidenceFootnotes key
+    const { error, value } = consolidatedReportSchema.validate(report, { abortEarly: false });
+    expect(error).toBeUndefined();
+    expect(value.disputeLetter.content.evidenceFootnotes).toEqual([]);
+  });
+
+  test('validates letter content with fully populated footnotes', () => {
+    const report = makeReportWithLetter({
+      evidenceFootnotes: [
+        {
+          findingId: 'anom-001',
+          documentName: 'statement-jan.pdf',
+          pageNumber: 2,
+          quotedText: 'Escrow Balance: $1,245.00',
+          citation: '[statement-jan.pdf, p.2]: "Escrow Balance: $1,245.00"',
+          context: 'This escrow balance contradicts the disclosed amount.'
+        },
+        {
+          documentName: 'bank-records.pdf',
+          citation: '[bank-records.pdf]: "ACH Debit"'
+        }
+      ]
+    });
+    const { error, value } = consolidatedReportSchema.validate(report, { abortEarly: false });
+    expect(error).toBeUndefined();
+    const footnotes = value.disputeLetter.content.evidenceFootnotes;
+    expect(footnotes).toHaveLength(2);
+    expect(footnotes[0].findingId).toBe('anom-001');
+    expect(footnotes[0].documentName).toBe('statement-jan.pdf');
+    expect(footnotes[0].pageNumber).toBe(2);
+    expect(footnotes[0].citation).toMatch(/^\[statement-jan\.pdf, p\.2\]/);
+    expect(footnotes[1].documentName).toBe('bank-records.pdf');
+    expect(footnotes[1].citation).toBe('[bank-records.pdf]: "ACH Debit"');
+  });
+
+  test('rejects footnote entry missing required documentName', () => {
+    const report = makeReportWithLetter({
+      evidenceFootnotes: [
+        { citation: '[unknown]: "x"' } // no documentName
+      ]
+    });
+    const { error } = consolidatedReportSchema.validate(report, { abortEarly: false });
+    expect(error).toBeDefined();
+    expect(error.details.some(d => d.path.includes('documentName'))).toBe(true);
+  });
+
+  test('rejects footnote entry missing required citation', () => {
+    const report = makeReportWithLetter({
+      evidenceFootnotes: [
+        { documentName: 'statement.pdf', pageNumber: 1 } // no citation
+      ]
+    });
+    const { error } = consolidatedReportSchema.validate(report, { abortEarly: false });
+    expect(error).toBeDefined();
+    expect(error.details.some(d => d.path.includes('citation'))).toBe(true);
+  });
+
+  test('rejects quotedText longer than 500 chars', () => {
+    const longText = 'x'.repeat(501);
+    const report = makeReportWithLetter({
+      evidenceFootnotes: [
+        {
+          documentName: 'statement.pdf',
+          citation: '[statement.pdf]',
+          quotedText: longText
+        }
+      ]
+    });
+    const { error } = consolidatedReportSchema.validate(report, { abortEarly: false });
+    expect(error).toBeDefined();
+    expect(error.details.some(d => d.path.includes('quotedText'))).toBe(true);
+  });
+});

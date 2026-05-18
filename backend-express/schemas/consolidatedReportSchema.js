@@ -498,7 +498,25 @@ const disputeLetterContentSchema = Joi.object({
   demands: Joi.array().items(Joi.string()).default([]),
   legalCitations: Joi.array().items(Joi.string()).default([]),
   responseDeadline: Joi.string().allow('').required(),
-  closingStatement: Joi.string().allow('').required()
+  closingStatement: Joi.string().allow('').required(),
+
+  /**
+   * Phase 53-03: Structured machine-readable footnotes for evidence citations
+   * embedded in the letter body. When the upstream report has enriched evidence,
+   * Claude is asked to mirror each in-body citation as an entry here so the
+   * frontend / PDF generator can render a Sources / Footnotes section without
+   * re-parsing the body prose.
+   *
+   * Optional with default [] — un-enriched letters validate identically.
+   */
+  evidenceFootnotes: Joi.array().items(Joi.object({
+    findingId: Joi.string().optional().allow(null),
+    documentName: Joi.string().required(),
+    pageNumber: Joi.number().integer().allow(null).optional(),
+    quotedText: Joi.string().max(500).allow(null).optional(),
+    citation: Joi.string().required(),  // pre-formatted "[doc.pdf, p.X]: 'text'"
+    context: Joi.string().max(300).optional().allow('')  // brief why-this-matters note from Claude
+  })).optional().default([])
 }).required();
 
 const disputeLetterSchema = Joi.object({
