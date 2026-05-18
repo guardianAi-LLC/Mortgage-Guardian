@@ -20,6 +20,7 @@ interface LetterViewerProps {
 export function LetterViewer({ letter }: LetterViewerProps) {
   const [copied, setCopied] = useState(false)
   const { letterType, generatedAt, content, recipientInfo } = letter
+  const evidenceFootnotes = content.evidenceFootnotes ?? []
 
   const fullText = buildPlainText(letter)
 
@@ -139,6 +140,27 @@ export function LetterViewer({ letter }: LetterViewerProps) {
           <div className="space-y-4 pt-4">
             <p>{content.closingStatement}</p>
           </div>
+
+          {/* Evidence Footnotes (Phase 53-03) */}
+          {evidenceFootnotes.length > 0 && (
+            <section className="border-t border-gray-300 pt-4 mt-6 print:border-gray-400">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">
+                Evidence Footnotes
+              </h3>
+              <ol className="list-decimal pl-5 space-y-2 text-xs leading-relaxed text-gray-800">
+                {evidenceFootnotes.map((fn, i) => (
+                  <li key={fn.findingId ?? i} id={`footnote-${i + 1}`}>
+                    <span className="font-mono">{fn.citation}</span>
+                    {fn.context && (
+                      <span className="block mt-0.5 text-gray-600">
+                        {fn.context}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
         </div>
       </div>
 
@@ -201,6 +223,17 @@ function buildPlainText(letter: DisputeLetter): string {
   }
 
   parts.push(content.closingStatement)
+
+  if (content.evidenceFootnotes && content.evidenceFootnotes.length > 0) {
+    parts.push('')
+    parts.push('Evidence Footnotes:')
+    content.evidenceFootnotes.forEach((fn, i) => {
+      parts.push(`${i + 1}. ${fn.citation}`)
+      if (fn.context) {
+        parts.push(`   — ${fn.context}`)
+      }
+    })
+  }
 
   return parts.join('\n')
 }
