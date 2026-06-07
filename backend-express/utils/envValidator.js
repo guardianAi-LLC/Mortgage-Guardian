@@ -48,6 +48,15 @@ function buildSchema(isProduction) {
       'any.required': 'DOCUMENT_ENCRYPTION_KEY is required (document encryption)',
       'string.empty': 'DOCUMENT_ENCRYPTION_KEY cannot be empty'
     }),
+    PLAID_ENCRYPTION_KEY: isProduction
+      ? Joi.string().pattern(HEX_64).required().messages({
+          'string.pattern.base': 'PLAID_ENCRYPTION_KEY must be exactly 64 hex characters (generate with: openssl rand -hex 32)',
+          'any.required': 'PLAID_ENCRYPTION_KEY is required (Plaid access token encryption)',
+          'string.empty': 'PLAID_ENCRYPTION_KEY cannot be empty'
+        })
+      : Joi.string().pattern(HEX_64).optional().allow('').messages({
+          'string.pattern.base': 'PLAID_ENCRYPTION_KEY must be exactly 64 hex characters (generate with: openssl rand -hex 32)'
+        }),
 
     // ── Feature (optional but warned) ─────────────────────────
     ANTHROPIC_API_KEY: Joi.string().optional().allow(''),
@@ -166,6 +175,7 @@ function validateEnvironment() {
 
     // Security
     documentEncryptionKey: value.DOCUMENT_ENCRYPTION_KEY,
+    plaidEncryptionKey: value.PLAID_ENCRYPTION_KEY || '',
     jwtSecret: value.JWT_SECRET || '',
 
     // AI
