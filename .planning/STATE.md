@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 ## Current Position
 
 Phase: 54 of 60 (Plaid Token Migration)
-Plan: 1 of 5 in current phase
+Plan: 2 of 5 in current phase
 Status: In progress
-Last activity: 2026-06-07 - Completed 54-01-PLAN.md (Token Encryption Service & Schema Migration)
+Last activity: 2026-06-07 - Completed 54-02-PLAN.md (Server-Side Token Resolution & API Refactor)
 
 Progress: ██░░░░░░░░ 26%
 
@@ -53,5 +53,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-06-07
-Stopped at: Completed 54-01-PLAN.md (Token Encryption Service & Schema Migration) — established PLAID_ENCRYPTION_KEY env var, migration 006, dual-write strategy for plans 54-02 through 54-05
+Stopped at: Completed 54-02-PLAN.md (Server-Side Token Resolution & API Refactor) — 5 Plaid endpoints now require item_id; access_token resolved server-side via resolveTokenByItemId with ownership check; 15 IDOR-regression tests added. Next: 54-03 frontend rewire.
 Resume file: None
