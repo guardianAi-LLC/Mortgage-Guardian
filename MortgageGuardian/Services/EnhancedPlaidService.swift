@@ -110,12 +110,12 @@ public final class EnhancedPlaidService: ObservableObject {
                 institutionId: institutionId
             )
 
-            // Store access token securely
-            try secureKeyManager.saveAPIKey(exchangeResponse.accessToken, forService: .plaidAccessToken)
+            // Persist itemId — backend is the sole holder of the Plaid access token.
+            try secureKeyManager.saveAPIKey(exchangeResponse.itemId, forService: .plaidItemId)
 
             // Fetch accounts to find loan accounts
             let accountsResponse = try await APIClient.shared.getPlaidAPIAccounts(
-                accessToken: exchangeResponse.accessToken
+                itemId: exchangeResponse.itemId
             )
 
             let loanAccounts = accountsResponse.accounts
@@ -188,10 +188,10 @@ public final class EnhancedPlaidService: ObservableObject {
 
             await updateSyncProgress(.processingTransactions, 0.3, "Processing transactions for audit...")
 
-            // Fetch transactions via APIClient
-            let accessToken = try secureKeyManager.getAPIKey(forService: .plaidAccessToken)
+            // Fetch transactions via APIClient (backend resolves token from itemId).
+            let itemId = try secureKeyManager.getAPIKey(forService: .plaidItemId)
             let response = try await APIClient.shared.getPlaidTransactions(
-                accessToken: accessToken,
+                itemId: itemId,
                 startDate: startDateStr,
                 endDate: endDateStr
             )
@@ -296,9 +296,9 @@ public final class EnhancedPlaidService: ObservableObject {
         logger.info("Unlinking Plaid account")
 
         do {
-            // Delete Plaid item via backend
-            let accessToken = try secureKeyManager.getAPIKey(forService: .plaidAccessToken)
-            _ = try await APIClient.shared.deletePlaidItem(accessToken: accessToken)
+            // Delete Plaid item via backend (token resolved server-side from itemId).
+            let itemId = try secureKeyManager.getAPIKey(forService: .plaidItemId)
+            _ = try await APIClient.shared.deletePlaidItem(itemId: itemId)
 
             // Clear local state
             await MainActor.run {
@@ -308,8 +308,8 @@ public final class EnhancedPlaidService: ObservableObject {
                 self.lastSyncResult = nil
             }
 
-            // Clear stored tokens and data
-            secureKeyManager.deleteAPIKey(forService: .plaidAccessToken)
+            // Clear stored itemId and data
+            secureKeyManager.deleteAPIKey(forService: .plaidItemId)
             UserDefaults.standard.removeObject(forKey: "plaid_link_data")
 
             logger.info("Account unlinked successfully")

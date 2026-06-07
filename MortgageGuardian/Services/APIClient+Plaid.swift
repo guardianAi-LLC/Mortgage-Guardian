@@ -28,24 +28,24 @@ struct PlaidExchangeTokenRequest: Encodable {
 }
 
 struct PlaidAPIAccountsRequest: Encodable {
-    let accessToken: String
+    let itemId: String
     let accountIds: [String]?
 
     enum CodingKeys: String, CodingKey {
-        case accessToken = "access_token"
+        case itemId = "item_id"
         case accountIds = "account_ids"
     }
 }
 
 struct PlaidTransactionsRequest: Encodable {
-    let accessToken: String
+    let itemId: String
     let startDate: String
     let endDate: String
     let count: Int?
     let offset: Int?
 
     enum CodingKeys: String, CodingKey {
-        case accessToken = "access_token"
+        case itemId = "item_id"
         case startDate = "start_date"
         case endDate = "end_date"
         case count
@@ -172,10 +172,10 @@ struct PlaidTransaction: Decodable {
 }
 
 struct PlaidDeleteItemRequest: Encodable {
-    let accessToken: String
+    let itemId: String
 
     enum CodingKeys: String, CodingKey {
-        case accessToken = "access_token"
+        case itemId = "item_id"
     }
 }
 
@@ -250,11 +250,11 @@ extension APIClient {
     }
 
     func getPlaidAPIAccounts(
-        accessToken: String,
+        itemId: String,
         accountIds: [String]? = nil
     ) async throws -> PlaidAPIAccountsResponse {
         let requestBody = PlaidAPIAccountsRequest(
-            accessToken: accessToken,
+            itemId: itemId,
             accountIds: accountIds
         )
         let body = try JSONEncoder().encode(requestBody)
@@ -267,9 +267,9 @@ extension APIClient {
     }
 
     func deletePlaidItem(
-        accessToken: String
+        itemId: String
     ) async throws -> PlaidDeleteItemResponse {
-        let requestBody = PlaidDeleteItemRequest(accessToken: accessToken)
+        let requestBody = PlaidDeleteItemRequest(itemId: itemId)
         let body = try JSONEncoder().encode(requestBody)
         return try await request(
             endpoint: "/v1/plaid/item",
@@ -292,14 +292,14 @@ extension APIClient {
     }
 
     func getPlaidTransactions(
-        accessToken: String,
+        itemId: String,
         startDate: String,
         endDate: String,
         count: Int? = nil,
         offset: Int? = nil
     ) async throws -> PlaidTransactionsResponse {
         let requestBody = PlaidTransactionsRequest(
-            accessToken: accessToken,
+            itemId: itemId,
             startDate: startDate,
             endDate: endDate,
             count: count,

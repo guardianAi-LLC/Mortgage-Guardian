@@ -32,7 +32,20 @@ class SecureKeyManager: ObservableObject {
     @Published var hasMarketDataKey = false
 
     private init() {
+        purgeLegacyPlaidAccessToken()
         checkAPIKeysStatus()
+    }
+
+    /// Phase 54: clients no longer hold Plaid access tokens. Delete any legacy
+    /// Keychain entry left over from pre-itemId builds. Idempotent — no-op if
+    /// the entry is already gone.
+    private func purgeLegacyPlaidAccessToken() {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "com.mortgageguardian.api.plaid.accesstoken",
+            kSecAttrAccount as String: "MortgageGuardian"
+        ]
+        SecItemDelete(query as CFDictionary)
     }
 
     // MARK: - Save API Keys
@@ -172,7 +185,7 @@ enum APIService: String, CaseIterable, Identifiable {
     case claude = "com.mortgageguardian.api.claude"
     case plaidClientId = "com.mortgageguardian.api.plaid.client"
     case plaidSecret = "com.mortgageguardian.api.plaid.secret"
-    case plaidAccessToken = "com.mortgageguardian.api.plaid.accesstoken"
+    case plaidItemId = "com.mortgageguardian.api.plaid.itemid"
 
     // Market Data Services
     case marketData = "com.mortgageguardian.api.marketdata"
@@ -187,8 +200,8 @@ enum APIService: String, CaseIterable, Identifiable {
             return "Plaid Client ID"
         case .plaidSecret:
             return "Plaid Secret"
-        case .plaidAccessToken:
-            return "Plaid Access Token"
+        case .plaidItemId:
+            return "Plaid Item ID"
         case .marketData:
             return "Market Data API"
         case .realEstate:
@@ -202,7 +215,7 @@ enum APIService: String, CaseIterable, Identifiable {
         switch self {
         case .claude:
             return "Required for AI-powered document analysis"
-        case .plaidClientId, .plaidSecret, .plaidAccessToken:
+        case .plaidClientId, .plaidSecret, .plaidItemId:
             return "Required for bank account integration"
         case .marketData:
             return "Optional: For real-time market data"
@@ -215,7 +228,7 @@ enum APIService: String, CaseIterable, Identifiable {
 
     var isRequired: Bool {
         switch self {
-        case .claude, .plaidClientId, .plaidSecret, .plaidAccessToken:
+        case .claude, .plaidClientId, .plaidSecret:
             return true
         default:
             return false
