@@ -98,14 +98,16 @@ export const api = {
       fetchWithAuth('/plaid/link_token', token, { method: 'POST', body: JSON.stringify({ user_id: data.userId }) }),
     exchangeToken: (token: string, data: { publicToken: string; institution?: object }) =>
       fetchWithAuth('/plaid/exchange_token', token, { method: 'POST', body: JSON.stringify({ public_token: data.publicToken, institution: data.institution }) }),
-    getAccounts: (token: string, accessToken: string) =>
-      fetchWithAuth('/plaid/accounts', token, { method: 'POST', body: JSON.stringify({ access_token: accessToken }) }),
-    getTransactions: (token: string, data: { accessToken: string; startDate?: string; endDate?: string }) =>
-      fetchWithAuth('/plaid/transactions', token, { method: 'POST', body: JSON.stringify({ access_token: data.accessToken, start_date: data.startDate, end_date: data.endDate }) }),
-    getItem: (token: string, accessToken: string) =>
-      fetchWithAuth('/plaid/item', token, { method: 'POST', body: JSON.stringify({ access_token: accessToken }) }),
-    deleteItem: (token: string, accessToken: string) =>
-      fetchWithAuth('/plaid/item', token, { method: 'DELETE', body: JSON.stringify({ access_token: accessToken }) }),
+    listItems: (token: string) =>
+      fetchWithAuth('/plaid/items', token),
+    getAccounts: (token: string, itemId: string) =>
+      fetchWithAuth('/plaid/accounts', token, { method: 'POST', body: JSON.stringify({ item_id: itemId }) }),
+    getTransactions: (token: string, data: { itemId: string; startDate?: string; endDate?: string }) =>
+      fetchWithAuth('/plaid/transactions', token, { method: 'POST', body: JSON.stringify({ item_id: data.itemId, start_date: data.startDate, end_date: data.endDate }) }),
+    getItem: (token: string, itemId: string) =>
+      fetchWithAuth('/plaid/item', token, { method: 'POST', body: JSON.stringify({ item_id: itemId }) }),
+    deleteItem: (token: string, itemId: string) =>
+      fetchWithAuth('/plaid/item', token, { method: 'DELETE', body: JSON.stringify({ item_id: itemId }) }),
   },
 
   health: {

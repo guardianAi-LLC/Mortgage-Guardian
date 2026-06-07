@@ -9,49 +9,62 @@ import type { PlaidAccount, PlaidTransaction, PlaidItem, PlaidLinkResult, PlaidE
 // Queries
 // --------------------------------------------------------------------------
 
-export function usePlaidAccounts(accessToken?: string) {
+export function usePlaidItems() {
   const getToken = useApiToken()
-  return useQuery<PlaidAccount[]>({
-    queryKey: ['plaid-accounts', accessToken],
+  const query = useQuery<PlaidItem[]>({
+    queryKey: ['plaid-items'],
     queryFn: async () => {
       const token = await getToken()
-      const res = await api.plaid.getAccounts(token, accessToken!)
+      const res = await api.plaid.listItems(token)
+      return res.items ?? []
+    },
+  })
+  return { items: query.data ?? [], isLoading: query.isLoading, refetch: query.refetch }
+}
+
+export function usePlaidAccounts(itemId?: string) {
+  const getToken = useApiToken()
+  return useQuery<PlaidAccount[]>({
+    queryKey: ['plaid-accounts', itemId],
+    queryFn: async () => {
+      const token = await getToken()
+      const res = await api.plaid.getAccounts(token, itemId!)
       return res.accounts ?? res
     },
-    enabled: !!accessToken,
+    enabled: !!itemId,
   })
 }
 
 export function usePlaidTransactions(
-  accessToken?: string,
+  itemId?: string,
   dateRange?: { startDate: string; endDate: string }
 ) {
   const getToken = useApiToken()
   return useQuery<PlaidTransaction[]>({
-    queryKey: ['plaid-transactions', accessToken, dateRange],
+    queryKey: ['plaid-transactions', itemId, dateRange],
     queryFn: async () => {
       const token = await getToken()
       const res = await api.plaid.getTransactions(token, {
-        accessToken: accessToken!,
+        itemId: itemId!,
         startDate: dateRange?.startDate,
         endDate: dateRange?.endDate,
       })
       return res.transactions ?? res
     },
-    enabled: !!accessToken,
+    enabled: !!itemId,
   })
 }
 
-export function usePlaidItem(accessToken?: string) {
+export function usePlaidItem(itemId?: string) {
   const getToken = useApiToken()
   return useQuery<PlaidItem>({
-    queryKey: ['plaid-item', accessToken],
+    queryKey: ['plaid-item', itemId],
     queryFn: async () => {
       const token = await getToken()
-      const res = await api.plaid.getItem(token, accessToken!)
+      const res = await api.plaid.getItem(token, itemId!)
       return res.item ?? res
     },
-    enabled: !!accessToken,
+    enabled: !!itemId,
   })
 }
 
@@ -63,11 +76,12 @@ export function useDeletePlaidItem() {
   const getToken = useApiToken()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (accessToken: string) => {
+    mutationFn: async (itemId: string) => {
       const token = await getToken()
-      return api.plaid.deleteItem(token, accessToken)
+      return api.plaid.deleteItem(token, itemId)
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plaid-items'] })
       queryClient.invalidateQueries({ queryKey: ['plaid-accounts'] })
       queryClient.invalidateQueries({ queryKey: ['plaid-item'] })
       queryClient.invalidateQueries({ queryKey: ['plaid-transactions'] })
@@ -94,6 +108,7 @@ export function useExchangeToken() {
       return api.plaid.exchangeToken(token, data)
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plaid-items'] })
       queryClient.invalidateQueries({ queryKey: ['plaid-accounts'] })
       queryClient.invalidateQueries({ queryKey: ['plaid-item'] })
     },
