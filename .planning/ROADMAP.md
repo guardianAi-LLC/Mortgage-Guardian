@@ -190,10 +190,14 @@ Plans:
 **Depends on**: Phase 53
 **Research**: Likely (encrypted token storage patterns)
 **Research topics**: Server-side encrypted credential storage, secure token rotation, migration strategies for live tokens
-**Plans**: TBD
+**Plans**: 5
 
 Plans:
-- [ ] 54-01: TBD
+- [ ] 54-01: Token Encryption Service & Schema Migration
+- [ ] 54-02: Server-Side Token Resolution & API Refactor (itemId-based endpoints)
+- [ ] 54-03: Frontend Migration to itemId (remove localStorage)
+- [ ] 54-04: iOS Migration & Production Token Backfill
+- [ ] 54-05: Drop Plaintext Column, Audit Logging, Runbook, Cleanup
 
 #### Phase 55: Upload Security & Malware Scanning
 
