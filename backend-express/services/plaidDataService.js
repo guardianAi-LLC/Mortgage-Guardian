@@ -367,36 +367,106 @@ class PlaidDataService {
       const row = (data || [])[0];
       if (!row) return null;
 
-      // Phase 54-01: prefer encrypted ciphertext; fall back to plaintext
-      // with a warn that the 54-04 backfill script keys off of.
-      if (row.access_token_encrypted) {
-        const tokenEnc = getTokenEncryption();
-        if (tokenEnc) {
-          try {
-            return tokenEnc.decryptFromStorage(userId, row.access_token_encrypted);
-          } catch (decErr) {
-            logger.error('Failed to decrypt Plaid access token - falling back to plaintext', {
-              error: decErr.message,
-              itemId: row.item_id,
-              userId
-            });
-          }
-        }
-      }
-
-      if (row.access_token) {
-        logger.warn('Plaid access token resolved from plaintext column - needs backfill', {
-          itemId: row.item_id,
-          userId
-        });
-        return row.access_token;
-      }
-
-      return null;
+      return this._decryptRow(userId, row);
     } catch (error) {
       logger.error('getAccessTokenForUser error', { error: error.message, userId });
       return null;
     }
+  }
+
+  /**
+   * Resolve the Plaid access_token for a specific (userId, itemId) pair.
+   *
+   * Phase 54-02: the public Plaid endpoints (/accounts, /transactions, /item,
+   * /item/webhook, DELETE /item) accept ONLY `item_id` from the client. The
+   * server resolves the access token here after verifying that the
+   * authenticated user owns the item. This closes an IDOR-style hole: a stale
+   * or stolen access_token in another user's keychain can no longer be
+   * replayed against the API.
+   *
+   * Same row-level decrypt-or-fallback semantics as getAccessTokenForUser
+   * (prefer ciphertext, warn on plaintext fallback).
+   *
+   * @param {string} userId Clerk-derived req.user.id, never client-supplied
+   * @param {string} itemId Plaid item_id from the request body
+   * @returns {Promise<{ success: true, accessToken: string }
+   *                 | { success: false, code: 'not_found' | 'error' }>}
+   *   `not_found` is returned for both "no such item" AND "item belongs to a
+   *   different user" — same shape so callers cannot probe for existence.
+   */
+  async resolveTokenByItemId(userId, itemId) {
+    if (!userId || typeof userId !== 'string' || !itemId || typeof itemId !== 'string') {
+      return { success: false, code: 'not_found' };
+    }
+
+    if (!supabase) {
+      // Mock mode: look up by itemId + userId match.
+      const item = this.mockItems.get(itemId);
+      if (!item || item.userId !== userId || !item.accessToken) {
+        return { success: false, code: 'not_found' };
+      }
+      return { success: true, accessToken: item.accessToken };
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('plaid_items')
+        .select('access_token, access_token_encrypted, encryption_version')
+        .eq('item_id', itemId)
+        .eq('user_id', userId)
+        .single();
+
+      if (error || !data) {
+        // Supabase .single() returns an error when zero rows match — treat as
+        // not_found so we don't leak the existence of foreign items.
+        if (error && error.code !== 'PGRST116') {
+          logger.error('resolveTokenByItemId db error', { error: error.message, itemId, userId });
+        }
+        return { success: false, code: 'not_found' };
+      }
+
+      const accessToken = this._decryptRow(userId, { ...data, item_id: itemId });
+      if (!accessToken) {
+        return { success: false, code: 'not_found' };
+      }
+      return { success: true, accessToken };
+    } catch (err) {
+      logger.error('resolveTokenByItemId error', { error: err.message, itemId, userId });
+      return { success: false, code: 'error' };
+    }
+  }
+
+  /**
+   * Private: decrypt the access token from a plaid_items row.
+   * Prefers ciphertext; falls back to plaintext (with a warn the 54-04
+   * backfill script keys off of). Returns the token string or null.
+   * NEVER logs the resolved token.
+   */
+  _decryptRow(userId, row) {
+    if (row.access_token_encrypted) {
+      const tokenEnc = getTokenEncryption();
+      if (tokenEnc) {
+        try {
+          return tokenEnc.decryptFromStorage(userId, row.access_token_encrypted);
+        } catch (decErr) {
+          logger.error('Failed to decrypt Plaid access token - falling back to plaintext', {
+            error: decErr.message,
+            itemId: row.item_id,
+            userId
+          });
+        }
+      }
+    }
+
+    if (row.access_token) {
+      logger.warn('Plaid access token resolved from plaintext column - needs backfill', {
+        itemId: row.item_id,
+        userId
+      });
+      return row.access_token;
+    }
+
+    return null;
   }
 
   /**
