@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 ## Current Position
 
 Phase: 54 of 60 (Plaid Token Migration)
-Plan: 2 of 5 in current phase
+Plan: 3 of 5 in current phase
 Status: In progress
-Last activity: 2026-06-07 - Completed 54-02-PLAN.md (Server-Side Token Resolution & API Refactor)
+Last activity: 2026-06-07 - Completed 54-03-PLAN.md (Frontend Migration to itemId, localStorage cleanup)
 
-Progress: ██░░░░░░░░ 26%
+Progress: ██░░░░░░░░ 28%
 
 ## Accumulated Context
 
@@ -53,5 +53,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-06-07
-Stopped at: Completed 54-02-PLAN.md (Server-Side Token Resolution & API Refactor) — 5 Plaid endpoints now require item_id; access_token resolved server-side via resolveTokenByItemId with ownership check; 15 IDOR-regression tests added. Next: 54-03 frontend rewire.
+Stopped at: Completed 54-03-PLAN.md (Frontend Migration to itemId) — Next.js web client now uses itemId only for all Plaid calls; legacy `mg_plaid_access_tokens` localStorage key is actively purged on first load (cleanup line scheduled for removal in 54-05); Playwright regressions assert no access_token in any /v1/plaid/* request body. Next: 54-04 iOS rewire & production token backfill.
 Resume file: None
