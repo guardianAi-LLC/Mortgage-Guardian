@@ -2,6 +2,21 @@ const { createClient } = require('@supabase/supabase-js');
 const { createLogger } = require('../utils/logger');
 const logger = createLogger('plaid-data');
 
+// Lazy-load the encryption service so missing PLAID_ENCRYPTION_KEY in
+// pre-Phase-54 environments degrades gracefully (writes plaintext only,
+// reads keep working) instead of crashing module load.
+let _tokenEncryption = null;
+function getTokenEncryption() {
+  if (_tokenEncryption !== null) return _tokenEncryption;
+  try {
+    _tokenEncryption = require('./plaidTokenEncryptionService');
+  } catch (err) {
+    logger.warn('plaidTokenEncryptionService unavailable - tokens will be stored plaintext only', { error: err.message });
+    _tokenEncryption = false; // sentinel: tried and failed
+  }
+  return _tokenEncryption;
+}
+
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
@@ -31,12 +46,34 @@ class PlaidDataService {
     }
 
     try {
+      // Phase 54-01 dual-write: store plaintext (existing column) AND
+      // encrypted ciphertext (new column) so resolver can prefer ciphertext
+      // while the 54-04 backfill catches up legacy rows. Only encrypt when
+      // both a userId and accessToken are present and the service loads.
+      let accessTokenEncrypted = null;
+      let encryptionVersion = 1;
+      if (accessToken && userId) {
+        const tokenEnc = getTokenEncryption();
+        if (tokenEnc) {
+          try {
+            accessTokenEncrypted = tokenEnc.encryptForStorage(userId, accessToken);
+          } catch (encErr) {
+            logger.error('Failed to encrypt Plaid access token - falling back to plaintext only', {
+              error: encErr.message,
+              itemId
+            });
+          }
+        }
+      }
+
       const { data, error: dbError } = await supabase
         .from('plaid_items')
         .upsert({
           item_id: itemId,
           user_id: userId,
           access_token: accessToken,
+          access_token_encrypted: accessTokenEncrypted,
+          encryption_version: encryptionVersion,
           status: status || 'active',
           institution_id: institutionId,
           error: error ? JSON.stringify(error) : null,
@@ -317,7 +354,7 @@ class PlaidDataService {
     try {
       const { data, error } = await supabase
         .from('plaid_items')
-        .select('access_token')
+        .select('item_id, access_token, access_token_encrypted, encryption_version')
         .eq('user_id', userId)
         .eq('status', 'active')
         .limit(1);
@@ -328,7 +365,34 @@ class PlaidDataService {
       }
 
       const row = (data || [])[0];
-      return row?.access_token || null;
+      if (!row) return null;
+
+      // Phase 54-01: prefer encrypted ciphertext; fall back to plaintext
+      // with a warn that the 54-04 backfill script keys off of.
+      if (row.access_token_encrypted) {
+        const tokenEnc = getTokenEncryption();
+        if (tokenEnc) {
+          try {
+            return tokenEnc.decryptFromStorage(userId, row.access_token_encrypted);
+          } catch (decErr) {
+            logger.error('Failed to decrypt Plaid access token - falling back to plaintext', {
+              error: decErr.message,
+              itemId: row.item_id,
+              userId
+            });
+          }
+        }
+      }
+
+      if (row.access_token) {
+        logger.warn('Plaid access token resolved from plaintext column - needs backfill', {
+          itemId: row.item_id,
+          userId
+        });
+        return row.access_token;
+      }
+
+      return null;
     } catch (error) {
       logger.error('getAccessTokenForUser error', { error: error.message, userId });
       return null;
