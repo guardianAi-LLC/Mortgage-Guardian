@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
@@ -907,7 +907,9 @@ export default function BankAccountsPage() {
           </div>
 
           {/* Cross-reference verification */}
-          <CrossReferenceSection />
+          <Suspense fallback={null}>
+            <CrossReferenceSection />
+          </Suspense>
 
           {/* Transactions */}
           {itemIds.length > 0 && <TransactionSection itemIds={itemIds} />}

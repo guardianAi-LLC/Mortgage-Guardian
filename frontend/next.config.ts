@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
@@ -6,6 +7,13 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+
+  // Pin workspace root to this directory; otherwise Next 16 picks the parent
+  // repo (which also has a package-lock.json) and fails to resolve tailwindcss
+  // when the dev server runs under Playwright.
+  turbopack: {
+    root: path.join(__dirname),
+  },
 
   async rewrites() {
     return [
