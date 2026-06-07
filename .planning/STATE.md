@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 ## Current Position
 
 Phase: 54 of 60 (Plaid Token Migration)
-Plan: 3 of 5 in current phase
-Status: In progress
-Last activity: 2026-06-07 - Completed 54-03-PLAN.md (Frontend Migration to itemId, localStorage cleanup)
+Plan: 4 of 5 in current phase
+Status: In progress — Task 3 (production cutover) blocked on operator
+Last activity: 2026-06-07 - Landed 54-04 Tasks 1 & 2 (iOS itemId migration + backfill script). Production backfill checkpoint pending.
 
-Progress: ██░░░░░░░░ 28%
+Progress: ███░░░░░░░ 30%
 
 ## Accumulated Context
 
