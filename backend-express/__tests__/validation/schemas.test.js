@@ -282,44 +282,37 @@ describe('Plaid schemas', () => {
   });
 
   // ------------------------------------------------
-  // accountsSchema
+  // accountsSchema  (54-02: item_id only — access_token forbidden)
   // ------------------------------------------------
   describe('accountsSchema', () => {
-    test('accepts access token starting with "access-"', () => {
+    test('accepts item_id', () => {
       const { error, value } = accountsSchema.validate({
-        access_token: 'access-sandbox-abc123'
+        item_id: 'item-abc123'
       });
       expect(error).toBeUndefined();
-      expect(value.access_token).toBe('access-sandbox-abc123');
-    });
-
-    test('accepts access token starting with "access_sandbox-"', () => {
-      const { error, value } = accountsSchema.validate({
-        access_token: 'access_sandbox-token-xyz'
-      });
-      expect(error).toBeUndefined();
-      expect(value.access_token).toBe('access_sandbox-token-xyz');
+      expect(value.item_id).toBe('item-abc123');
     });
 
     test('accepts with optional account_ids', () => {
       const { error, value } = accountsSchema.validate({
-        access_token: 'access-prod-token',
+        item_id: 'item-xyz',
         account_ids: ['acct-1', 'acct-2']
       });
       expect(error).toBeUndefined();
       expect(value.account_ids).toEqual(['acct-1', 'acct-2']);
     });
 
-    test('rejects invalid access token format', () => {
-      const { error } = accountsSchema.validate({
-        access_token: 'invalid-token'
-      });
+    test('rejects missing item_id', () => {
+      const { error } = accountsSchema.validate({});
       expect(error).toBeDefined();
-      expect(error.message).toContain('Invalid access token format');
+      expect(error.details[0].path).toContain('item_id');
     });
 
-    test('rejects missing access_token', () => {
-      const { error } = accountsSchema.validate({});
+    test('rejects access_token in body (IDOR-prevention)', () => {
+      const { error } = accountsSchema.validate({
+        item_id: 'item-1',
+        access_token: 'access-sandbox-x'
+      });
       expect(error).toBeDefined();
       expect(error.details[0].path).toContain('access_token');
     });
@@ -330,7 +323,7 @@ describe('Plaid schemas', () => {
   // ------------------------------------------------
   describe('transactionsSchema', () => {
     const validComplete = {
-      access_token: 'access-sandbox-txn',
+      item_id: 'item-txn',
       start_date: '2024-01-01',
       end_date: '2024-12-31',
       account_ids: ['acct-1'],
@@ -347,7 +340,7 @@ describe('Plaid schemas', () => {
 
     test('applies defaults for count and offset', () => {
       const { error, value } = transactionsSchema.validate({
-        access_token: 'access-sandbox-txn',
+        item_id: 'item-txn',
         start_date: '2024-01-01',
         end_date: '2024-06-30'
       });
@@ -358,8 +351,8 @@ describe('Plaid schemas', () => {
 
     test('rejects invalid date format', () => {
       const { error } = transactionsSchema.validate({
-        access_token: 'access-sandbox-txn',
-        start_date: '01-01-2024', // wrong format
+        item_id: 'item-txn',
+        start_date: '01-01-2024',
         end_date: '2024-12-31'
       });
       expect(error).toBeDefined();
@@ -368,7 +361,7 @@ describe('Plaid schemas', () => {
 
     test('rejects invalid end_date format', () => {
       const { error } = transactionsSchema.validate({
-        access_token: 'access-sandbox-txn',
+        item_id: 'item-txn',
         start_date: '2024-01-01',
         end_date: 'December 31, 2024'
       });
@@ -378,7 +371,7 @@ describe('Plaid schemas', () => {
 
     test('rejects count out of range (> 500)', () => {
       const { error } = transactionsSchema.validate({
-        access_token: 'access-sandbox-txn',
+        item_id: 'item-txn',
         start_date: '2024-01-01',
         end_date: '2024-12-31',
         count: 501
@@ -389,7 +382,7 @@ describe('Plaid schemas', () => {
 
     test('rejects count < 1', () => {
       const { error } = transactionsSchema.validate({
-        access_token: 'access-sandbox-txn',
+        item_id: 'item-txn',
         start_date: '2024-01-01',
         end_date: '2024-12-31',
         count: 0
@@ -400,7 +393,7 @@ describe('Plaid schemas', () => {
 
     test('rejects negative offset', () => {
       const { error } = transactionsSchema.validate({
-        access_token: 'access-sandbox-txn',
+        item_id: 'item-txn',
         start_date: '2024-01-01',
         end_date: '2024-12-31',
         offset: -1
@@ -409,14 +402,15 @@ describe('Plaid schemas', () => {
       expect(error.details[0].path).toContain('offset');
     });
 
-    test('rejects invalid access token', () => {
+    test('rejects access_token in body (IDOR-prevention)', () => {
       const { error } = transactionsSchema.validate({
-        access_token: 'bad-token',
+        item_id: 'item-txn',
+        access_token: 'access-sandbox-x',
         start_date: '2024-01-01',
         end_date: '2024-12-31'
       });
       expect(error).toBeDefined();
-      expect(error.message).toContain('Invalid access token format');
+      expect(error.details[0].path).toContain('access_token');
     });
   });
 
@@ -424,23 +418,24 @@ describe('Plaid schemas', () => {
   // itemSchema
   // ------------------------------------------------
   describe('itemSchema', () => {
-    test('accepts valid access token', () => {
+    test('accepts valid item_id', () => {
       const { error, value } = itemSchema.validate({
-        access_token: 'access-sandbox-item-123'
+        item_id: 'item-123'
       });
       expect(error).toBeUndefined();
-      expect(value.access_token).toBe('access-sandbox-item-123');
+      expect(value.item_id).toBe('item-123');
     });
 
-    test('rejects invalid access token format', () => {
+    test('rejects access_token in body (IDOR-prevention)', () => {
       const { error } = itemSchema.validate({
-        access_token: 'not-valid'
+        item_id: 'item-1',
+        access_token: 'access-sandbox-x'
       });
       expect(error).toBeDefined();
-      expect(error.message).toContain('Invalid access token format');
+      expect(error.details[0].path).toContain('access_token');
     });
 
-    test('rejects missing access_token', () => {
+    test('rejects missing item_id', () => {
       const { error } = itemSchema.validate({});
       expect(error).toBeDefined();
     });
@@ -452,7 +447,7 @@ describe('Plaid schemas', () => {
   describe('updateWebhookSchema', () => {
     test('accepts valid with https URL', () => {
       const { error, value } = updateWebhookSchema.validate({
-        access_token: 'access-sandbox-wh',
+        item_id: 'item-wh',
         webhook: 'https://example.com/webhook'
       });
       expect(error).toBeUndefined();
@@ -461,7 +456,7 @@ describe('Plaid schemas', () => {
 
     test('accepts valid with http URL', () => {
       const { error, value } = updateWebhookSchema.validate({
-        access_token: 'access-sandbox-wh',
+        item_id: 'item-wh',
         webhook: 'http://localhost:3000/webhook'
       });
       expect(error).toBeUndefined();
@@ -470,7 +465,7 @@ describe('Plaid schemas', () => {
 
     test('rejects invalid URL', () => {
       const { error } = updateWebhookSchema.validate({
-        access_token: 'access-sandbox-wh',
+        item_id: 'item-wh',
         webhook: 'not-a-url'
       });
       expect(error).toBeDefined();
@@ -479,19 +474,20 @@ describe('Plaid schemas', () => {
 
     test('rejects missing webhook', () => {
       const { error } = updateWebhookSchema.validate({
-        access_token: 'access-sandbox-wh'
+        item_id: 'item-wh'
       });
       expect(error).toBeDefined();
       expect(error.details[0].path).toContain('webhook');
     });
 
-    test('rejects invalid access token', () => {
+    test('rejects access_token in body (IDOR-prevention)', () => {
       const { error } = updateWebhookSchema.validate({
-        access_token: 'bad-token',
+        item_id: 'item-wh',
+        access_token: 'access-sandbox-x',
         webhook: 'https://example.com/webhook'
       });
       expect(error).toBeDefined();
-      expect(error.message).toContain('Invalid access token format');
+      expect(error.details[0].path).toContain('access_token');
     });
   });
 
@@ -499,23 +495,24 @@ describe('Plaid schemas', () => {
   // deleteItemSchema
   // ------------------------------------------------
   describe('deleteItemSchema', () => {
-    test('accepts valid access token', () => {
+    test('accepts valid item_id', () => {
       const { error, value } = deleteItemSchema.validate({
-        access_token: 'access-sandbox-del'
+        item_id: 'item-del'
       });
       expect(error).toBeUndefined();
-      expect(value.access_token).toBe('access-sandbox-del');
+      expect(value.item_id).toBe('item-del');
     });
 
-    test('rejects invalid access token format', () => {
+    test('rejects access_token in body (IDOR-prevention)', () => {
       const { error } = deleteItemSchema.validate({
-        access_token: 'wrong-prefix-token'
+        item_id: 'item-del',
+        access_token: 'access-sandbox-x'
       });
       expect(error).toBeDefined();
-      expect(error.message).toContain('Invalid access token format');
+      expect(error.details[0].path).toContain('access_token');
     });
 
-    test('rejects missing access_token', () => {
+    test('rejects missing item_id', () => {
       const { error } = deleteItemSchema.validate({});
       expect(error).toBeDefined();
     });
