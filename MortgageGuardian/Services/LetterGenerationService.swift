@@ -246,6 +246,27 @@ class LetterGenerationService: ObservableObject {
     ///   - caseId: The case identifier on the backend.
     ///   - letterTypes: Backend letter type strings (defaults to NOE + QWR).
     /// - Returns: An array of successfully generated dispute letter responses.
+    /// Generate a single dispute letter via the backend for a case.
+    ///
+    /// Views should call this instead of `APIClient.shared.generateDisputeLetter`
+    /// directly so all letter generation flows through `LetterGenerationService`.
+    ///
+    /// - Parameters:
+    ///   - caseId: The case identifier on the backend.
+    ///   - letterType: Backend letter type string (e.g. `notice_of_error`).
+    /// - Returns: The generated dispute letter response.
+    func generateBackendLetter(
+        caseId: String,
+        letterType: String
+    ) async throws -> DisputeLetterResponse {
+        isLoading = true
+        defer { isLoading = false }
+        return try await APIClient.shared.generateDisputeLetter(
+            caseId: caseId,
+            letterType: letterType
+        )
+    }
+
     func generateBackendLetterSeries(
         caseId: String,
         letterTypes: [String] = ["notice_of_error", "qualified_written_request"]

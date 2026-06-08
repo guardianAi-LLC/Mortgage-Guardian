@@ -305,7 +305,7 @@ struct IssueLetterGeneratorView: View {
             Task {
                 do {
                     let backendLetterType = letterType.backendKey
-                    let response = try await APIClient.shared.generateDisputeLetter(
+                    let response = try await LetterGenerationService.shared.generateBackendLetter(
                         caseId: caseId,
                         letterType: backendLetterType
                     )
