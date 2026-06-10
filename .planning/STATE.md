@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-04-20)
 
 **Core value:** The platform must reliably and securely analyze mortgage documents to detect servicing errors with high confidence, cross-verify against actual bank transaction data, and protect sensitive financial information throughout the process.
-**Current focus:** v8.0 Enterprise Readiness — Phase 53 Report Output Format
+**Current focus:** v8.0 Enterprise Readiness — Phase 54 Plaid Token Migration
 
 ## Current Position
 
 Phase: 54 of 60 (Plaid Token Migration)
-Plan: 4 of 5 in current phase
-Status: In progress — Task 3 (production cutover) blocked on operator
-Last activity: 2026-06-07 - Landed 54-04 Tasks 1 & 2 (iOS itemId migration + backfill script). Production backfill checkpoint pending.
+Plan: 4 of 5 complete — 54-05 ready to execute
+Status: 54-04 complete (production backfill applied + verified 2026-06-10)
+Last activity: 2026-06-10 - Merged phase-54 worktree to main; applied migration 006 to prod; generated PLAID_ENCRYPTION_KEY; backfill applied (1 row, 0 errors); plaintext count = 0. 54-05 prerequisites satisfied.
 
 Progress: ███░░░░░░░ 30%
 
@@ -38,7 +38,7 @@ None.
 
 ### Blockers/Concerns Carried Forward
 
-None.
+- **Backend has no live deployment** (discovered 2026-06-10 during 54-04 cutover): the Railway app the production frontend targets returns 404; the Vercel backend project's last deploy is Nov 2025 and not live. Redeploy needed with PLAID_ENCRYPTION_KEY (now in backend-express/.env only) set in the hosting env, and frontend/.env.production updated if the host changes. Suggested: fold into Phase 56 or a dedicated deploy pass after 54-05.
 
 ### Roadmap Evolution
 

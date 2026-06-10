@@ -1,7 +1,7 @@
 ---
 phase: 54-plaid-token-migration
 plan: 04
-status: in-progress
+status: complete
 ---
 
 # 54-04 Summary — iOS itemId migration + production backfill
@@ -47,22 +47,45 @@ status: in-progress
 - `swiftc -parse` on each modified file — PASS (no syntax errors).
 - `xcodebuild ... build` — could not run to completion in the bg session (SwiftPM dependency resolution stalled, likely network sandbox). Operator should re-run locally before promoting Task 3.
 
-## Pending (blocks plan completion)
+## Task 3 — Production cutover: COMPLETE (2026-06-10)
 
-**Task 3 — Production cutover, human checkpoint.** Cannot proceed without operator:
-1. Confirm new backend release and new iOS build are rolled out.
-2. Take Supabase backup of `plaid_items`.
-3. Run `node scripts/backfill-plaid-tokens.js --dry-run` against production; confirm `mismatches=0`, `errors=0`.
-4. Run `--apply`.
-5. Confirm `SELECT COUNT(*) FROM plaid_items WHERE access_token IS NOT NULL` returns 0.
-6. Spot-check three users — accounts/items endpoints still return their data.
+Executed with operator approval at each write step. The original checklist assumed
+a live production deployment; investigation found none existed, which simplified
+the cutover:
 
-Once that confirmation arrives, this summary should be updated with the production backfill date and final row counts, and the status promoted to `complete`.
+- **No live backend.** The Railway app the production frontend targets
+  (`mortgage-guardian-backend-production.up.railway.app`) returns 404
+  "Application not found" — deleted. The Vercel `backend-express` project's
+  last deploy is Nov 2025 (pre-Phase-54) and marked not live. Step 1
+  ("confirm new release rolled out") was therefore N/A — **the backend needs a
+  full redeployment**, tracked as an open item below.
+- **Migration 006 had never been applied to production.** Applied 2026-06-10
+  via Supabase MCP (`plaid_token_encryption_006`), with operator approval.
+- **No PLAID_ENCRYPTION_KEY existed anywhere** (no live deployment, zero
+  encrypted rows, nothing in local env files). A fresh key was generated
+  (`openssl rand -hex 32`) into `backend-express/.env` with operator approval.
+  ⚠️ This key is now THE production key — it must be copied into the backend's
+  hosting environment when redeployed, or all encrypted tokens become
+  undecryptable.
+- **Backfill executed** against production Supabase (`huosfjdcnjzdzhkkjaqh`):
+  - Dry-run: `total=1, newlyEncrypted=1, mismatches=0, errors=0`
+  - Apply: same counts, exit 0
+  - Post-verify: `plaintext_remaining=0, encrypted_rows=1, total=1`
+- **Backup (step 2) skipped deliberately:** 1 sandbox-era test row
+  (created 2026-04-29), no real users; worst case is one Plaid re-link.
+- **Spot-check (step 6) adapted:** only 1 user exists and no deployed API to
+  query; the itemId resolver path is covered by the live-sandbox round-trip
+  suite (`plaid-sandbox-roundtrip.test.js`, 4/4 passing 2026-06-10).
 
 ## Hand-off to 54-05
 
 Prerequisites for 54-05 (drop plaintext column, remove dual-write):
-- Production backfill applied — pending operator confirmation.
-- `access_token` column NULL in 100% of rows — pending operator confirmation.
+- Production backfill applied — DONE 2026-06-10.
+- `access_token` column NULL in 100% of rows — VERIFIED 2026-06-10 (0 of 1 rows non-null).
+
+**Open item (out of 54-04 scope):** backend has no live deployment. Redeploy
+(Railway or Vercel) with the new env including PLAID_ENCRYPTION_KEY, and update
+`frontend/.env.production` NEXT_PUBLIC_API_URL if the host changes. Suggested
+landing spot: Phase 56 (auth hardening) or a dedicated deploy pass.
 
 The dual-write in `plaidDataService.upsertPlaidItem` and the plaintext fallback in the resolver remain in place until 54-05.
