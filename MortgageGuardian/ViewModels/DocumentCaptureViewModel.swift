@@ -385,12 +385,6 @@ class DocumentCaptureViewModel: ObservableObject {
         }
         defer { url.stopAccessingSecurityScopedResource() }
 
-        // Validate file type
-        let fileExtension = url.pathExtension.lowercased()
-        guard ["pdf", "jpg", "jpeg", "png", "heic"].contains(fileExtension) else {
-            throw CaptureError.unsupportedFileType
-        }
-
         // Check file size
         let fileSize = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
         guard fileSize <= maxFileSize else {
@@ -398,15 +392,22 @@ class DocumentCaptureViewModel: ObservableObject {
         }
 
         let fileName = url.lastPathComponent
+        let fileExtension = url.pathExtension.lowercased()
 
-        if fileExtension == "pdf" {
+        // Sniff first 4 bytes only — avoid loading the whole file just to detect PDF.
+        let head: Data = {
+            guard let handle = try? FileHandle(forReadingFrom: url) else { return Data() }
+            defer { try? handle.close() }
+            return (try? handle.read(upToCount: 4)) ?? Data()
+        }()
+        let isPDF = fileExtension == "pdf" || head == Data("%PDF".utf8)
+
+        if isPDF {
             try await processPDFFile(url, fileName: fileName)
-        } else {
-            let imageData = try Data(contentsOf: url)
-            guard let image = UIImage(data: imageData) else {
-                throw CaptureError.invalidImageData
-            }
+        } else if let image = UIImage(contentsOfFile: url.path) {
             await processImportedImage(image, fileName: fileName, mode: .fileImport)
+        } else {
+            throw CaptureError.unsupportedFileType
         }
     }
 

@@ -18,7 +18,7 @@ struct MainTabView: View {
                     Label("Analysis", systemImage: "chart.bar.doc.horizontal")
                 }
 
-            RealPlaidConnectionView()
+            RealPlaidConnectedAccounts()
                 .tabItem {
                     Label("Accounts", systemImage: "building.columns")
                 }

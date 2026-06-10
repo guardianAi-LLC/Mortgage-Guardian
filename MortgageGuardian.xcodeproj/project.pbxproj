@@ -27,8 +27,6 @@
 		TEST_BF_TC001 /* TestConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_TC001 /* TestConfiguration.swift */; };
 		TEST_BF_TG001 /* MortgageTestDataGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_TG001 /* MortgageTestDataGenerator.swift */; };
 		TEST_BF_TDM01 /* TestDataModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_TDM01 /* TestDataModels.swift */; };
-		TEST_BF_MD001 /* MockData.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_MD001 /* MockData.swift */; };
-		TEST_BF_MS001 /* MockServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = TEST_FR_MS001 /* MockServices.swift */; };
 		APIDOC_BUILD001 /* APIClient+Documents.swift in Sources */ = {isa = PBXBuildFile; fileRef = APIDOC001 /* APIClient+Documents.swift */; };
 		APIPLAID_BUILD001 /* APIClient+Plaid.swift in Sources */ = {isa = PBXBuildFile; fileRef = APIPLAID001 /* APIClient+Plaid.swift */; };
 		APIRPT_BUILD001 /* APIClient+Reports.swift in Sources */ = {isa = PBXBuildFile; fileRef = APIRPT001 /* APIClient+Reports.swift */; };
@@ -192,8 +190,6 @@
 		TEST_FR_TC001 /* TestConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestConfiguration.swift; sourceTree = "<group>"; };
 		TEST_FR_TG001 /* MortgageTestDataGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MortgageTestDataGenerator.swift; sourceTree = "<group>"; };
 		TEST_FR_TDM01 /* TestDataModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestDataModels.swift; sourceTree = "<group>"; };
-		TEST_FR_MD001 /* MockData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockData.swift; sourceTree = "<group>"; };
-		TEST_FR_MS001 /* MockServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockServices.swift; sourceTree = "<group>"; };
 		TEST_PRODUCT001 /* MortgageGuardianTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MortgageGuardianTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CORE_FR_001 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		CORE_FR_002 /* BrandedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandedComponents.swift; sourceTree = "<group>"; };
@@ -396,8 +392,6 @@
 		TEST_GRP_MOCK /* MockData */ = {
 			isa = PBXGroup;
 			children = (
-				TEST_FR_MD001 /* MockData.swift */,
-				TEST_FR_MS001 /* MockServices.swift */,
 			);
 			path = MockData;
 			sourceTree = "<group>";
@@ -918,8 +912,6 @@
 				TEST_BF_TC001 /* TestConfiguration.swift in Sources */,
 				TEST_BF_TG001 /* MortgageTestDataGenerator.swift in Sources */,
 				TEST_BF_TDM01 /* TestDataModels.swift in Sources */,
-				TEST_BF_MD001 /* MockData.swift in Sources */,
-				TEST_BF_MS001 /* MockServices.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -50,7 +50,7 @@ struct DocumentCaptureView: View {
             }
             .fileImporter(
                 isPresented: $viewModel.showingFilePicker,
-                allowedContentTypes: [.pdf, .jpeg, .png, .heic],
+                allowedContentTypes: [.pdf, .image],
                 allowsMultipleSelection: true
             ) { result in
                 Task {
