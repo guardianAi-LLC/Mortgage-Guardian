@@ -1,6 +1,9 @@
 const { createClient } = require('@supabase/supabase-js');
 const { createLogger } = require('../utils/logger');
 const logger = createLogger('plaid-data');
+// Phase 54-05: every successful token decryption emits a structured audit
+// event ('plaid_token_decrypted'). Token material is NEVER logged.
+const auditLogger = createLogger('audit');
 
 // Lazy-load the encryption service so a missing PLAID_ENCRYPTION_KEY fails
 // at first use (with a clear log) instead of crashing module load. Since
@@ -334,12 +337,14 @@ class PlaidDataService {
    * audit pipeline (M001/S04/T02) to call plaidService.getTransactions.
    *
    * @param {string} userId
+   * @param {{ route?: string }} [context] caller label for the decrypt
+   *   audit event (e.g. 'audit-pipeline')
    * @returns {Promise<string|null>} access token, or null if user has no
    *   Plaid items linked. Errors are logged and surface as null so the
    *   audit pipeline can degrade gracefully (no Plaid evidence) rather
    *   than fail the whole document.
    */
-  async getAccessTokenForUser(userId) {
+  async getAccessTokenForUser(userId, context = {}) {
     if (!userId || typeof userId !== 'string') {
       return null;
     }
@@ -370,7 +375,7 @@ class PlaidDataService {
       const row = (data || [])[0];
       if (!row) return null;
 
-      return this._decryptRow(userId, row);
+      return this._decryptRow(userId, row, context);
     } catch (error) {
       logger.error('getAccessTokenForUser error', { error: error.message, userId });
       return null;
@@ -393,12 +398,14 @@ class PlaidDataService {
    *
    * @param {string} userId Clerk-derived req.user.id, never client-supplied
    * @param {string} itemId Plaid item_id from the request body
+   * @param {{ route?: string }} [context] caller label (e.g. '/v1/plaid/accounts')
+   *   recorded on the `plaid_token_decrypted` audit event
    * @returns {Promise<{ success: true, accessToken: string }
    *                 | { success: false, code: 'not_found' | 'token_missing' | 'error' }>}
    *   `not_found` is returned for both "no such item" AND "item belongs to a
    *   different user" — same shape so callers cannot probe for existence.
    */
-  async resolveTokenByItemId(userId, itemId) {
+  async resolveTokenByItemId(userId, itemId, context = {}) {
     if (!userId || typeof userId !== 'string' || !itemId || typeof itemId !== 'string') {
       return { success: false, code: 'not_found' };
     }
@@ -429,7 +436,7 @@ class PlaidDataService {
         return { success: false, code: 'not_found' };
       }
 
-      const accessToken = this._decryptRow(userId, { ...data, item_id: itemId });
+      const accessToken = this._decryptRow(userId, { ...data, item_id: itemId }, context);
       if (!accessToken) {
         // Row exists but has no usable ciphertext — fail closed. Distinct
         // code so callers/ops can tell "needs re-link" from "no such item".
@@ -450,8 +457,12 @@ class PlaidDataService {
    * unavailable encryption service, or a failed decrypt all return null
    * (callers translate that into `token_missing` / null and the user must
    * re-link via Plaid Link). NEVER logs the resolved token.
+   *
+   * Phase 54-05: every SUCCESSFUL decrypt emits a structured
+   * `plaid_token_decrypted` audit event (userId, itemId, route, timestamp).
+   * No token material — plaintext, ciphertext, or derivatives — is logged.
    */
-  _decryptRow(userId, row) {
+  _decryptRow(userId, row, context = {}) {
     if (!row.access_token_encrypted) {
       logger.error('Plaid item has no encrypted access token - failing closed (re-link required)', {
         itemId: row.item_id,
@@ -470,7 +481,15 @@ class PlaidDataService {
     }
 
     try {
-      return tokenEnc.decryptFromStorage(userId, row.access_token_encrypted);
+      const accessToken = tokenEnc.decryptFromStorage(userId, row.access_token_encrypted);
+      auditLogger.info('plaid_token_decrypted', {
+        event: 'plaid_token_decrypted',
+        userId,
+        itemId: row.item_id,
+        route: context.route || 'unknown',
+        timestamp: new Date().toISOString()
+      });
+      return accessToken;
     } catch (decErr) {
       logger.error('Failed to decrypt Plaid access token - failing closed', {
         error: decErr.message,

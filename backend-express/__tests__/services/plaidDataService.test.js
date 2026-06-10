@@ -44,6 +44,16 @@ jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabase)
 }));
 
+// --- Audit logger spy (Phase 54-05: plaid_token_decrypted events) ---
+const mockAuditLog = { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() };
+jest.mock('../../utils/logger', () => {
+  const actual = jest.requireActual('../../utils/logger');
+  return {
+    ...actual,
+    createLogger: (name) => (name === 'audit' ? mockAuditLog : actual.createLogger(name))
+  };
+});
+
 // Set env vars BEFORE requiring the service so module-scope init creates a client
 process.env.SUPABASE_URL = 'https://test.supabase.co';
 process.env.SUPABASE_SERVICE_KEY = 'test-service-key';
@@ -455,6 +465,46 @@ describe('PlaidDataService (Supabase mode)', () => {
       const result = await plaidDataService.resolveTokenByItemId('user-r1', 'item-r1');
 
       expect(result).toEqual({ success: true, accessToken: token });
+    });
+
+    it('emits a plaid_token_decrypted audit event on successful resolve (no token material)', async () => {
+      const token = 'access-sandbox-audit-1';
+      const ciphertext = plaidTokenEncryptionService.encryptForStorage('user-a1', token);
+      mockSingle.mockResolvedValue({
+        data: { access_token_encrypted: ciphertext, encryption_version: 1 },
+        error: null
+      });
+
+      const result = await plaidDataService.resolveTokenByItemId('user-a1', 'item-a1', {
+        route: '/v1/plaid/accounts'
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockAuditLog.info).toHaveBeenCalledWith(
+        'plaid_token_decrypted',
+        expect.objectContaining({
+          event: 'plaid_token_decrypted',
+          userId: 'user-a1',
+          itemId: 'item-a1',
+          route: '/v1/plaid/accounts',
+          timestamp: expect.any(String)
+        })
+      );
+      // NEVER log token material — neither plaintext nor ciphertext
+      const serialized = JSON.stringify(mockAuditLog.info.mock.calls);
+      expect(serialized).not.toContain(token);
+      expect(serialized).not.toContain(ciphertext);
+    });
+
+    it('does NOT emit an audit event when resolution fails', async () => {
+      mockSingle.mockResolvedValue({
+        data: { access_token_encrypted: null, encryption_version: 1 },
+        error: null
+      });
+
+      await plaidDataService.resolveTokenByItemId('user-a2', 'item-a2', { route: '/v1/plaid/item' });
+
+      expect(mockAuditLog.info).not.toHaveBeenCalled();
     });
 
     it('fails closed with token_missing when row has no ciphertext', async () => {

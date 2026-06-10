@@ -89,6 +89,10 @@ jest.mock('../../services/plaidDataService', () => ({
 }));
 
 // Set env vars so modules initialize properly
+// 54-05: all tests in this file share one mock user; raise the per-user
+// Plaid resolve limit so the suite doesn't trip it. The limiter itself is
+// unit-tested in __tests__/middleware/plaidRateLimit.test.js.
+process.env.PLAID_RESOLVE_RATE_LIMIT_MAX = '100000';
 process.env.SUPABASE_URL = 'https://mock.supabase.co';
 process.env.SUPABASE_ANON_KEY = 'mock-anon-key';
 process.env.NODE_ENV = 'production';
@@ -419,7 +423,11 @@ describe('POST /v1/plaid/accounts', () => {
         account_ids: ['acc-001', 'acc-002']
       });
 
-    expect(mockResolveTokenByItemId).toHaveBeenCalledWith('mock-user-id-12345', 'item-owned-001');
+    expect(mockResolveTokenByItemId).toHaveBeenCalledWith(
+      'mock-user-id-12345',
+      'item-owned-001',
+      expect.objectContaining({ route: expect.any(String) })
+    );
     expect(mockGetAccounts).toHaveBeenCalledWith(
       'access-sandbox-resolved',
       ['acc-001', 'acc-002']
@@ -547,7 +555,11 @@ describe('POST /v1/plaid/transactions', () => {
         end_date: '2026-03-31'
       });
 
-    expect(mockResolveTokenByItemId).toHaveBeenCalledWith('mock-user-id-12345', 'item-owned-001');
+    expect(mockResolveTokenByItemId).toHaveBeenCalledWith(
+      'mock-user-id-12345',
+      'item-owned-001',
+      expect.objectContaining({ route: expect.any(String) })
+    );
     expect(mockGetTransactions).toHaveBeenCalledWith({
       accessToken: 'access-sandbox-resolved',
       startDate: '2026-01-01',
@@ -752,7 +764,11 @@ describe('POST /v1/plaid/item', () => {
       .set('Authorization', AUTH)
       .send({ item_id: 'item-owned-001' });
 
-    expect(mockResolveTokenByItemId).toHaveBeenCalledWith('mock-user-id-12345', 'item-owned-001');
+    expect(mockResolveTokenByItemId).toHaveBeenCalledWith(
+      'mock-user-id-12345',
+      'item-owned-001',
+      expect.objectContaining({ route: expect.any(String) })
+    );
     expect(mockGetItem).toHaveBeenCalledWith('access-sandbox-resolved');
   });
 
@@ -848,7 +864,11 @@ describe('POST /v1/plaid/item/webhook', () => {
         webhook: 'https://hooks.example.com/plaid'
       });
 
-    expect(mockResolveTokenByItemId).toHaveBeenCalledWith('mock-user-id-12345', 'item-owned-001');
+    expect(mockResolveTokenByItemId).toHaveBeenCalledWith(
+      'mock-user-id-12345',
+      'item-owned-001',
+      expect.objectContaining({ route: expect.any(String) })
+    );
     expect(mockUpdateWebhook).toHaveBeenCalledWith(
       'access-sandbox-resolved',
       'https://hooks.example.com/plaid'
@@ -1054,7 +1074,11 @@ describe('DELETE /v1/plaid/item', () => {
       .set('Authorization', AUTH)
       .send({ item_id: 'item-owned-001' });
 
-    expect(mockResolveTokenByItemId).toHaveBeenCalledWith('mock-user-id-12345', 'item-owned-001');
+    expect(mockResolveTokenByItemId).toHaveBeenCalledWith(
+      'mock-user-id-12345',
+      'item-owned-001',
+      expect.objectContaining({ route: expect.any(String) })
+    );
     expect(mockRemoveItem).toHaveBeenCalledWith('access-sandbox-resolved');
   });
 
