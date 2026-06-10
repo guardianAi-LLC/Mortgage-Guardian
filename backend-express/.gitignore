@@ -49,3 +49,7 @@ build/
 
 # Load test results
 loadtest/results/
+
+# Accuracy harness output (regenerated each run)
+reports/accuracy-latest.json
+reports/accuracy-latest.md
