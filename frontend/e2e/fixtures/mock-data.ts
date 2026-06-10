@@ -509,17 +509,36 @@ export function mockTransactions(): MockPlaidTransaction[] {
   ]
 }
 
-/** Set up page.route interception for Plaid API endpoints. */
+/** A realistic mock item_id matching backend format. */
+export const MOCK_PLAID_ITEM_ID = 'item-sandbox-abc123'
+
+/**
+ * Assert a Plaid request body does NOT include any access_token-like key.
+ * Used by E2E to prove the new contract holds.
+ */
+export function assertNoAccessTokenInBody(body: unknown): void {
+  if (body && typeof body === 'object') {
+    for (const key of Object.keys(body as Record<string, unknown>)) {
+      if (/access_?token/i.test(key)) {
+        throw new Error(`Forbidden key in Plaid request body: ${key}`)
+      }
+    }
+  }
+}
+
+/** Set up page.route interception for Plaid API endpoints (item_id contract). */
 export async function interceptPlaidAPI(
   page: Page,
   opts?: {
     accounts?: MockPlaidAccount[]
     transactions?: MockPlaidTransaction[]
     empty?: boolean
+    itemId?: string
   }
 ) {
   const accounts = opts?.empty ? [] : (opts?.accounts ?? mockPlaidAccounts())
   const transactions = opts?.empty ? [] : (opts?.transactions ?? mockTransactions())
+  const itemId = opts?.itemId ?? MOCK_PLAID_ITEM_ID
 
   // Link token creation
   await page.route('**/api/v1/plaid/link_token', (route) =>
@@ -530,35 +549,69 @@ export async function interceptPlaidAPI(
     })
   )
 
-  // Token exchange
+  // Token exchange — backend now returns only item_id (no access_token)
   await page.route('**/api/v1/plaid/exchange_token', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ access_token: 'access-sandbox-test-token' }),
+      body: JSON.stringify({ item_id: itemId }),
     })
   )
 
-  // Accounts
-  await page.route('**/api/v1/plaid/accounts', (route) =>
-    route.fulfill({
+  // List items (new in 54-03) — authoritative source for linked banks
+  await page.route('**/api/v1/plaid/items', (route) => {
+    if (opts?.empty) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ items: [] }),
+      })
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [
+          {
+            itemId,
+            institutionId: 'ins_001',
+            institutionName: 'First National Bank',
+            status: 'active',
+            updatedAt: '2026-06-01T00:00:00Z',
+            accounts,
+            consentExpirationTime: null,
+          },
+        ],
+      }),
+    })
+  })
+
+  // Accounts — POST body must contain { item_id }, not { access_token }
+  await page.route('**/api/v1/plaid/accounts', (route) => {
+    const body = route.request().postDataJSON()
+    assertNoAccessTokenInBody(body)
+    return route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({ accounts }),
     })
-  )
+  })
 
-  // Transactions
-  await page.route('**/api/v1/plaid/transactions', (route) =>
-    route.fulfill({
+  // Transactions — POST body must contain { item_id }, not { access_token }
+  await page.route('**/api/v1/plaid/transactions', (route) => {
+    const body = route.request().postDataJSON()
+    assertNoAccessTokenInBody(body)
+    return route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({ transactions }),
     })
-  )
+  })
 
-  // Item info
+  // Item info / DELETE — POST or DELETE body must contain { item_id }
   await page.route('**/api/v1/plaid/item', (route) => {
+    const body = route.request().postDataJSON()
+    assertNoAccessTokenInBody(body)
     if (route.request().method() === 'DELETE') {
       return route.fulfill({
         status: 200,
@@ -571,9 +624,13 @@ export async function interceptPlaidAPI(
       contentType: 'application/json',
       body: JSON.stringify({
         item: {
-          institution_id: 'ins_001',
-          institution_name: 'First National Bank',
-          consent_expiration_time: null,
+          itemId,
+          institutionId: 'ins_001',
+          institutionName: 'First National Bank',
+          status: 'active',
+          updatedAt: '2026-06-01T00:00:00Z',
+          accounts,
+          consentExpirationTime: null,
         },
       }),
     })

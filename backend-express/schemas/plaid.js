@@ -26,51 +26,64 @@ const exchangeTokenSchema = Joi.object({
 });
 
 /**
+ * Phase 54-02: the five Plaid endpoints below take `item_id` from the client.
+ * The server resolves the access_token from plaid_items after verifying the
+ * authenticated Clerk user owns the item. `access_token` MUST NEVER appear in
+ * these request bodies — explicitly forbidden so stale clients surface a 400
+ * instead of being silently stripped by the `stripUnknown: true` validate
+ * middleware option.
+ */
+const itemIdField = Joi.string().trim().min(1).max(255).required();
+const forbiddenAccessToken = Joi.any().forbidden().messages({
+  'any.unknown': 'access_token is no longer accepted in this endpoint; send item_id instead'
+});
+
+/**
  * Schema for POST /v1/plaid/accounts
  * Get account information.
  */
 const accountsSchema = Joi.object({
-  access_token: Joi.string().trim().pattern(/^access[-_]/).message('Invalid access token format').required(),
+  item_id: itemIdField,
   account_ids: Joi.array().items(Joi.string()).optional()
-});
+}).unknown(false);
 
 /**
  * Schema for POST /v1/plaid/transactions
  * Get transaction history with pagination.
  */
 const transactionsSchema = Joi.object({
-  access_token: Joi.string().trim().pattern(/^access[-_]/).message('Invalid access token format').required(),
+  item_id: itemIdField,
   start_date: Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).message('Dates must be in YYYY-MM-DD format').required(),
   end_date: Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).message('Dates must be in YYYY-MM-DD format').required(),
   account_ids: Joi.array().items(Joi.string()).optional(),
   count: Joi.number().integer().min(1).max(500).default(100),
   offset: Joi.number().integer().min(0).default(0)
-});
+}).unknown(false);
 
 /**
  * Schema for POST /v1/plaid/item
  * Get item (bank connection) information.
  */
 const itemSchema = Joi.object({
-  access_token: Joi.string().trim().pattern(/^access[-_]/).message('Invalid access token format').required()
-});
+  item_id: itemIdField
+}).unknown(false);
 
 /**
  * Schema for POST /v1/plaid/item/webhook
  * Update webhook URL for an item.
  */
 const updateWebhookSchema = Joi.object({
-  access_token: Joi.string().trim().pattern(/^access[-_]/).message('Invalid access token format').required(),
+  item_id: itemIdField,
   webhook: Joi.string().trim().uri().required()
-});
+}).unknown(false);
 
 /**
  * Schema for DELETE /v1/plaid/item
  * Remove (delete) an item and revoke access.
  */
 const deleteItemSchema = Joi.object({
-  access_token: Joi.string().trim().pattern(/^access[-_]/).message('Invalid access token format').required()
-});
+  item_id: itemIdField
+}).unknown(false);
 
 /**
  * Schema for POST /v1/plaid/sandbox_public_token

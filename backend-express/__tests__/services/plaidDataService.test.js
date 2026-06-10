@@ -44,8 +44,11 @@ jest.mock('@supabase/supabase-js', () => ({
 // Set env vars BEFORE requiring the service so module-scope init creates a client
 process.env.SUPABASE_URL = 'https://test.supabase.co';
 process.env.SUPABASE_SERVICE_KEY = 'test-service-key';
+// Phase 54-01: ensure the encryption service can lazy-load with a valid key
+process.env.PLAID_ENCRYPTION_KEY = require('crypto').randomBytes(32).toString('hex');
 
 const plaidDataService = require('../../services/plaidDataService');
+const plaidTokenEncryptionService = require('../../services/plaidTokenEncryptionService');
 
 // ============================================================
 // Supabase mode tests
@@ -135,6 +138,34 @@ describe('PlaidDataService (Supabase mode)', () => {
       });
 
       expect(result).toEqual({ success: false, error: 'Database error: DB error' });
+    });
+
+    // Phase 54-01: dual-write encrypted token alongside plaintext
+    it('writes encrypted access token that round-trips to original', async () => {
+      mockUpsert.mockResolvedValue({ data: {}, error: null });
+
+      const plaintextToken = 'access-sandbox-encrypted-1';
+      await plaidDataService.upsertPlaidItem({
+        itemId: 'item-enc',
+        userId: 'user-enc',
+        accessToken: plaintextToken,
+        status: 'active'
+      });
+
+      const payload = mockUpsert.mock.calls[0][0];
+      expect(payload).toHaveProperty('access_token', plaintextToken);
+      expect(payload).toHaveProperty('access_token_encrypted');
+      expect(typeof payload.access_token_encrypted).toBe('string');
+      expect(payload.access_token_encrypted.length).toBeGreaterThan(0);
+      expect(payload.access_token_encrypted).not.toBe(plaintextToken);
+      expect(payload).toHaveProperty('encryption_version', 1);
+
+      // Round-trip via the encryption service confirms it's valid ciphertext
+      const recovered = plaidTokenEncryptionService.decryptFromStorage(
+        'user-enc',
+        payload.access_token_encrypted
+      );
+      expect(recovered).toBe(plaintextToken);
     });
   });
 

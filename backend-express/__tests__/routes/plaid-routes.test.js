@@ -74,6 +74,7 @@ const mockCreateNotification = jest.fn();
 const mockRemoveTransactions = jest.fn();
 const mockUpdateItemStatus = jest.fn();
 const mockGetItemsForUser = jest.fn();
+const mockResolveTokenByItemId = jest.fn();
 
 jest.mock('../../services/plaidDataService', () => ({
   upsertPlaidItem: mockUpsertPlaidItem,
@@ -83,7 +84,8 @@ jest.mock('../../services/plaidDataService', () => ({
   createNotification: mockCreateNotification,
   removeTransactions: mockRemoveTransactions,
   updateItemStatus: mockUpdateItemStatus,
-  getItemsForUser: mockGetItemsForUser
+  getItemsForUser: mockGetItemsForUser,
+  resolveTokenByItemId: mockResolveTokenByItemId
 }));
 
 // Set env vars so modules initialize properly
@@ -173,6 +175,12 @@ beforeEach(() => {
   mockRemoveTransactions.mockResolvedValue({ success: true });
   mockUpdateItemStatus.mockResolvedValue({ success: true });
   mockGetItemsForUser.mockResolvedValue({ success: true, items: [] });
+  // 54-02: routes resolve access_token from item_id server-side. Default
+  // mock returns success so happy-path tests don't have to wire it each time.
+  mockResolveTokenByItemId.mockResolvedValue({
+    success: true,
+    accessToken: 'access-sandbox-resolved'
+  });
 });
 
 // ============================================================
@@ -394,7 +402,7 @@ describe('POST /v1/plaid/accounts', () => {
     const res = await request(app)
       .post('/v1/plaid/accounts')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
     expect(res.status).toBe(200);
     expect(res.body.accounts).toHaveLength(1);
@@ -402,17 +410,18 @@ describe('POST /v1/plaid/accounts', () => {
     expect(res.body.requestId).toBe('req-acc-001');
   });
 
-  it('passes access_token and account_ids to service', async () => {
+  it('resolves item_id under JWT user and passes account_ids to service', async () => {
     await request(app)
       .post('/v1/plaid/accounts')
       .set('Authorization', AUTH)
       .send({
-        access_token: 'access-sandbox-token123',
+        item_id: 'item-owned-001',
         account_ids: ['acc-001', 'acc-002']
       });
 
+    expect(mockResolveTokenByItemId).toHaveBeenCalledWith('mock-user-id-12345', 'item-owned-001');
     expect(mockGetAccounts).toHaveBeenCalledWith(
-      'access-sandbox-token123',
+      'access-sandbox-resolved',
       ['acc-001', 'acc-002']
     );
   });
@@ -421,12 +430,12 @@ describe('POST /v1/plaid/accounts', () => {
     await request(app)
       .post('/v1/plaid/accounts')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
-    expect(mockGetAccounts).toHaveBeenCalledWith('access-sandbox-token123', undefined);
+    expect(mockGetAccounts).toHaveBeenCalledWith('access-sandbox-resolved', undefined);
   });
 
-  it('returns 400 when access_token is missing', async () => {
+  it('returns 400 when item_id is missing', async () => {
     const res = await request(app)
       .post('/v1/plaid/accounts')
       .set('Authorization', AUTH)
@@ -436,19 +445,46 @@ describe('POST /v1/plaid/accounts', () => {
     expect(res.body.error).toBe('Bad Request');
   });
 
-  it('returns 400 when access_token has invalid format', async () => {
+  it('returns 400 when client sends access_token (IDOR-prevention)', async () => {
     const res = await request(app)
       .post('/v1/plaid/accounts')
       .set('Authorization', AUTH)
-      .send({ access_token: 'bad-token' });
+      .send({ access_token: 'access-sandbox-x', item_id: 'item-owned-001' });
 
     expect(res.status).toBe(400);
+    expect(mockResolveTokenByItemId).not.toHaveBeenCalled();
+    expect(mockGetAccounts).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 item_not_found when item belongs to a different user', async () => {
+    mockResolveTokenByItemId.mockResolvedValue({ success: false, code: 'not_found' });
+
+    const res = await request(app)
+      .post('/v1/plaid/accounts')
+      .set('Authorization', AUTH)
+      .send({ item_id: 'item-owned-by-other-user' });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('item_not_found');
+    expect(mockGetAccounts).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 item_not_found when item does not exist (same shape, no existence leak)', async () => {
+    mockResolveTokenByItemId.mockResolvedValue({ success: false, code: 'not_found' });
+
+    const res = await request(app)
+      .post('/v1/plaid/accounts')
+      .set('Authorization', AUTH)
+      .send({ item_id: 'item-does-not-exist' });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('item_not_found');
   });
 
   it('returns 401 without auth token', async () => {
     const res = await request(app)
       .post('/v1/plaid/accounts')
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
     expect(res.status).toBe(401);
   });
@@ -463,7 +499,7 @@ describe('POST /v1/plaid/accounts', () => {
     const res = await request(app)
       .post('/v1/plaid/accounts')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-bad' });
+      .send({ item_id: 'item-owned-001' });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Plaid API Error');
@@ -475,7 +511,7 @@ describe('POST /v1/plaid/accounts', () => {
     const res = await request(app)
       .post('/v1/plaid/accounts')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
     expect(res.status).toBe(500);
   });
@@ -490,7 +526,7 @@ describe('POST /v1/plaid/transactions', () => {
       .post('/v1/plaid/transactions')
       .set('Authorization', AUTH)
       .send({
-        access_token: 'access-sandbox-token123',
+        item_id: 'item-owned-001',
         start_date: '2026-01-01',
         end_date: '2026-03-31'
       });
@@ -506,13 +542,14 @@ describe('POST /v1/plaid/transactions', () => {
       .post('/v1/plaid/transactions')
       .set('Authorization', AUTH)
       .send({
-        access_token: 'access-sandbox-token123',
+        item_id: 'item-owned-001',
         start_date: '2026-01-01',
         end_date: '2026-03-31'
       });
 
+    expect(mockResolveTokenByItemId).toHaveBeenCalledWith('mock-user-id-12345', 'item-owned-001');
     expect(mockGetTransactions).toHaveBeenCalledWith({
-      accessToken: 'access-sandbox-token123',
+      accessToken: 'access-sandbox-resolved',
       startDate: '2026-01-01',
       endDate: '2026-03-31',
       accountIds: undefined,
@@ -526,7 +563,7 @@ describe('POST /v1/plaid/transactions', () => {
       .post('/v1/plaid/transactions')
       .set('Authorization', AUTH)
       .send({
-        access_token: 'access-sandbox-token123',
+        item_id: 'item-owned-001',
         start_date: '2026-01-01',
         end_date: '2026-03-31',
         account_ids: ['acc-001'],
@@ -535,7 +572,7 @@ describe('POST /v1/plaid/transactions', () => {
       });
 
     expect(mockGetTransactions).toHaveBeenCalledWith({
-      accessToken: 'access-sandbox-token123',
+      accessToken: 'access-sandbox-resolved',
       startDate: '2026-01-01',
       endDate: '2026-03-31',
       accountIds: ['acc-001'],
@@ -544,7 +581,7 @@ describe('POST /v1/plaid/transactions', () => {
     });
   });
 
-  it('returns 400 when access_token is missing', async () => {
+  it('returns 400 when item_id is missing', async () => {
     const res = await request(app)
       .post('/v1/plaid/transactions')
       .set('Authorization', AUTH)
@@ -553,11 +590,60 @@ describe('POST /v1/plaid/transactions', () => {
     expect(res.status).toBe(400);
   });
 
+  it('returns 400 when client sends access_token (IDOR-prevention)', async () => {
+    const res = await request(app)
+      .post('/v1/plaid/transactions')
+      .set('Authorization', AUTH)
+      .send({
+        access_token: 'access-sandbox-x',
+        item_id: 'item-owned-001',
+        start_date: '2026-01-01',
+        end_date: '2026-03-31'
+      });
+
+    expect(res.status).toBe(400);
+    expect(mockResolveTokenByItemId).not.toHaveBeenCalled();
+    expect(mockGetTransactions).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 item_not_found when item belongs to a different user', async () => {
+    mockResolveTokenByItemId.mockResolvedValue({ success: false, code: 'not_found' });
+
+    const res = await request(app)
+      .post('/v1/plaid/transactions')
+      .set('Authorization', AUTH)
+      .send({
+        item_id: 'item-owned-by-other-user',
+        start_date: '2026-01-01',
+        end_date: '2026-03-31'
+      });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('item_not_found');
+    expect(mockGetTransactions).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 item_not_found when item does not exist', async () => {
+    mockResolveTokenByItemId.mockResolvedValue({ success: false, code: 'not_found' });
+
+    const res = await request(app)
+      .post('/v1/plaid/transactions')
+      .set('Authorization', AUTH)
+      .send({
+        item_id: 'item-does-not-exist',
+        start_date: '2026-01-01',
+        end_date: '2026-03-31'
+      });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('item_not_found');
+  });
+
   it('returns 400 when start_date is missing', async () => {
     const res = await request(app)
       .post('/v1/plaid/transactions')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-tok', end_date: '2026-03-31' });
+      .send({ item_id: 'item-owned-001', end_date: '2026-03-31' });
 
     expect(res.status).toBe(400);
   });
@@ -566,7 +652,7 @@ describe('POST /v1/plaid/transactions', () => {
     const res = await request(app)
       .post('/v1/plaid/transactions')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-tok', start_date: '2026-01-01' });
+      .send({ item_id: 'item-owned-001', start_date: '2026-01-01' });
 
     expect(res.status).toBe(400);
   });
@@ -576,21 +662,8 @@ describe('POST /v1/plaid/transactions', () => {
       .post('/v1/plaid/transactions')
       .set('Authorization', AUTH)
       .send({
-        access_token: 'access-sandbox-tok',
+        item_id: 'item-owned-001',
         start_date: '01/01/2026',
-        end_date: '2026-03-31'
-      });
-
-    expect(res.status).toBe(400);
-  });
-
-  it('returns 400 when access_token has invalid format', async () => {
-    const res = await request(app)
-      .post('/v1/plaid/transactions')
-      .set('Authorization', AUTH)
-      .send({
-        access_token: 'bad-token',
-        start_date: '2026-01-01',
         end_date: '2026-03-31'
       });
 
@@ -602,7 +675,7 @@ describe('POST /v1/plaid/transactions', () => {
       .post('/v1/plaid/transactions')
       .set('Authorization', AUTH)
       .send({
-        access_token: 'access-sandbox-tok',
+        item_id: 'item-owned-001',
         start_date: '2026-01-01',
         end_date: '2026-03-31',
         count: 501
@@ -616,7 +689,7 @@ describe('POST /v1/plaid/transactions', () => {
       .post('/v1/plaid/transactions')
       .set('Authorization', AUTH)
       .send({
-        access_token: 'access-sandbox-tok',
+        item_id: 'item-owned-001',
         start_date: '2026-01-01',
         end_date: '2026-03-31',
         count: 0
@@ -629,7 +702,7 @@ describe('POST /v1/plaid/transactions', () => {
     const res = await request(app)
       .post('/v1/plaid/transactions')
       .send({
-        access_token: 'access-sandbox-tok',
+        item_id: 'item-owned-001',
         start_date: '2026-01-01',
         end_date: '2026-03-31'
       });
@@ -648,7 +721,7 @@ describe('POST /v1/plaid/transactions', () => {
       .post('/v1/plaid/transactions')
       .set('Authorization', AUTH)
       .send({
-        access_token: 'access-sandbox-token123',
+        item_id: 'item-owned-001',
         start_date: '2026-01-01',
         end_date: '2026-03-31'
       });
@@ -666,23 +739,24 @@ describe('POST /v1/plaid/item', () => {
     const res = await request(app)
       .post('/v1/plaid/item')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
     expect(res.status).toBe(200);
     expect(res.body.itemId).toBe('item-001');
     expect(res.body.institutionId).toBe('ins_109508');
   });
 
-  it('passes access_token to service', async () => {
+  it('resolves item_id under JWT user and passes token to service', async () => {
     await request(app)
       .post('/v1/plaid/item')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
-    expect(mockGetItem).toHaveBeenCalledWith('access-sandbox-token123');
+    expect(mockResolveTokenByItemId).toHaveBeenCalledWith('mock-user-id-12345', 'item-owned-001');
+    expect(mockGetItem).toHaveBeenCalledWith('access-sandbox-resolved');
   });
 
-  it('returns 400 when access_token is missing', async () => {
+  it('returns 400 when item_id is missing', async () => {
     const res = await request(app)
       .post('/v1/plaid/item')
       .set('Authorization', AUTH)
@@ -691,19 +765,46 @@ describe('POST /v1/plaid/item', () => {
     expect(res.status).toBe(400);
   });
 
-  it('returns 400 when access_token has invalid format', async () => {
+  it('returns 400 when client sends access_token (IDOR-prevention)', async () => {
     const res = await request(app)
       .post('/v1/plaid/item')
       .set('Authorization', AUTH)
-      .send({ access_token: 'invalid' });
+      .send({ access_token: 'access-sandbox-x', item_id: 'item-owned-001' });
 
     expect(res.status).toBe(400);
+    expect(mockResolveTokenByItemId).not.toHaveBeenCalled();
+    expect(mockGetItem).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 item_not_found when item belongs to a different user', async () => {
+    mockResolveTokenByItemId.mockResolvedValue({ success: false, code: 'not_found' });
+
+    const res = await request(app)
+      .post('/v1/plaid/item')
+      .set('Authorization', AUTH)
+      .send({ item_id: 'item-owned-by-other-user' });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('item_not_found');
+    expect(mockGetItem).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 item_not_found when item does not exist', async () => {
+    mockResolveTokenByItemId.mockResolvedValue({ success: false, code: 'not_found' });
+
+    const res = await request(app)
+      .post('/v1/plaid/item')
+      .set('Authorization', AUTH)
+      .send({ item_id: 'item-does-not-exist' });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('item_not_found');
   });
 
   it('returns 401 without auth token', async () => {
     const res = await request(app)
       .post('/v1/plaid/item')
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
     expect(res.status).toBe(401);
   });
@@ -714,7 +815,7 @@ describe('POST /v1/plaid/item', () => {
     const res = await request(app)
       .post('/v1/plaid/item')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
     expect(res.status).toBe(500);
   });
@@ -729,7 +830,7 @@ describe('POST /v1/plaid/item/webhook', () => {
       .post('/v1/plaid/item/webhook')
       .set('Authorization', AUTH)
       .send({
-        access_token: 'access-sandbox-token123',
+        item_id: 'item-owned-001',
         webhook: 'https://new.example.com/webhook'
       });
 
@@ -738,22 +839,23 @@ describe('POST /v1/plaid/item/webhook', () => {
     expect(res.body.webhook).toBe('https://new.example.com/webhook');
   });
 
-  it('passes access_token and webhook to service', async () => {
+  it('resolves item_id under JWT user and passes token + webhook to service', async () => {
     await request(app)
       .post('/v1/plaid/item/webhook')
       .set('Authorization', AUTH)
       .send({
-        access_token: 'access-sandbox-token123',
+        item_id: 'item-owned-001',
         webhook: 'https://hooks.example.com/plaid'
       });
 
+    expect(mockResolveTokenByItemId).toHaveBeenCalledWith('mock-user-id-12345', 'item-owned-001');
     expect(mockUpdateWebhook).toHaveBeenCalledWith(
-      'access-sandbox-token123',
+      'access-sandbox-resolved',
       'https://hooks.example.com/plaid'
     );
   });
 
-  it('returns 400 when access_token is missing', async () => {
+  it('returns 400 when item_id is missing', async () => {
     const res = await request(app)
       .post('/v1/plaid/item/webhook')
       .set('Authorization', AUTH)
@@ -762,11 +864,57 @@ describe('POST /v1/plaid/item/webhook', () => {
     expect(res.status).toBe(400);
   });
 
+  it('returns 400 when client sends access_token (IDOR-prevention)', async () => {
+    const res = await request(app)
+      .post('/v1/plaid/item/webhook')
+      .set('Authorization', AUTH)
+      .send({
+        access_token: 'access-sandbox-x',
+        item_id: 'item-owned-001',
+        webhook: 'https://example.com/webhook'
+      });
+
+    expect(res.status).toBe(400);
+    expect(mockResolveTokenByItemId).not.toHaveBeenCalled();
+    expect(mockUpdateWebhook).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 item_not_found when item belongs to a different user', async () => {
+    mockResolveTokenByItemId.mockResolvedValue({ success: false, code: 'not_found' });
+
+    const res = await request(app)
+      .post('/v1/plaid/item/webhook')
+      .set('Authorization', AUTH)
+      .send({
+        item_id: 'item-owned-by-other-user',
+        webhook: 'https://example.com/webhook'
+      });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('item_not_found');
+    expect(mockUpdateWebhook).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 item_not_found when item does not exist', async () => {
+    mockResolveTokenByItemId.mockResolvedValue({ success: false, code: 'not_found' });
+
+    const res = await request(app)
+      .post('/v1/plaid/item/webhook')
+      .set('Authorization', AUTH)
+      .send({
+        item_id: 'item-does-not-exist',
+        webhook: 'https://example.com/webhook'
+      });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('item_not_found');
+  });
+
   it('returns 400 when webhook is missing', async () => {
     const res = await request(app)
       .post('/v1/plaid/item/webhook')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
     expect(res.status).toBe(400);
   });
@@ -776,20 +924,8 @@ describe('POST /v1/plaid/item/webhook', () => {
       .post('/v1/plaid/item/webhook')
       .set('Authorization', AUTH)
       .send({
-        access_token: 'access-sandbox-token123',
+        item_id: 'item-owned-001',
         webhook: 'not-a-url'
-      });
-
-    expect(res.status).toBe(400);
-  });
-
-  it('returns 400 when access_token has invalid format', async () => {
-    const res = await request(app)
-      .post('/v1/plaid/item/webhook')
-      .set('Authorization', AUTH)
-      .send({
-        access_token: 'bad',
-        webhook: 'https://example.com/webhook'
       });
 
     expect(res.status).toBe(400);
@@ -799,7 +935,7 @@ describe('POST /v1/plaid/item/webhook', () => {
     const res = await request(app)
       .post('/v1/plaid/item/webhook')
       .send({
-        access_token: 'access-sandbox-token123',
+        item_id: 'item-owned-001',
         webhook: 'https://example.com/webhook'
       });
 
@@ -813,7 +949,7 @@ describe('POST /v1/plaid/item/webhook', () => {
       .post('/v1/plaid/item/webhook')
       .set('Authorization', AUTH)
       .send({
-        access_token: 'access-sandbox-token123',
+        item_id: 'item-owned-001',
         webhook: 'https://example.com/webhook'
       });
 
@@ -905,23 +1041,24 @@ describe('DELETE /v1/plaid/item', () => {
     const res = await request(app)
       .delete('/v1/plaid/item')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
     expect(res.status).toBe(200);
     expect(res.body.removed).toBe(true);
     expect(res.body.requestId).toBe('req-rm-001');
   });
 
-  it('passes access_token to service', async () => {
+  it('resolves item_id under JWT user and passes token to service', async () => {
     await request(app)
       .delete('/v1/plaid/item')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
-    expect(mockRemoveItem).toHaveBeenCalledWith('access-sandbox-token123');
+    expect(mockResolveTokenByItemId).toHaveBeenCalledWith('mock-user-id-12345', 'item-owned-001');
+    expect(mockRemoveItem).toHaveBeenCalledWith('access-sandbox-resolved');
   });
 
-  it('returns 400 when access_token is missing', async () => {
+  it('returns 400 when item_id is missing', async () => {
     const res = await request(app)
       .delete('/v1/plaid/item')
       .set('Authorization', AUTH)
@@ -930,19 +1067,46 @@ describe('DELETE /v1/plaid/item', () => {
     expect(res.status).toBe(400);
   });
 
-  it('returns 400 when access_token has invalid format', async () => {
+  it('returns 400 when client sends access_token (IDOR-prevention)', async () => {
     const res = await request(app)
       .delete('/v1/plaid/item')
       .set('Authorization', AUTH)
-      .send({ access_token: 'invalid' });
+      .send({ access_token: 'access-sandbox-x', item_id: 'item-owned-001' });
 
     expect(res.status).toBe(400);
+    expect(mockResolveTokenByItemId).not.toHaveBeenCalled();
+    expect(mockRemoveItem).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 item_not_found when item belongs to a different user', async () => {
+    mockResolveTokenByItemId.mockResolvedValue({ success: false, code: 'not_found' });
+
+    const res = await request(app)
+      .delete('/v1/plaid/item')
+      .set('Authorization', AUTH)
+      .send({ item_id: 'item-owned-by-other-user' });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('item_not_found');
+    expect(mockRemoveItem).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 item_not_found when item does not exist', async () => {
+    mockResolveTokenByItemId.mockResolvedValue({ success: false, code: 'not_found' });
+
+    const res = await request(app)
+      .delete('/v1/plaid/item')
+      .set('Authorization', AUTH)
+      .send({ item_id: 'item-does-not-exist' });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('item_not_found');
   });
 
   it('returns 401 without auth token', async () => {
     const res = await request(app)
       .delete('/v1/plaid/item')
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
     expect(res.status).toBe(401);
   });
@@ -957,7 +1121,7 @@ describe('DELETE /v1/plaid/item', () => {
     const res = await request(app)
       .delete('/v1/plaid/item')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Plaid API Error');
@@ -1643,7 +1807,7 @@ describe('Plaid error handler', () => {
     const res = await request(app)
       .post('/v1/plaid/accounts')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Plaid API Error');
@@ -1658,7 +1822,7 @@ describe('Plaid error handler', () => {
     const res = await request(app)
       .post('/v1/plaid/accounts')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
     expect(res.status).toBe(500);
     expect(res.body.error).toBe('Error');
@@ -1672,7 +1836,7 @@ describe('Plaid error handler', () => {
     const res = await request(app)
       .post('/v1/plaid/accounts')
       .set('Authorization', AUTH)
-      .send({ access_token: 'access-sandbox-token123' });
+      .send({ item_id: 'item-owned-001' });
 
     expect(res.status).toBe(500);
     expect(res.body.message).toBe('Internal server error');

@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 
 ## Current Position
 
-Phase: 53 of 60 (Report Output Format)
-Plan: 5 of 5 in current phase
-Status: Phase complete
-Last activity: 2026-05-18 - Completed 53-05-PLAN.md (Phase 53 done; ready for Phase 54)
+Phase: 54 of 60 (Plaid Token Migration)
+Plan: 4 of 5 in current phase
+Status: In progress — Task 3 (production cutover) blocked on operator
+Last activity: 2026-06-07 - Landed 54-04 Tasks 1 & 2 (iOS itemId migration + backfill script). Production backfill checkpoint pending.
 
-Progress: ██░░░░░░░░ 25%
+Progress: ███░░░░░░░ 30%
 
 ## Accumulated Context
 
@@ -52,6 +52,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-18
-Stopped at: Completed 53-05-PLAN.md (Wire Backend Output into Report-Summary and Letter-Viewer) — Phase 53 complete (5/5); ready for Phase 54: Plaid Token Migration
+Last session: 2026-06-07
+Stopped at: Completed 54-03-PLAN.md (Frontend Migration to itemId) — Next.js web client now uses itemId only for all Plaid calls; legacy `mg_plaid_access_tokens` localStorage key is actively purged on first load (cleanup line scheduled for removal in 54-05); Playwright regressions assert no access_token in any /v1/plaid/* request body. Next: 54-04 iOS rewire & production token backfill.
 Resume file: None

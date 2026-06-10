@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
@@ -17,9 +17,11 @@ import {
   XCircle,
   Info,
 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   usePlaidAccounts,
   usePlaidItem,
+  usePlaidItems,
   usePlaidTransactions,
   useExchangeToken,
   useDeletePlaidItem,
@@ -61,35 +63,6 @@ import {
   DialogClose,
 } from '@/components/ui/dialog'
 import type { PlaidAccount, PlaidTransaction, PaymentVerification } from '@/lib/types'
-
-// ---------------------------------------------------------------------------
-// localStorage helpers
-// ---------------------------------------------------------------------------
-
-const STORAGE_KEY = 'mg_plaid_access_tokens'
-
-function getPlaidAccessTokens(): string[] {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as string[]) : []
-  } catch {
-    return []
-  }
-}
-
-function addPlaidAccessToken(token: string): void {
-  const tokens = getPlaidAccessTokens()
-  if (!tokens.includes(token)) {
-    tokens.push(token)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens))
-  }
-}
-
-function removePlaidAccessToken(token: string): void {
-  const tokens = getPlaidAccessTokens().filter((t) => t !== token)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens))
-}
 
 // ---------------------------------------------------------------------------
 // Currency formatter
@@ -150,10 +123,10 @@ function AccountTypeBadge({ type }: { type: string }) {
 // ---------------------------------------------------------------------------
 
 function LinkedItemCard({
-  accessToken,
+  itemId,
   onUnlinked,
 }: {
-  accessToken: string
+  itemId: string
   onUnlinked: () => void
 }) {
   const {
@@ -161,12 +134,12 @@ function LinkedItemCard({
     isLoading: accountsLoading,
     isError: accountsError,
     refetch: refetchAccounts,
-  } = usePlaidAccounts(accessToken)
+  } = usePlaidAccounts(itemId)
   const {
     data: plaidItem,
     isLoading: itemLoading,
     refetch: refetchItem,
-  } = usePlaidItem(accessToken)
+  } = usePlaidItem(itemId)
   const deleteItem = useDeletePlaidItem()
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
@@ -184,16 +157,15 @@ function LinkedItemCard({
   }
 
   const handleUnlink = async () => {
-    await deleteItem.mutateAsync(accessToken)
-    removePlaidAccessToken(accessToken)
+    await deleteItem.mutateAsync(itemId)
     setUnlinkOpen(false)
     onUnlinked()
   }
 
   const isLoading = accountsLoading || itemLoading
   const needsReauth =
-    plaidItem?.consent_expiration_time &&
-    new Date(plaidItem.consent_expiration_time) < new Date()
+    plaidItem?.consentExpirationTime &&
+    new Date(plaidItem.consentExpirationTime) < new Date()
 
   if (isLoading) {
     return (
@@ -225,12 +197,12 @@ function LinkedItemCard({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-white font-semibold text-base">
-              {plaidItem?.institution_name ?? 'Unknown Institution'}
+              {plaidItem?.institutionName ?? 'Unknown Institution'}
             </h3>
-            {plaidItem?.consent_expiration_time && (
+            {plaidItem?.consentExpirationTime && (
               <p className="text-xs text-gray-500 mt-0.5">
                 Consent expires{' '}
-                {new Date(plaidItem.consent_expiration_time).toLocaleDateString()}
+                {new Date(plaidItem.consentExpirationTime).toLocaleDateString()}
               </p>
             )}
           </div>
@@ -354,7 +326,7 @@ function LinkedItemCard({
             <DialogDescription>
               Are you sure you want to unlink{' '}
               <span className="font-medium text-white">
-                {plaidItem?.institution_name ?? 'this institution'}
+                {plaidItem?.institutionName ?? 'this institution'}
               </span>
               ? This will remove all associated accounts and cannot be undone.
             </DialogDescription>
@@ -508,29 +480,29 @@ function CrossReferenceInfoCard() {
 }
 
 // ---------------------------------------------------------------------------
-// Account entry for selector (flattened across tokens)
+// Account entry for selector (flattened across items)
 // ---------------------------------------------------------------------------
 
 interface AccountEntry {
-  accessToken: string
+  itemId: string
   account: PlaidAccount
 }
 
 // ---------------------------------------------------------------------------
-// Hook: aggregate accounts across access tokens
+// Hook: aggregate accounts across item ids
 // ---------------------------------------------------------------------------
 
-function useAllAccounts(accessTokens: string[]): {
+function useAllAccounts(itemIds: string[]): {
   entries: AccountEntry[]
   isLoading: boolean
 } {
-  // We call usePlaidAccounts for each token. Since hooks must be called
-  // unconditionally, we support up to 10 tokens (pad with undefined).
+  // We call usePlaidAccounts for each itemId. Since hooks must be called
+  // unconditionally, we support up to 10 items (pad with undefined).
   const padded = useMemo(() => {
-    const arr = [...accessTokens]
+    const arr = [...itemIds]
     while (arr.length < 10) arr.push('')
     return arr
-  }, [accessTokens])
+  }, [itemIds])
 
   const q0 = usePlaidAccounts(padded[0] || undefined)
   const q1 = usePlaidAccounts(padded[1] || undefined)
@@ -547,23 +519,23 @@ function useAllAccounts(accessTokens: string[]): {
 
   const entries = useMemo(() => {
     const result: AccountEntry[] = []
-    for (let i = 0; i < accessTokens.length && i < 10; i++) {
+    for (let i = 0; i < itemIds.length && i < 10; i++) {
       const data = queries[i].data
       if (data) {
         for (const account of data) {
-          result.push({ accessToken: accessTokens[i], account })
+          result.push({ itemId: itemIds[i], account })
         }
       }
     }
     return result
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    accessTokens,
+    itemIds,
     q0.data, q1.data, q2.data, q3.data, q4.data,
     q5.data, q6.data, q7.data, q8.data, q9.data,
   ])
 
-  const isLoading = queries.some((q, i) => i < accessTokens.length && q.isLoading)
+  const isLoading = queries.some((q, i) => i < itemIds.length && q.isLoading)
 
   return { entries, isLoading }
 }
@@ -574,8 +546,8 @@ function useAllAccounts(accessTokens: string[]): {
 
 const PAGE_SIZE = 25
 
-function TransactionSection({ accessTokens }: { accessTokens: string[] }) {
-  const { entries: allAccounts, isLoading: accountsLoading } = useAllAccounts(accessTokens)
+function TransactionSection({ itemIds }: { itemIds: string[] }) {
+  const { entries: allAccounts, isLoading: accountsLoading } = useAllAccounts(itemIds)
 
   // Account selector
   const [selectedAccountId, setSelectedAccountId] = useState<string>('all')
@@ -591,16 +563,16 @@ function TransactionSection({ accessTokens }: { accessTokens: string[] }) {
   // Pagination
   const [page, setPage] = useState(0)
 
-  // Find the access token for the selected account
+  // Find the itemId for the selected account
   const selectedEntry = useMemo(
     () => allAccounts.find((e) => e.account.account_id === selectedAccountId),
     [allAccounts, selectedAccountId]
   )
 
-  // When selecting "all", use the first token; otherwise use the selected account's token
-  const activeToken = selectedAccountId === 'all'
-    ? accessTokens[0]
-    : selectedEntry?.accessToken
+  // When selecting "all", use the first itemId; otherwise use the selected account's itemId
+  const activeItemId = selectedAccountId === 'all'
+    ? itemIds[0]
+    : selectedEntry?.itemId
 
   const dateRange = useMemo(
     () => ({ startDate, endDate }),
@@ -610,7 +582,7 @@ function TransactionSection({ accessTokens }: { accessTokens: string[] }) {
   const {
     data: transactions,
     isLoading: txLoading,
-  } = usePlaidTransactions(activeToken, dateRange)
+  } = usePlaidTransactions(activeItemId, dateRange)
 
   // Client-side filtering
   const filtered = useMemo(() => {
@@ -862,26 +834,34 @@ function CrossReferenceSection() {
 // ---------------------------------------------------------------------------
 
 export default function BankAccountsPage() {
-  const [accessTokens, setAccessTokens] = useState<string[]>([])
   const exchangeToken = useExchangeToken()
+  const queryClient = useQueryClient()
+  const { items, isLoading: itemsLoading } = usePlaidItems()
 
-  // Hydrate from localStorage after mount to avoid SSR mismatch
+  // One-time migration cleanup (Phase 54): remove the legacy plaintext
+  // access-token cache from localStorage. The client no longer stores
+  // Plaid credentials; item_id is the only identifier from now on.
+  // Plan 54-05 will remove this cleanup line after a deprecation window.
   useEffect(() => {
-    setAccessTokens(getPlaidAccessTokens())
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('mg_plaid_access_tokens')
+    }
   }, [])
+
+  const itemIds = useMemo(() => items.map((i) => i.itemId), [items])
 
   const handlePlaidSuccess = useCallback(
     async (publicToken: string) => {
-      const result = await exchangeToken.mutateAsync({ publicToken })
-      addPlaidAccessToken(result.access_token)
-      setAccessTokens(getPlaidAccessTokens())
+      await exchangeToken.mutateAsync({ publicToken })
+      // New item appears via refetch of GET /v1/plaid/items
+      queryClient.invalidateQueries({ queryKey: ['plaid-items'] })
     },
-    [exchangeToken]
+    [exchangeToken, queryClient]
   )
 
   const handleUnlinked = useCallback(() => {
-    setAccessTokens(getPlaidAccessTokens())
-  }, [])
+    queryClient.invalidateQueries({ queryKey: ['plaid-items'] })
+  }, [queryClient])
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto">
@@ -905,7 +885,7 @@ export default function BankAccountsPage() {
         </div>
       )}
 
-      {accessTokens.length === 0 ? (
+      {!itemsLoading && itemIds.length === 0 ? (
         <EmptyState
           icon={Landmark}
           title="No linked accounts"
@@ -917,20 +897,22 @@ export default function BankAccountsPage() {
         <div className="space-y-6">
           {/* Linked accounts */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {accessTokens.map((token) => (
+            {itemIds.map((id) => (
               <LinkedItemCard
-                key={token}
-                accessToken={token}
+                key={id}
+                itemId={id}
                 onUnlinked={handleUnlinked}
               />
             ))}
           </div>
 
           {/* Cross-reference verification */}
-          <CrossReferenceSection />
+          <Suspense fallback={null}>
+            <CrossReferenceSection />
+          </Suspense>
 
           {/* Transactions */}
-          <TransactionSection accessTokens={accessTokens} />
+          {itemIds.length > 0 && <TransactionSection itemIds={itemIds} />}
         </div>
       )}
     </div>
