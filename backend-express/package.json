@@ -16,7 +16,8 @@
     "loadtest:health": "node loadtest/runner.js --suite health",
     "loadtest:api": "node loadtest/runner.js --suite api",
     "loadtest:stress": "node loadtest/runner.js --suite stress",
-    "loadtest:memory": "node loadtest/runner.js --suite memory"
+    "loadtest:memory": "node loadtest/runner.js --suite memory",
+    "accuracy": "node scripts/accuracy-report.js"
   },
   "engines": {
     "node": ">=20.0.0",

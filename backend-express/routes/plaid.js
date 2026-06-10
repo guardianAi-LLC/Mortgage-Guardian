@@ -172,20 +172,38 @@ router.post('/exchange_token', validate(exchangeTokenSchema), async (req, res, n
  * POST /v1/plaid/accounts
  * Get account information
  *
+ * Phase 54-02: access_token is resolved server-side from `item_id` after the
+ * authenticated Clerk user is verified to own the item. The access_token MUST
+ * NEVER appear in the request body.
+ *
  * Request Body:
- * - access_token (required): Plaid access token
+ * - item_id (required): Plaid item_id owned by the authenticated user
  * - account_ids (optional): Specific account IDs to fetch
  *
  * Response:
  * - accounts: Array of account objects with balances
  * - item: Bank connection metadata
  * - request_id: Plaid request ID for debugging
+ *
+ * Errors:
+ * - 400 if access_token is supplied (schema rejects unknown keys)
+ * - 404 { error: 'item_not_found' } if the item does not exist OR is owned
+ *   by a different user (same shape to avoid existence leakage)
  */
 router.post('/accounts', validate(accountsSchema), async (req, res, next) => {
   try {
-    const { access_token, account_ids } = req.body;
+    const { item_id, account_ids } = req.body;
 
-    const result = await plaidService.getAccounts(access_token, account_ids);
+    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id);
+    if (!tokenResult.success) {
+      logger.warn('Plaid accounts: item not found for user', { itemId: item_id, userId: req.user.id });
+      return res.status(404).json({
+        error: 'item_not_found',
+        message: 'No Plaid item found for the current user with that item_id'
+      });
+    }
+
+    const result = await plaidService.getAccounts(tokenResult.accessToken, account_ids);
 
     res.json(result);
 
@@ -199,8 +217,11 @@ router.post('/accounts', validate(accountsSchema), async (req, res, next) => {
  * POST /v1/plaid/transactions
  * Get transaction history with pagination
  *
+ * Phase 54-02: access_token is resolved server-side from `item_id` after the
+ * authenticated Clerk user is verified to own the item.
+ *
  * Request Body:
- * - access_token (required): Plaid access token
+ * - item_id (required): Plaid item_id owned by the authenticated user
  * - start_date (required): Start date in YYYY-MM-DD format
  * - end_date (required): End date in YYYY-MM-DD format
  * - account_ids (optional): Specific account IDs to fetch transactions for
@@ -212,11 +233,15 @@ router.post('/accounts', validate(accountsSchema), async (req, res, next) => {
  * - total_transactions: Total number of transactions in date range
  * - accounts: Array of accounts with transactions
  * - request_id: Plaid request ID for debugging
+ *
+ * Errors:
+ * - 400 if access_token is supplied
+ * - 404 { error: 'item_not_found' } if foreign or missing item
  */
 router.post('/transactions', validate(transactionsSchema), async (req, res, next) => {
   try {
     const {
-      access_token,
+      item_id,
       start_date,
       end_date,
       account_ids,
@@ -224,8 +249,17 @@ router.post('/transactions', validate(transactionsSchema), async (req, res, next
       offset
     } = req.body;
 
+    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id);
+    if (!tokenResult.success) {
+      logger.warn('Plaid transactions: item not found for user', { itemId: item_id, userId: req.user.id });
+      return res.status(404).json({
+        error: 'item_not_found',
+        message: 'No Plaid item found for the current user with that item_id'
+      });
+    }
+
     const result = await plaidService.getTransactions({
-      accessToken: access_token,
+      accessToken: tokenResult.accessToken,
       startDate: start_date,
       endDate: end_date,
       accountIds: account_ids,
@@ -249,8 +283,10 @@ router.post('/transactions', validate(transactionsSchema), async (req, res, next
  * POST /v1/plaid/item
  * Get item (bank connection) information
  *
+ * Phase 54-02: access_token resolved server-side from `item_id`.
+ *
  * Request Body:
- * - access_token (required): Plaid access token
+ * - item_id (required): Plaid item_id owned by the authenticated user
  *
  * Response:
  * - itemId: Unique item identifier
@@ -259,12 +295,25 @@ router.post('/transactions', validate(transactionsSchema), async (req, res, next
  * - availableProducts: Products available for this item
  * - billedProducts: Products currently being billed
  * - error: Any item-level errors
+ *
+ * Errors:
+ * - 400 if access_token is supplied
+ * - 404 { error: 'item_not_found' } if foreign or missing item
  */
 router.post('/item', validate(itemSchema), async (req, res, next) => {
   try {
-    const { access_token } = req.body;
+    const { item_id } = req.body;
 
-    const result = await plaidService.getItem(access_token);
+    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id);
+    if (!tokenResult.success) {
+      logger.warn('Plaid item: not found for user', { itemId: item_id, userId: req.user.id });
+      return res.status(404).json({
+        error: 'item_not_found',
+        message: 'No Plaid item found for the current user with that item_id'
+      });
+    }
+
+    const result = await plaidService.getItem(tokenResult.accessToken);
 
     res.json(result);
 
@@ -324,19 +373,34 @@ router.get('/items', async (req, res, next) => {
  * POST /v1/plaid/item/webhook
  * Update webhook URL for an item
  *
+ * Phase 54-02: access_token resolved server-side from `item_id`.
+ *
  * Request Body:
- * - access_token (required): Plaid access token
+ * - item_id (required): Plaid item_id owned by the authenticated user
  * - webhook (required): New webhook URL (must be HTTPS)
  *
  * Response:
  * - itemId: Unique item identifier
  * - webhook: Updated webhook URL
+ *
+ * Errors:
+ * - 400 if access_token is supplied
+ * - 404 { error: 'item_not_found' } if foreign or missing item
  */
 router.post('/item/webhook', validate(updateWebhookSchema), async (req, res, next) => {
   try {
-    const { access_token, webhook } = req.body;
+    const { item_id, webhook } = req.body;
 
-    const result = await plaidService.updateWebhook(access_token, webhook);
+    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id);
+    if (!tokenResult.success) {
+      logger.warn('Plaid update webhook: item not found for user', { itemId: item_id, userId: req.user.id });
+      return res.status(404).json({
+        error: 'item_not_found',
+        message: 'No Plaid item found for the current user with that item_id'
+      });
+    }
+
+    const result = await plaidService.updateWebhook(tokenResult.accessToken, webhook);
 
     res.json(result);
 
@@ -350,18 +414,33 @@ router.post('/item/webhook', validate(updateWebhookSchema), async (req, res, nex
  * DELETE /v1/plaid/item
  * Remove (delete) an item and revoke access
  *
+ * Phase 54-02: access_token resolved server-side from `item_id`.
+ *
  * Request Body:
- * - access_token (required): Plaid access token
+ * - item_id (required): Plaid item_id owned by the authenticated user
  *
  * Response:
  * - removed: Boolean indicating success
  * - request_id: Plaid request ID for debugging
+ *
+ * Errors:
+ * - 400 if access_token is supplied
+ * - 404 { error: 'item_not_found' } if foreign or missing item
  */
 router.delete('/item', validate(deleteItemSchema), async (req, res, next) => {
   try {
-    const { access_token } = req.body;
+    const { item_id } = req.body;
 
-    const result = await plaidService.removeItem(access_token);
+    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id);
+    if (!tokenResult.success) {
+      logger.warn('Plaid remove item: not found for user', { itemId: item_id, userId: req.user.id });
+      return res.status(404).json({
+        error: 'item_not_found',
+        message: 'No Plaid item found for the current user with that item_id'
+      });
+    }
+
+    const result = await plaidService.removeItem(tokenResult.accessToken);
 
     res.json(result);
 

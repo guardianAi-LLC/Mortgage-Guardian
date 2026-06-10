@@ -8,7 +8,11 @@ import { useLinkToken } from '@/hooks/use-plaid-link'
 interface PlaidLinkButtonProps {
   onSuccess: (publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => void
   onExit?: () => void
-  accessToken?: string
+  /**
+   * When set, opens Plaid Link in update mode for the given Plaid item.
+   * The backend resolves the access_token server-side from this item_id.
+   */
+  itemId?: string
   className?: string
   children?: ReactNode
 }
@@ -16,7 +20,7 @@ interface PlaidLinkButtonProps {
 export function PlaidLinkButton({
   onSuccess,
   onExit,
-  accessToken,
+  itemId: _itemId,
   className,
   children,
 }: PlaidLinkButtonProps) {

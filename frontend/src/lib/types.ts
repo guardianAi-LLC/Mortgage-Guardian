@@ -318,12 +318,13 @@ export interface PlaidTransaction {
 }
 
 export interface PlaidItem {
-  item_id: string
-  institution_id: string
-  institution_name?: string
-  consent_expiration_time?: string
-  available_products?: string[]
-  billed_products?: string[]
+  itemId: string
+  institutionId: string | null
+  institutionName?: string
+  status: string
+  updatedAt: string
+  accounts: PlaidAccount[]
+  consentExpirationTime?: string | null
 }
 
 export interface PlaidLinkResult {
@@ -332,6 +333,5 @@ export interface PlaidLinkResult {
 }
 
 export interface PlaidExchangeResult {
-  access_token: string
   item_id: string
 }

@@ -1,0 +1,9 @@
+{
+  "id": "m001-s04-synthetic-statement",
+  "source": "synthetic",
+  "docType": "servicing",
+  "docSubtype": "monthly_statement",
+  "createdAt": "2026-05-29",
+  "labeledBy": "engineering",
+  "description": "Synthetic monthly statement: excessive late fee (5% of P&I), escrow shortage with undisclosed allocation period, escrow balance carry-forward inconsistency. Lifted from the M001/S04 end-to-end fixture as the corpus seed."
+}

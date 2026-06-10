@@ -1,0 +1,10 @@
+{
+  "expectedRuleIds": [
+    "rule-respa-001",
+    "rule-respa-004",
+    "rule-cfpb-006"
+  ],
+  "minConfidence": 0.5,
+  "citationRegex": "12 CFR § 102[46]",
+  "notes": "RESPA Section 8 (excessive fee) + RESPA Section 10 (escrow shortage allocation disclosure) + CFPB early intervention notice."
+}

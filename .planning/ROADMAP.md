@@ -190,10 +190,14 @@ Plans:
 **Depends on**: Phase 53
 **Research**: Likely (encrypted token storage patterns)
 **Research topics**: Server-side encrypted credential storage, secure token rotation, migration strategies for live tokens
-**Plans**: TBD
+**Plans**: 5
 
 Plans:
-- [ ] 54-01: TBD
+- [x] 54-01: Token Encryption Service & Schema Migration — completed 2026-06-07
+- [x] 54-02: Server-Side Token Resolution & API Refactor (itemId-based endpoints) — completed 2026-06-07
+- [x] 54-03: Frontend Migration to itemId (remove localStorage) — completed 2026-06-07
+- [ ] 54-04: iOS Migration & Production Token Backfill
+- [ ] 54-05: Drop Plaintext Column, Audit Logging, Runbook, Cleanup
 
 #### Phase 55: Upload Security & Malware Scanning
 
@@ -326,4 +330,4 @@ Plans:
 | 60. Landing Page & Public Presence | v8.0 | 0/? | Not started | - |
 
 **Completed:** 195 plans across 53 phases, 6 milestones (53 phases fully complete)
-**In progress:** v8.0 Enterprise Readiness — Phase 53 complete; ready for Phase 54
+**In progress:** v8.0 Enterprise Readiness — Phase 54 Plaid Token Migration (3/5 plans complete)

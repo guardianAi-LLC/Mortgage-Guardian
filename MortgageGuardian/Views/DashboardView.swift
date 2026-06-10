@@ -70,7 +70,7 @@ struct DashboardView: View {
             }
             .fileImporter(
                 isPresented: $showingFileImporter,
-                allowedContentTypes: [.pdf, .png, .jpeg, .heic],
+                allowedContentTypes: [.pdf, .image],
                 allowsMultipleSelection: false
             ) { result in
                 switch result {
@@ -433,7 +433,7 @@ struct DashboardDocumentPicker: View {
             }
             .fileImporter(
                 isPresented: $showingFileImporter,
-                allowedContentTypes: [.pdf, .png, .jpeg, .heic],
+                allowedContentTypes: [.pdf, .image],
                 allowsMultipleSelection: false
             ) { result in
                 switch result {

@@ -81,8 +81,16 @@ const mockGetItemsForUser = jest.fn(async (userId) => {
   return { success: true, items };
 });
 
+// Phase 54: routes resolve the access token server-side from item_id.
+const mockResolveTokenByItemId = jest.fn(async (userId, itemId) => {
+  const item = upsertedItems.find((i) => i.userId === userId && i.itemId === itemId);
+  if (!item) return { success: false, error: 'item_not_found' };
+  return { success: true, accessToken: item.accessToken };
+});
+
 jest.mock('../../services/plaidDataService', () => ({
   upsertPlaidItem: (...args) => mockUpsertPlaidItem(...args),
+  resolveTokenByItemId: (...args) => mockResolveTokenByItemId(...args),
   getItem: jest.fn().mockResolvedValue({ success: true, data: null }),
   getItemsForUser: (...args) => mockGetItemsForUser(...args),
   storeTransactions: jest.fn().mockResolvedValue({ success: true }),
@@ -187,7 +195,7 @@ describeIfPlaid('Plaid sandbox round-trip (real Plaid API)', () => {
   });
 
   it('POST /v1/plaid/transactions returns at least one sandbox transaction', async () => {
-    expect(accessToken).toBeDefined();
+    expect(itemId).toBeDefined();
 
     // Plaid sandbox seeds canned historical transactions for ins_109508, but
     // they are not immediately available after itemPublicTokenExchange — Plaid
@@ -211,7 +219,7 @@ describeIfPlaid('Plaid sandbox round-trip (real Plaid API)', () => {
         .post('/v1/plaid/transactions')
         .set('Authorization', AUTH)
         .send({
-          access_token: accessToken,
+          item_id: itemId,
           start_date: fmt(thirtyDaysAgo),
           end_date: fmt(today),
           count: 50

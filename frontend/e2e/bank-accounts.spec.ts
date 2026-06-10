@@ -1,16 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { interceptPlaidAPI, mockPlaidAccounts, mockTransactions, signIn } from './fixtures/mock-data'
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Seed localStorage with a fake Plaid access token so the page renders linked accounts. */
-async function seedPlaidToken(page: import('@playwright/test').Page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('mg_plaid_access_tokens', JSON.stringify(['access-sandbox-test-token']))
-  })
-}
+import {
+  interceptPlaidAPI,
+  mockPlaidAccounts,
+  mockTransactions,
+  signIn,
+} from './fixtures/mock-data'
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -32,23 +26,23 @@ test.describe('Bank accounts page', () => {
   })
 
   test('link bank account button renders', async ({ page }) => {
+    // Use the "empty items" intercept so the empty state surfaces the CTA.
+    await interceptPlaidAPI(page, { empty: true })
     await page.goto('/dashboard/bank-accounts')
     await page.waitForLoadState('networkidle')
 
-    // The PlaidLinkButton renders with text "Link Bank Account"
     const linkButton = page.getByRole('button', { name: /link bank account/i })
     await expect(linkButton.first()).toBeVisible()
   })
 
-  test('linked account cards display', async ({ page }) => {
-    await seedPlaidToken(page)
+  test('linked banks render from GET /v1/plaid/items', async ({ page }) => {
     await page.goto('/dashboard/bank-accounts')
     await page.waitForLoadState('networkidle')
 
-    // Institution name from mock
+    // Institution name comes from the mocked GET /items response.
     await expect(page.getByText('First National Bank')).toBeVisible()
 
-    // Account names and last 4 digits from mockPlaidAccounts
+    // Account names and last 4 digits from mockPlaidAccounts.
     const accounts = mockPlaidAccounts()
     for (const acct of accounts) {
       await expect(page.getByText(acct.name, { exact: false }).first()).toBeVisible()
@@ -57,17 +51,13 @@ test.describe('Bank accounts page', () => {
   })
 
   test('account card expands to show details', async ({ page }) => {
-    await seedPlaidToken(page)
     await page.goto('/dashboard/bank-accounts')
     await page.waitForLoadState('networkidle')
 
     const accounts = mockPlaidAccounts()
-
-    // Click on the first account to expand it
     const firstAccountButton = page.getByRole('button', { name: new RegExp(accounts[0].name) })
     await firstAccountButton.click()
 
-    // Verify expanded details
     await expect(page.getByText('Type')).toBeVisible()
     await expect(page.getByText('Subtype')).toBeVisible()
     await expect(page.getByText('Available')).toBeVisible()
@@ -75,15 +65,12 @@ test.describe('Bank accounts page', () => {
   })
 
   test('unlink button shows confirmation dialog', async ({ page }) => {
-    await seedPlaidToken(page)
     await page.goto('/dashboard/bank-accounts')
     await page.waitForLoadState('networkidle')
 
-    // Click unlink button (trash icon)
     const unlinkButton = page.getByRole('button', { name: /unlink bank account/i })
     await unlinkButton.click()
 
-    // Confirmation dialog should appear
     await expect(page.getByRole('heading', { name: /unlink bank account/i })).toBeVisible()
     await expect(page.getByText(/cannot be undone/i)).toBeVisible()
     await expect(page.getByRole('button', { name: /cancel/i })).toBeVisible()
@@ -91,37 +78,27 @@ test.describe('Bank accounts page', () => {
   })
 
   test('transactions section renders', async ({ page }) => {
-    await seedPlaidToken(page)
     await page.goto('/dashboard/bank-accounts')
     await page.waitForLoadState('networkidle')
 
-    // Verify transaction section heading
     await expect(page.getByText('Recent Transactions')).toBeVisible()
-
-    // Verify table headers
     await expect(page.getByRole('columnheader', { name: /description/i })).toBeVisible()
     await expect(page.getByRole('columnheader', { name: /amount/i })).toBeVisible()
     await expect(page.getByRole('columnheader', { name: /status/i })).toBeVisible()
 
-    // Verify mock transaction data appears
     const transactions = mockTransactions()
     await expect(page.getByText(transactions[0].name, { exact: false })).toBeVisible()
   })
 
   test('transaction filters render', async ({ page }) => {
-    await seedPlaidToken(page)
     await page.goto('/dashboard/bank-accounts')
     await page.waitForLoadState('networkidle')
 
-    // Date filters
     await expect(page.getByText('Start Date')).toBeVisible()
     await expect(page.getByText('End Date')).toBeVisible()
-
-    // Amount filters
     await expect(page.getByText('Min Amount')).toBeVisible()
     await expect(page.getByText('Max Amount')).toBeVisible()
 
-    // Verify the inputs exist
     const dateInputs = page.locator('input[type="date"]')
     await expect(dateInputs).toHaveCount(2)
 
@@ -129,12 +106,63 @@ test.describe('Bank accounts page', () => {
     await expect(numberInputs).toHaveCount(2)
   })
 
-  test('empty state when no accounts linked', async ({ page }) => {
-    // Do NOT seed plaid token => no accounts
+  test('empty state when GET /items returns []', async ({ page }) => {
+    await interceptPlaidAPI(page, { empty: true })
     await page.goto('/dashboard/bank-accounts')
     await page.waitForLoadState('networkidle')
 
     await expect(page.getByText('No linked accounts')).toBeVisible()
     await expect(page.getByText(/link a bank account/i)).toBeVisible()
+  })
+
+  // -------------------------------------------------------------------------
+  // Phase 54-03 security regressions
+  // -------------------------------------------------------------------------
+
+  test('no access_token in any /v1/plaid/* request body', async ({ page }) => {
+    const offending: { url: string; key: string }[] = []
+    page.on('request', (req) => {
+      if (!/\/api\/v1\/plaid\//.test(req.url())) return
+      const data = req.postData()
+      if (!data) return
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(data)
+      } catch {
+        return
+      }
+      if (parsed && typeof parsed === 'object') {
+        for (const key of Object.keys(parsed as Record<string, unknown>)) {
+          if (/access_?token/i.test(key)) {
+            offending.push({ url: req.url(), key })
+          }
+        }
+      }
+    })
+
+    await page.goto('/dashboard/bank-accounts')
+    await page.waitForLoadState('networkidle')
+
+    expect(offending, JSON.stringify(offending)).toEqual([])
+  })
+
+  test('localStorage migration cleanup: legacy mg_plaid_access_tokens is purged on first render', async ({
+    page,
+  }) => {
+    // Seed the legacy key BEFORE the page boots.
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        'mg_plaid_access_tokens',
+        JSON.stringify(['access-sandbox-LEAKY-TOKEN'])
+      )
+    })
+
+    await page.goto('/dashboard/bank-accounts')
+    await page.waitForLoadState('networkidle')
+
+    const remaining = await page.evaluate(() =>
+      localStorage.getItem('mg_plaid_access_tokens')
+    )
+    expect(remaining).toBeNull()
   })
 })

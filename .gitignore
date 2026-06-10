@@ -351,3 +351,15 @@ frontend/.netlify/
 .venv/
 target/
 vendor/
+
+# Personal deal-prep / business strategy docs (kept locally, never committed)
+/friday-call-playbook.md
+/pre-call-email-to-michaella.md
+/trap-questions-deflections.md
+
+# Generated knowledge graph (regenerate with `graphify update .`)
+graphify-out/
+
+# Claude Code local state
+.claude/scheduled_tasks.lock
+.claude/worktrees/

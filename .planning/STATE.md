@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-04-20)
 
 **Core value:** The platform must reliably and securely analyze mortgage documents to detect servicing errors with high confidence, cross-verify against actual bank transaction data, and protect sensitive financial information throughout the process.
-**Current focus:** v8.0 Enterprise Readiness — Phase 53 Report Output Format
+**Current focus:** v8.0 Enterprise Readiness — Phase 54 Plaid Token Migration
 
 ## Current Position
 
-Phase: 53 of 60 (Report Output Format)
-Plan: 5 of 5 in current phase
-Status: Phase complete
-Last activity: 2026-05-18 - Completed 53-05-PLAN.md (Phase 53 done; ready for Phase 54)
+Phase: 54 of 60 (Plaid Token Migration)
+Plan: 4 of 5 complete — 54-05 ready to execute
+Status: 54-04 complete (production backfill applied + verified 2026-06-10)
+Last activity: 2026-06-10 - Merged phase-54 worktree to main; applied migration 006 to prod; generated PLAID_ENCRYPTION_KEY; backfill applied (1 row, 0 errors); plaintext count = 0. 54-05 prerequisites satisfied.
 
-Progress: ██░░░░░░░░ 25%
+Progress: ███░░░░░░░ 30%
 
 ## Accumulated Context
 
@@ -38,7 +38,7 @@ None.
 
 ### Blockers/Concerns Carried Forward
 
-None.
+- **Backend has no live deployment** (discovered 2026-06-10 during 54-04 cutover): the Railway app the production frontend targets returns 404; the Vercel backend project's last deploy is Nov 2025 and not live. Redeploy needed with PLAID_ENCRYPTION_KEY (now in backend-express/.env only) set in the hosting env, and frontend/.env.production updated if the host changes. Suggested: fold into Phase 56 or a dedicated deploy pass after 54-05.
 
 ### Roadmap Evolution
 
@@ -52,6 +52,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-18
-Stopped at: Completed 53-05-PLAN.md (Wire Backend Output into Report-Summary and Letter-Viewer) — Phase 53 complete (5/5); ready for Phase 54: Plaid Token Migration
+Last session: 2026-06-07
+Stopped at: Completed 54-03-PLAN.md (Frontend Migration to itemId) — Next.js web client now uses itemId only for all Plaid calls; legacy `mg_plaid_access_tokens` localStorage key is actively purged on first load (cleanup line scheduled for removal in 54-05); Playwright regressions assert no access_token in any /v1/plaid/* request body. Next: 54-04 iOS rewire & production token backfill.
 Resume file: None

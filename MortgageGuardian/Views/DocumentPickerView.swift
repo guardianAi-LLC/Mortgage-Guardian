@@ -12,10 +12,13 @@ struct DocumentPickerView: View {
     @State private var isUploading = false
     @State private var uploadProgress: Double = 0.0
     @State private var showingCamera = false
+    @State private var showingPhotoPicker = false
     @State private var showingFileImporter = false
     @State private var errorMessage: String?
     @State private var showingError = false
     @State private var fileName = ""
+
+    private static let maxFileSize: Int = 50 * 1024 * 1024 // 50MB
 
     var body: some View {
         NavigationView {
@@ -91,7 +94,7 @@ struct DocumentPickerView: View {
     private var uploadOptionsSection: some View {
         VStack(spacing: 16) {
             Button {
-                // PhotosPicker will be triggered by the sheet
+                showingPhotoPicker = true
             } label: {
                 UploadOptionCard(
                     icon: "photo.on.rectangle",
@@ -99,7 +102,7 @@ struct DocumentPickerView: View {
                     description: "Select from your photos"
                 )
             }
-            .photosPicker(isPresented: .constant(true), selection: $selectedItem, matching: .images)
+            .photosPicker(isPresented: $showingPhotoPicker, selection: $selectedItem, matching: .images)
 
             Button {
                 showingCamera = true
@@ -252,20 +255,31 @@ struct DocumentPickerView: View {
 
         Task {
             do {
+                // Size guard before reading into memory
+                let fileSize = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                guard fileSize <= Self.maxFileSize else {
+                    throw PickerDocumentError.fileTooLarge
+                }
+
                 // Read file content
                 let data = try Data(contentsOf: url)
                 uploadProgress = 0.3
 
-                // Extract text based on file type
+                // Extract text based on file type — check extension first, fall back to magic bytes
                 let extractedText: String
-                if url.pathExtension.lowercased() == "pdf" {
+                let ext = url.pathExtension.lowercased()
+                let isPDF = ext == "pdf" || data.prefix(4) == Data("%PDF".utf8)
+                if isPDF {
                     extractedText = await extractTextFromPDF(data)
-                } else {
-                    // Assume it's an image
-                    guard let image = UIImage(data: data) else {
-                        throw PickerDocumentError.unsupportedFormat
-                    }
+                } else if let image = UIImage(data: data) {
                     extractedText = await extractTextFromImage(image)
+                } else if let text = String(data: data, encoding: .utf8),
+                          !text.prefix(1024).contains("\0") {
+                    // Plain UTF-8 text only — isoLatin1 fallback is intentionally omitted
+                    // because it never fails for arbitrary bytes and would produce garbage.
+                    extractedText = text
+                } else {
+                    throw PickerDocumentError.unsupportedFormat
                 }
 
                 uploadProgress = 0.7
@@ -453,6 +467,7 @@ struct PickerCameraView: UIViewControllerRepresentable {
 enum PickerDocumentError: LocalizedError {
     case unsupportedFormat
     case processingFailed
+    case fileTooLarge
 
     var errorDescription: String? {
         switch self {
@@ -460,6 +475,8 @@ enum PickerDocumentError: LocalizedError {
             return "Unsupported file format"
         case .processingFailed:
             return "Failed to process document"
+        case .fileTooLarge:
+            return "File exceeds the 50 MB upload limit"
         }
     }
 }

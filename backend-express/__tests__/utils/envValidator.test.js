@@ -35,6 +35,7 @@ const VALID_ENV = {
   SUPABASE_ANON_KEY: 'test-anon-key',
   SUPABASE_SERVICE_KEY: 'test-service-key',
   DOCUMENT_ENCRYPTION_KEY: 'a'.repeat(64),
+  PLAID_ENCRYPTION_KEY: 'b'.repeat(64),
   ANTHROPIC_API_KEY: 'sk-ant-test',
   PLAID_CLIENT_ID: 'plaid-client-id',
   PLAID_SECRET: 'plaid-secret',
@@ -49,7 +50,7 @@ beforeEach(() => {
   // Clear all env vars that the validator cares about
   const keysToRemove = [
     'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_KEY',
-    'DOCUMENT_ENCRYPTION_KEY', 'ANTHROPIC_API_KEY', 'PLAID_CLIENT_ID',
+    'DOCUMENT_ENCRYPTION_KEY', 'PLAID_ENCRYPTION_KEY', 'ANTHROPIC_API_KEY', 'PLAID_CLIENT_ID',
     'PLAID_SECRET', 'PLAID_ENV', 'PORT', 'NODE_ENV',
     'RATE_LIMIT_WINDOW_MS', 'RATE_LIMIT_MAX_REQUESTS', 'ALLOWED_ORIGINS',
     'LOG_LEVEL', 'PLAID_WEBHOOK_URL', 'PLAID_WEBHOOK_VERIFICATION_KEY',
@@ -204,6 +205,35 @@ describe('envValidator - format validation', () => {
     setEnv({ DOCUMENT_ENCRYPTION_KEY: 'g'.repeat(64) });
     const { validateEnvironment } = loadValidator();
     expect(() => validateEnvironment()).toThrow(/DOCUMENT_ENCRYPTION_KEY/);
+  });
+
+  test('throws when PLAID_ENCRYPTION_KEY is not 64 hex chars in production', () => {
+    setEnv({
+      NODE_ENV: 'production',
+      ALLOWED_ORIGINS: 'https://example.com',
+      PLAID_WEBHOOK_VERIFICATION_KEY: 'webhook-key',
+      PLAID_ENCRYPTION_KEY: 'tooshort'
+    });
+    const { validateEnvironment } = loadValidator();
+    expect(() => validateEnvironment()).toThrow(/PLAID_ENCRYPTION_KEY/);
+  });
+
+  test('throws when PLAID_ENCRYPTION_KEY is missing in production', () => {
+    setEnv({
+      NODE_ENV: 'production',
+      ALLOWED_ORIGINS: 'https://example.com',
+      PLAID_WEBHOOK_VERIFICATION_KEY: 'webhook-key'
+    });
+    delete process.env.PLAID_ENCRYPTION_KEY;
+    const { validateEnvironment } = loadValidator();
+    expect(() => validateEnvironment()).toThrow(/PLAID_ENCRYPTION_KEY/);
+  });
+
+  test('allows PLAID_ENCRYPTION_KEY to be absent in development', () => {
+    setEnv();
+    delete process.env.PLAID_ENCRYPTION_KEY;
+    const { validateEnvironment } = loadValidator();
+    expect(() => validateEnvironment()).not.toThrow();
   });
 
   test('throws when PORT is not numeric', () => {

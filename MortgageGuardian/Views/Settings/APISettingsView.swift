@@ -682,7 +682,7 @@ struct InstructionsView: View {
                 (5, "Copy the generated API key immediately (it won't be shown again)"),
                 (6, "Paste the key in this app's configuration")
             ]
-        case .plaidClientId, .plaidSecret, .plaidAccessToken:
+        case .plaidClientId, .plaidSecret, .plaidItemId:
             return [
                 (1, "Go to dashboard.plaid.com and log in"),
                 (2, "Navigate to Team Settings > Keys"),
@@ -719,7 +719,7 @@ struct InstructionsView: View {
         switch service {
         case .claude:
             return URL(string: "https://docs.anthropic.com/claude/reference/getting-started-with-the-api")
-        case .plaidClientId, .plaidSecret, .plaidAccessToken:
+        case .plaidClientId, .plaidSecret, .plaidItemId:
             return URL(string: "https://plaid.com/docs/api/")
         case .marketData:
             return URL(string: "https://marketdata.com/docs")

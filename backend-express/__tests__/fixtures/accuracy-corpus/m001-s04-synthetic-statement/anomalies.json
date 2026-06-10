@@ -1,0 +1,49 @@
+[
+  {
+    "field": "lateFee",
+    "type": "unusual_value",
+    "severity": "high",
+    "description": "Late fee of $50.00 represents 5% of monthly principal & interest ($1,000.00), which exceeds typical late fee caps and may constitute an excessive or unauthorized fee under RESPA Section 8.",
+    "expectedValue": "<= 4% of P&I (~$40.00)",
+    "actualValue": "$50.00",
+    "pageNumber": 1,
+    "quotedText": "Late Fee Assessed:            $50.00",
+    "reasoningSteps": [
+      "Monthly P&I is $1,000.00",
+      "Late fee assessed is $50.00",
+      "$50 / $1,000 = 5% which exceeds the typical 4% late fee cap"
+    ],
+    "confidence": 0.92
+  },
+  {
+    "field": "escrowShortage",
+    "type": "calculation_error",
+    "severity": "high",
+    "description": "Escrow shortage of $1,260.00 identified during annual escrow analysis but the required shortage allocation disclosure (spread over at least 12 months when shortage exceeds 1 monthly payment) is not provided in the statement.",
+    "expectedValue": "Disclosed allocation period of at least 12 months",
+    "actualValue": "No allocation period disclosed",
+    "pageNumber": 1,
+    "quotedText": "Escrow shortage of $1,260.00 identified during annual escrow analysis",
+    "reasoningSteps": [
+      "Escrow shortage exceeds one monthly escrow payment ($420.00)",
+      "RESPA Section 10 requires shortage to be spread over at least 12 months",
+      "Statement omits required allocation period disclosure"
+    ],
+    "confidence": 0.88
+  },
+  {
+    "field": "statementBalance",
+    "type": "inconsistency",
+    "severity": "medium",
+    "description": "Periodic statement transaction activity does not reconcile with prior statement ending balance — escrow balance carry-forward inconsistency in periodic billing statement.",
+    "expectedValue": "Consistent escrow balance carry-forward",
+    "actualValue": "Reported escrow balance does not reconcile",
+    "pageNumber": 1,
+    "quotedText": "Periodic statement transaction activity does not reconcile with prior statement ending balance",
+    "reasoningSteps": [
+      "Prior statement ending escrow balance differs from this statement opening balance",
+      "Periodic statement accuracy is required under Reg Z 12 CFR § 1026.41"
+    ],
+    "confidence": 0.8
+  }
+]
