@@ -14,6 +14,7 @@ const mockDelete = jest.fn();
 const mockEq = jest.fn();
 const mockIn = jest.fn();
 const mockSingle = jest.fn();
+const mockLimit = jest.fn();
 
 // Build the chainable mock object, then wire return values (can't self-reference during init)
 const mockSupabase = {
@@ -25,7 +26,8 @@ const mockSupabase = {
   delete: mockDelete,
   eq: mockEq,
   in: mockIn,
-  single: mockSingle
+  single: mockSingle,
+  limit: mockLimit
 };
 // Each chainable method returns the mock object so `.from(...).upsert(...)` etc. works.
 mockSupabase.from.mockReturnValue(mockSupabase);
@@ -36,6 +38,7 @@ mockUpdate.mockReturnValue(mockSupabase);
 mockDelete.mockReturnValue(mockSupabase);
 mockEq.mockReturnValue(mockSupabase);
 mockIn.mockReturnValue(mockSupabase);
+mockLimit.mockReturnValue(mockSupabase);
 
 jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockSupabase)
@@ -64,6 +67,7 @@ describe('PlaidDataService (Supabase mode)', () => {
     mockDelete.mockReturnValue(mockSupabase);
     mockEq.mockReturnValue(mockSupabase);
     mockIn.mockReturnValue(mockSupabase);
+    mockLimit.mockReturnValue(mockSupabase);
   });
 
   // ----------------------------------------------------------
@@ -88,12 +92,14 @@ describe('PlaidDataService (Supabase mode)', () => {
         expect.objectContaining({
           item_id: 'item-1',
           user_id: 'user-1',
-          access_token: 'access-token-1',
           status: 'active',
           institution_id: 'ins_123'
         }),
         { onConflict: 'item_id' }
       );
+      // Phase 54-05: plaintext column dropped — the insert payload must
+      // NEVER contain our own access_token column again.
+      expect(mockUpsert.mock.calls[0][0]).not.toHaveProperty('access_token');
     });
 
     it('defaults status to active when not provided', async () => {
@@ -140,8 +146,8 @@ describe('PlaidDataService (Supabase mode)', () => {
       expect(result).toEqual({ success: false, error: 'Database error: DB error' });
     });
 
-    // Phase 54-01: dual-write encrypted token alongside plaintext
-    it('writes encrypted access token that round-trips to original', async () => {
+    // Phase 54-05: encrypted-only write — the plaintext column is gone
+    it('writes ONLY the encrypted access token, which round-trips to original', async () => {
       mockUpsert.mockResolvedValue({ data: {}, error: null });
 
       const plaintextToken = 'access-sandbox-encrypted-1';
@@ -153,7 +159,7 @@ describe('PlaidDataService (Supabase mode)', () => {
       });
 
       const payload = mockUpsert.mock.calls[0][0];
-      expect(payload).toHaveProperty('access_token', plaintextToken);
+      expect(payload).not.toHaveProperty('access_token');
       expect(payload).toHaveProperty('access_token_encrypted');
       expect(typeof payload.access_token_encrypted).toBe('string');
       expect(payload.access_token_encrypted.length).toBeGreaterThan(0);
@@ -430,6 +436,86 @@ describe('PlaidDataService (Supabase mode)', () => {
       const result = await plaidDataService.getItem('item-missing');
 
       expect(result).toEqual({ success: false, error: 'Database error: Not found' });
+    });
+  });
+
+  // ----------------------------------------------------------
+  // resolveTokenByItemId / getAccessTokenForUser (Phase 54-05:
+  // ciphertext-only, fail-closed — no plaintext fallback)
+  // ----------------------------------------------------------
+  describe('resolveTokenByItemId (encrypted-only)', () => {
+    it('decrypts and returns the token when ciphertext is present', async () => {
+      const token = 'access-sandbox-resolve-1';
+      const ciphertext = plaidTokenEncryptionService.encryptForStorage('user-r1', token);
+      mockSingle.mockResolvedValue({
+        data: { access_token_encrypted: ciphertext, encryption_version: 1 },
+        error: null
+      });
+
+      const result = await plaidDataService.resolveTokenByItemId('user-r1', 'item-r1');
+
+      expect(result).toEqual({ success: true, accessToken: token });
+    });
+
+    it('fails closed with token_missing when row has no ciphertext', async () => {
+      mockSingle.mockResolvedValue({
+        data: { access_token_encrypted: null, encryption_version: 1 },
+        error: null
+      });
+
+      const result = await plaidDataService.resolveTokenByItemId('user-r2', 'item-r2');
+
+      expect(result).toEqual({ success: false, code: 'token_missing' });
+    });
+
+    it('fails closed with token_missing when ciphertext cannot be decrypted', async () => {
+      // Ciphertext encrypted for a DIFFERENT user cannot be decrypted for user-r3
+      const foreignCiphertext = plaidTokenEncryptionService.encryptForStorage('user-other', 'access-x');
+      mockSingle.mockResolvedValue({
+        data: { access_token_encrypted: foreignCiphertext, encryption_version: 1 },
+        error: null
+      });
+
+      const result = await plaidDataService.resolveTokenByItemId('user-r3', 'item-r3');
+
+      expect(result).toEqual({ success: false, code: 'token_missing' });
+    });
+
+    it('returns not_found when no row matches (PGRST116)', async () => {
+      mockSingle.mockResolvedValue({
+        data: null,
+        error: { code: 'PGRST116', message: 'No rows found' }
+      });
+
+      const result = await plaidDataService.resolveTokenByItemId('user-r4', 'item-missing');
+
+      expect(result).toEqual({ success: false, code: 'not_found' });
+    });
+  });
+
+  describe('getAccessTokenForUser (encrypted-only)', () => {
+    it('decrypts and returns the token when ciphertext is present', async () => {
+      const token = 'access-sandbox-user-1';
+      const ciphertext = plaidTokenEncryptionService.encryptForStorage('user-g1', token);
+      mockLimit.mockResolvedValue({
+        data: [{ item_id: 'item-g1', access_token_encrypted: ciphertext, encryption_version: 1 }],
+        error: null
+      });
+
+      const result = await plaidDataService.getAccessTokenForUser('user-g1');
+
+      expect(result).toBe(token);
+    });
+
+    it('returns null (fail closed) when row has no ciphertext', async () => {
+      mockLimit.mockResolvedValue({
+        data: [{ item_id: 'item-g2', access_token_encrypted: null, encryption_version: 1 }],
+        error: null
+      });
+
+      const result = await plaidDataService.getAccessTokenForUser('user-g2');
+
+      expect(result).toBeNull();
     });
   });
 

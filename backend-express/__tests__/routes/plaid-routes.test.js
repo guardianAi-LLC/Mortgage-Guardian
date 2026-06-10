@@ -1249,6 +1249,21 @@ describe('POST /v1/plaid/webhook', () => {
       expect(res.body.handled).toBe(false);
     });
 
+    it('returns handled=false when token resolution fails (54-05 fail-closed)', async () => {
+      mockResolveTokenByItemId.mockResolvedValue({ success: false, code: 'token_missing' });
+
+      const res = await sendWebhook({
+        webhook_type: 'TRANSACTIONS',
+        webhook_code: 'DEFAULT_UPDATE',
+        item_id: 'item-wh-001',
+        new_transactions: 1
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.acknowledged).toBe(true);
+      expect(res.body.handled).toBe(false);
+    });
+
     it('returns handled=false when transaction fetch returns null', async () => {
       mockGetTransactions.mockResolvedValue(null);
 

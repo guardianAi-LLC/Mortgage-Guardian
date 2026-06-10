@@ -551,7 +551,15 @@ async function handleTransactionWebhook(data) {
           return { handled: false, error: `Item not found: ${item_id}` };
         }
 
-        const { access_token, user_id } = itemResult.data;
+        const { user_id } = itemResult.data;
+
+        // Phase 54-05: the plaintext access_token column no longer exists on
+        // plaid_items rows — resolve the token via the encrypted-only resolver.
+        const tokenResult = await plaidDataService.resolveTokenByItemId(user_id, item_id);
+        if (!tokenResult.success) {
+          logger.error('Failed to resolve access token for webhook item', { itemId: item_id, code: tokenResult.code });
+          return { handled: false, error: `Token resolution failed: ${tokenResult.code}` };
+        }
 
         // 2. Fetch new transactions from Plaid
         const now = new Date();
@@ -559,7 +567,7 @@ async function handleTransactionWebhook(data) {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
         const transactionsResponse = await plaidService.getTransactions({
-          accessToken: access_token,
+          accessToken: tokenResult.accessToken,
           startDate: thirtyDaysAgo.toISOString().split('T')[0],
           endDate: now.toISOString().split('T')[0]
         });

@@ -65,6 +65,8 @@ jest.mock('@supabase/supabase-js', () => ({
 process.env.SUPABASE_URL = 'https://test.supabase.co';
 process.env.SUPABASE_SERVICE_KEY = 'test-service-key';
 process.env.ANTHROPIC_API_KEY = 'test-api-key';
+// Phase 54-05: token storage fails closed without an encryption key
+process.env.PLAID_ENCRYPTION_KEY = require('crypto').randomBytes(32).toString('hex');
 
 // Require services AFTER all mocks are in place
 const claudeService = require('../../services/claudeService');
