@@ -838,16 +838,6 @@ export default function BankAccountsPage() {
   const queryClient = useQueryClient()
   const { items, isLoading: itemsLoading } = usePlaidItems()
 
-  // One-time migration cleanup (Phase 54): remove the legacy plaintext
-  // access-token cache from localStorage. The client no longer stores
-  // Plaid credentials; item_id is the only identifier from now on.
-  // Plan 54-05 will remove this cleanup line after a deprecation window.
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('mg_plaid_access_tokens')
-    }
-  }, [])
-
   const itemIds = useMemo(() => items.map((i) => i.itemId), [items])
 
   const handlePlaidSuccess = useCallback(
