@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 ## Current Position
 
 Phase: 54 of 60 (Plaid Token Migration)
-Plan: 4 of 5 complete — 54-05 ready to execute
-Status: 54-04 complete (production backfill applied + verified 2026-06-10)
-Last activity: 2026-06-10 - Merged phase-54 worktree to main; applied migration 006 to prod; generated PLAID_ENCRYPTION_KEY; backfill applied (1 row, 0 errors); plaintext count = 0. 54-05 prerequisites satisfied.
+Plan: 5 of 5 complete
+Status: Phase complete
+Last activity: 2026-06-10 - Completed 54-05-PLAN.md (plaintext column dropped in prod via migration 008, fail-closed resolver, decrypt audit logging, per-user rate limits, runbook). Phase 54 done; ready for Phase 55.
 
-Progress: ███░░░░░░░ 30%
+Progress: ████░░░░░░ 40%
 
 ## Accumulated Context
 
@@ -30,7 +30,10 @@ All decisions documented in PROJECT.md Key Decisions table and milestone archive
 
 ### Deferred Issues
 
-None.
+In `.planning/ISSUES.md`:
+- ISS-001: /exchange_token response still returns raw access token to clients (target: Phase 56)
+- ISS-002: Vestigial iOS User.plaidAccessToken model field
+- ISS-003: No dedicated PLAID_ENCRYPTION_KEY rotation script (runbook has manual procedure)
 
 ### Pending Todos
 
@@ -52,6 +55,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-07
-Stopped at: Completed 54-03-PLAN.md (Frontend Migration to itemId) — Next.js web client now uses itemId only for all Plaid calls; legacy `mg_plaid_access_tokens` localStorage key is actively purged on first load (cleanup line scheduled for removal in 54-05); Playwright regressions assert no access_token in any /v1/plaid/* request body. Next: 54-04 iOS rewire & production token backfill.
+Last session: 2026-06-10
+Stopped at: Completed 54-05-PLAN.md — Phase 54 complete (5/5); ready for Phase 55: Upload Security & Malware Scanning
 Resume file: None
