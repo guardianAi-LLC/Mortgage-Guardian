@@ -495,9 +495,15 @@ describe('partial pipeline', () => {
     expect(result.analysisResults).toBeDefined();
     expect(result.analysisResults.extractedData).toBeDefined();
 
-    // No forensic or compliance calls were needed
+    // No cross-document forensics for a single document...
     expect(mockCrossDocAggregation.aggregateForCase).not.toHaveBeenCalled();
-    expect(mockComplianceRuleEngine.evaluateFindings).not.toHaveBeenCalled();
+    // ...but the AUDITING step still runs the deterministic rule engine once
+    // over the single document with a minimal forensic surface (no
+    // cross-document discrepancies, empty timeline).
+    expect(mockComplianceRuleEngine.evaluateFindings).toHaveBeenCalledTimes(1);
+    const [forensicSurface] = mockComplianceRuleEngine.evaluateFindings.mock.calls[0];
+    expect(forensicSurface.discrepancies).toEqual([]);
+    expect(forensicSurface.timeline).toEqual({ events: [], violations: [] });
   });
 
   test('consolidated report handles missing forensic data gracefully', async () => {
