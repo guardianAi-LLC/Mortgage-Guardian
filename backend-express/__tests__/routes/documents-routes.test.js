@@ -71,6 +71,17 @@ jest.mock('../../services/plaidService', () => ({
   verifyWebhookSignature: jest.fn().mockReturnValue(true)
 }));
 
+// Phase 55-03: bypass real Cloudmersive call in the upload route.
+class MockMalwareScanError extends Error {
+  constructor(message) { super(message); this.name = 'MalwareScanError'; }
+}
+jest.mock('../../services/malwareScanService', () => ({
+  scanBuffer: jest.fn().mockResolvedValue({
+    scanned: true, clean: true, threats: [], engine: 'cloudmersive'
+  }),
+  MalwareScanError: MockMalwareScanError
+}));
+
 jest.mock('../../services/plaidDataService', () => ({
   upsertPlaidItem: jest.fn().mockResolvedValue({ success: true }),
   getItem: jest.fn().mockResolvedValue({ success: true, data: { access_token: 'mock', user_id: 'mock' } }),

@@ -12,8 +12,26 @@
 
 const FileType = require('file-type');
 const path = require('path');
-const isPdfEncrypted = require('is-pdf-encrypted');
 const { scanBuffer } = require('../services/malwareScanService');
+
+/**
+ * Check whether a PDF buffer is password-protected / encrypted.
+ *
+ * Implementation note (Phase 55-03 deviation): the plan specified the
+ * `is-pdf-encrypted` npm package, but its v1.1.0 implementation depends
+ * on the browser-only `FileReader` global and is unusable from Node.
+ * Inlining the same heuristic the package documents — scan the file
+ * trailer for the `/Encrypt` reference — avoids pulling in pdf.js just
+ * for a four-line check. Encrypted PDFs always reference an Encrypt
+ * dictionary from the trailer per the PDF spec (§7.6).
+ *
+ * @param {Buffer} buffer - PDF file buffer
+ * @returns {boolean} true if the PDF has an encryption dictionary
+ */
+function isPdfEncryptedBuffer(buffer) {
+  if (!buffer || !Buffer.isBuffer(buffer)) return false;
+  return buffer.includes(Buffer.from('/Encrypt'));
+}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -246,8 +264,7 @@ function sanitizeFileName(fileName) {
  */
 async function scanFileContent(buffer, detectedExt) {
   if (detectedExt === 'pdf') {
-    const encrypted = await isPdfEncrypted(buffer);
-    if (encrypted) {
+    if (isPdfEncryptedBuffer(buffer)) {
       return {
         scanned: false,
         clean: false,

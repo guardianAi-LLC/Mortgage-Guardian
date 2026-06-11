@@ -22,6 +22,23 @@
 const { createMockSupabaseClient } = require('../mocks/mockSupabaseClient');
 const mockClaudeService = require('../mocks/mockClaudeService');
 const request = require('supertest');
+const fs = require('fs');
+const path = require('path');
+
+// Phase 55-03: malware scan seam. Tests mock `scanBuffer` on the
+// services/malwareScanService.js module — that's the boundary the
+// upload route depends on via utils/fileValidation.js.
+const mockScanBuffer = jest.fn();
+class MockMalwareScanError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'MalwareScanError';
+  }
+}
+jest.mock('../../services/malwareScanService', () => ({
+  scanBuffer: (...args) => mockScanBuffer(...args),
+  MalwareScanError: MockMalwareScanError
+}));
 
 // Create mock Supabase client
 const mockClient = createMockSupabaseClient();
@@ -180,6 +197,14 @@ beforeEach(() => {
   mockClient.reset();
   mockClaudeService.reset();
   mockUploadDocument.mockClear();
+  mockScanBuffer.mockReset();
+  // Default: scanner says clean. Individual tests override for EICAR / errors.
+  mockScanBuffer.mockResolvedValue({
+    scanned: true,
+    clean: true,
+    threats: [],
+    engine: 'cloudmersive'
+  });
 
   // Configure mock Supabase to accept the auth token
   mockClient.setResponse('auth', {
@@ -594,6 +619,110 @@ describe('Document upload security integration', () => {
       // file-type can't detect it, but .txt extension is in allowed list
       // So it passes with a warning (unverifiable type)
       expect(response.status).toBe(201);
+    });
+
+  });
+
+  // =========================================================================
+  // 7. Malware scanning (Phase 55-03)
+  // =========================================================================
+  describe('malware scanning', () => {
+
+    // EICAR is the standard antivirus test signature — every AV vendor agrees
+    // on its detection. Renamed .txt so the magic-byte/extension reconciliation
+    // path treats it as plain text (file-type cannot detect it).
+    const EICAR_STRING = 'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*';
+    const EICAR_BASE64 = Buffer.from(EICAR_STRING).toString('base64');
+
+    // Encrypted PDF fixture, generated via:
+    //   qpdf --empty --pages . -- blank.pdf
+    //   qpdf --encrypt 'a' 'a' 256 -- blank.pdf encrypted-sample.pdf
+    // Password is 'a' for both user and owner. Tests only need is-encrypted
+    // detection — they never attempt to open it.
+    const ENCRYPTED_PDF_PATH = path.join(__dirname, '..', 'fixtures', 'encrypted-sample.pdf');
+    const ENCRYPTED_PDF_BASE64 = fs.readFileSync(ENCRYPTED_PDF_PATH).toString('base64');
+
+    test('EICAR test signature returns 400 with generic rejection message', async () => {
+      mockScanBuffer.mockResolvedValueOnce({
+        scanned: true,
+        clean: false,
+        threats: ['Win.Test.EICAR_HDB-1'],
+        engine: 'cloudmersive'
+      });
+
+      const body = buildUploadBody({
+        fileName: 'eicar.txt',
+        content: EICAR_BASE64
+      });
+
+      const response = await request(app)
+        .post('/v1/documents/upload')
+        .set('Authorization', AUTH_TOKEN)
+        .send(body);
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        error: 'This file appears unsafe and was not accepted.'
+      });
+      expect(mockUploadDocument).not.toHaveBeenCalled();
+    });
+
+    test('password-protected PDF returns 400 with encrypted-pdf message', async () => {
+      const body = buildUploadBody({
+        fileName: 'encrypted-sample.pdf',
+        content: ENCRYPTED_PDF_BASE64
+      });
+
+      const response = await request(app)
+        .post('/v1/documents/upload')
+        .set('Authorization', AUTH_TOKEN)
+        .send(body);
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toMatch(/password-protected/i);
+      expect(mockUploadDocument).not.toHaveBeenCalled();
+      // Scanner should never be invoked for an encrypted PDF (short-circuit).
+      expect(mockScanBuffer).not.toHaveBeenCalled();
+    });
+
+    test('MalwareScanError returns 502 with retry message', async () => {
+      mockScanBuffer.mockRejectedValueOnce(
+        new MockMalwareScanError('Cloudmersive 503 Service Unavailable')
+      );
+
+      const body = buildUploadBody({
+        fileName: 'mortgage-statement.pdf',
+        content: VALID_PDF_BASE64
+      });
+
+      const response = await request(app)
+        .post('/v1/documents/upload')
+        .set('Authorization', AUTH_TOKEN)
+        .send(body);
+
+      expect(response.status).toBe(502);
+      expect(response.body).toEqual({
+        error: 'Upload could not be safety-checked. Please try again.'
+      });
+      expect(mockUploadDocument).not.toHaveBeenCalled();
+    });
+
+    test('clean file passes scan and reaches storage', async () => {
+      // Default beforeEach mock returns clean.
+      const body = buildUploadBody({
+        fileName: 'mortgage-statement.pdf',
+        content: VALID_PDF_BASE64
+      });
+
+      const response = await request(app)
+        .post('/v1/documents/upload')
+        .set('Authorization', AUTH_TOKEN)
+        .send(body);
+
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty('success', true);
+      expect(mockScanBuffer).toHaveBeenCalledTimes(1);
+      expect(mockUploadDocument).toHaveBeenCalledTimes(1);
     });
 
   });

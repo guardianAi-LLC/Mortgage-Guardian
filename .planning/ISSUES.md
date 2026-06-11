@@ -31,3 +31,17 @@ plans tightly scoped. Review with `/gsd:consider-issues`.
   (old key → new key re-encrypt with version bump, dry-run default) would
   make rotation safe and routine.
 - **Suggested landing spot:** Phase 56 (Auth Hardening & Encryption Audit).
+
+### ISS-004: Inline encrypted-PDF heuristic replaces broken is-pdf-encrypted package
+- **Found during:** 55-03 (Task 1, encrypted-PDF short-circuit)
+- **Where:** `backend-express/utils/fileValidation.js` (`isPdfEncryptedBuffer`)
+- **Detail:** The plan called for `is-pdf-encrypted@^1.1.0`, but that
+  package depends on the browser-only `FileReader` global and crashes
+  immediately in Node. Replaced with a four-line inline check that
+  scans the buffer for the `/Encrypt` marker — the same heuristic the
+  package documents. Correct for spec-compliant PDFs (encryption
+  dictionaries are always referenced from the trailer) but could be
+  fooled by a malformed file that contains the literal string
+  `/Encrypt` outside an actual encryption dict. If false positives
+  appear in production, switch to a real PDF parser (pdfjs-dist).
+- **Suggested landing spot:** opportunistic; only if false positives surface.
