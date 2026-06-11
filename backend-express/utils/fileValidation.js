@@ -12,6 +12,8 @@
 
 const FileType = require('file-type');
 const path = require('path');
+const isPdfEncrypted = require('is-pdf-encrypted');
+const { scanBuffer } = require('../services/malwareScanService');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -217,45 +219,50 @@ function sanitizeFileName(fileName) {
 }
 
 // ---------------------------------------------------------------------------
-// scanFileContent (stub)
+// scanFileContent
 // ---------------------------------------------------------------------------
 
 /**
- * Scan file content for malware.
+ * Scan file content for malware (Phase 55-03).
  *
- * DECISION (Phase 04-03, 2026-02-21): Malware scanning deferred.
+ * Short-circuits password-protected PDFs (which Cloudmersive cannot read
+ * past the encryption layer and would otherwise report as "clean") and
+ * delegates all other buffers to `services/malwareScanService.scanBuffer`.
  *
- * Rationale:
- *   - Deployment target is serverless (Vercel/Railway) — ClamAV requires a
- *     running daemon and is incompatible.
- *   - VirusTotal API scanning is async, meaning files are stored before scan
- *     results return, creating a window where unscanned files exist.
- *   - Free tier rate limits (4 req/min, 500/day) could block legitimate uploads.
- *   - The added complexity (submission, polling, quarantine logic) is not
- *     justified at current scale.
- *
- * Compensating controls already in place:
- *   1. JWT authentication — only authenticated users can upload (Phase 2)
- *   2. Joi schema validation — type, size, format validated at boundary (Phase 3)
- *   3. Magic number verification — prevents disguised executables (Phase 04-01)
- *   4. Filename sanitization — blocks path traversal and injection (Phase 04-01)
- *   5. Body size limits — 25MB cap prevents abuse (Phase 04-02)
- *
- * Revisit when:
- *   - Moving to containerized deployment (enables ClamAV sidecar)
- *   - Handling high-risk document types beyond mortgage PDFs/images
- *   - Document upload volume justifies VirusTotal paid tier
- *
- * This stub maintains the function signature so future integration is a
- * drop-in replacement with zero changes to calling code.
+ * Contract:
+ *   - Encrypted PDF: `{ scanned: false, clean: false, reason: 'encrypted_pdf', message }`.
+ *     `scanned: false` means "we deliberately did not scan because we cannot";
+ *     it is STILL a rejection — callers must not treat it as clean.
+ *   - Clean buffer: `{ scanned: true, clean: true, threats: [], engine: 'cloudmersive' }`.
+ *   - Unclean buffer: `{ scanned: true, clean: false, threats: [...], engine: 'cloudmersive' }`.
+ *   - Infrastructure failure: propagates `MalwareScanError` from `scanBuffer`.
+ *     This function never catches it — the upload route must translate it
+ *     into a 502 so we fail closed instead of admitting an unscanned file.
  *
  * @param {Buffer} buffer - The file content buffer to scan
- * @returns {Promise<Object>} Scan result: { scanned: false, reason: string }
+ * @param {string} [detectedExt] - Extension detected by magic-byte check (from
+ *   `validateFileContent`). Passed through to avoid sniffing twice.
+ * @returns {Promise<Object>} Scan result (see contract above)
  */
-async function scanFileContent(buffer) {
+async function scanFileContent(buffer, detectedExt) {
+  if (detectedExt === 'pdf') {
+    const encrypted = await isPdfEncrypted(buffer);
+    if (encrypted) {
+      return {
+        scanned: false,
+        clean: false,
+        reason: 'encrypted_pdf',
+        message: 'Password-protected PDFs are not supported. Please remove the password and try again.'
+      };
+    }
+  }
+
+  const result = await scanBuffer(buffer);
   return {
-    scanned: false,
-    reason: 'Malware scanning deferred — compensating controls active (see fileValidation.js)'
+    scanned: true,
+    clean: result.clean,
+    threats: result.threats,
+    engine: 'cloudmersive'
   };
 }
 
