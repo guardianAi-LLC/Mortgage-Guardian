@@ -1,11 +1,14 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const documentService = require('../services/documentService');
 const documentPipeline = require('../services/documentPipelineService');
 const { createLogger } = require('../utils/logger');
 const logger = createLogger('document-routes');
+const uploadSecurityLogger = createLogger('upload-security');
 const { validate } = require('../middleware/validate');
-const { validateFileContent, sanitizeFileName } = require('../utils/fileValidation');
+const { validateFileContent, sanitizeFileName, scanFileContent } = require('../utils/fileValidation');
+const { MalwareScanError } = require('../services/malwareScanService');
 const {
   uploadDocumentSchema,
   getDocumentsSchema,
@@ -39,6 +42,41 @@ router.post('/upload', validate(uploadDocumentSchema), async (req, res, next) =>
       return res.status(400).json({
         error: 'Validation Error',
         message: validationResult.error
+      });
+    }
+
+    // Malware scan (Phase 55-03) — fail closed.
+    // Order: magic-byte check (above) → scan → only persist on clean.
+    const detectedExt = validationResult.detectedType ? validationResult.detectedType.ext : undefined;
+    let scanResult;
+    try {
+      scanResult = await scanFileContent(fileBuffer, detectedExt);
+    } catch (scanErr) {
+      if (scanErr instanceof MalwareScanError) {
+        uploadSecurityLogger.error('Malware scan infrastructure failure', {
+          userId,
+          err: scanErr.message
+        });
+        return res.status(502).json({
+          error: 'Upload could not be safety-checked. Please try again.'
+        });
+      }
+      throw scanErr;
+    }
+
+    if (scanResult.scanned === false && scanResult.reason === 'encrypted_pdf') {
+      return res.status(400).json({ error: scanResult.message });
+    }
+
+    if (!(scanResult.scanned === true && scanResult.clean === true)) {
+      const sha256Hash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+      uploadSecurityLogger.warn('Malware scan rejected upload', {
+        userId,
+        threats: scanResult.threats || [],
+        sha256Hash
+      });
+      return res.status(400).json({
+        error: 'This file appears unsafe and was not accepted.'
       });
     }
 
