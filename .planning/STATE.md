@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 ## Current Position
 
 Phase: 55 of 60 (Upload Security & Malware Scanning)
-Plan: 2 of 4 complete
+Plan: 3 of 4 complete
 Status: In progress
-Last activity: 2026-06-11 - Completed 55-02-PLAN.md (malwareScanService TDD; 4 passed / 2 live skipped without key; native fetch path chosen). Ready for 55-03 (wire scanFileContent + encrypted-PDF + hard-reject route).
+Last activity: 2026-06-11 - Completed 55-03-PLAN.md (wired scanFileContent to malwareScanService, encrypted-PDF short-circuit, fail-closed upload route). Stub gone. 4 new tests pass (EICAR/encrypted/scan-error/clean). Inline `/Encrypt` heuristic replaced broken is-pdf-encrypted package (ISS-004). Ready for 55-04 (docs + runbook closeout).
 
-Progress: ████░░░░░░ 43%
+Progress: ████░░░░░░ 44%
 
 ## Accumulated Context
 

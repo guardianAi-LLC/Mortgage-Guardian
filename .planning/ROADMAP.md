@@ -210,7 +210,7 @@ Plans:
 Plans:
 - [x] 55-01: Cloudmersive scan-host setup (env + Vercel) — completed 2026-06-10
 - [x] 55-02: malwareScanService.scanBuffer (TDD) — completed 2026-06-11
-- [ ] 55-03: wire scanFileContent + encrypted-PDF + hard-reject route
+- [x] 55-03: wire scanFileContent + encrypted-PDF + hard-reject route — completed 2026-06-11
 - [ ] 55-04: cloudmersive-health-check.js + ops doc + Phase 55 closeout
 
 #### Phase 56: Auth Hardening & Encryption Audit
