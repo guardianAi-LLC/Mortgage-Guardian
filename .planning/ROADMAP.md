@@ -205,10 +205,13 @@ Plans:
 **Depends on**: Phase 54
 **Research**: Likely (new integration — malware scanning library/service)
 **Research topics**: ClamAV vs cloud-based scanning services, Node.js malware scanning libraries, upload pipeline hardening
-**Plans**: TBD
+**Plans**: 4 (replanned mid-execution from ClamAV/Railway to Cloudmersive HTTPS API)
 
 Plans:
-- [ ] 55-01: TBD
+- [x] 55-01: Cloudmersive scan-host setup (env + Vercel) — completed 2026-06-10
+- [ ] 55-02: malwareScanService.scanBuffer (TDD)
+- [ ] 55-03: wire scanFileContent + encrypted-PDF + hard-reject route
+- [ ] 55-04: cloudmersive-health-check.js + ops doc + Phase 55 closeout
 
 #### Phase 56: Auth Hardening & Encryption Audit
 
@@ -322,7 +325,7 @@ Plans:
 | 52. Structured Reasoning in Claude Prompts | v8.0 | 6/6 | Complete | 2026-04-24 |
 | 53. Report Output Format | v8.0 | 5/5 | Complete | 2026-05-18 |
 | 54. Plaid Token Migration | v8.0 | 5/5 | Complete | 2026-06-10 |
-| 55. Upload Security & Malware Scanning | v8.0 | 0/? | Not started | - |
+| 55. Upload Security & Malware Scanning | v8.0 | 1/4 | In progress | - |
 | 56. Auth Hardening & Encryption Audit | v8.0 | 0/? | Not started | - |
 | 57. Server-Side Pagination & API Rate Limits | v8.0 | 0/? | Not started | - |
 | 58. Multi-Tenant & Role-Based Access | v8.0 | 0/? | Not started | - |

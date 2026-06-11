@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 
 ## Current Position
 
-Phase: 54 of 60 (Plaid Token Migration)
-Plan: 5 of 5 complete
-Status: Phase complete
-Last activity: 2026-06-10 - Completed 54-05-PLAN.md (plaintext column dropped in prod via migration 008, fail-closed resolver, decrypt audit logging, per-user rate limits, runbook). Phase 54 done; ready for Phase 55.
+Phase: 55 of 60 (Upload Security & Malware Scanning)
+Plan: 1 of 4 complete
+Status: In progress — replanned from ClamAV/Railway to Cloudmersive mid-execution
+Last activity: 2026-06-10 - Completed 55-01-PLAN.md (Cloudmersive selected; API key in Vercel Prod+Preview; envValidator wired). Task 3 live-fire deferred to 55-02. Ready for 55-02 TDD.
 
-Progress: ████░░░░░░ 40%
+Progress: ████░░░░░░ 42%
 
 ## Accumulated Context
 
