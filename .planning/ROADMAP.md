@@ -209,7 +209,7 @@ Plans:
 
 Plans:
 - [x] 55-01: Cloudmersive scan-host setup (env + Vercel) — completed 2026-06-10
-- [ ] 55-02: malwareScanService.scanBuffer (TDD)
+- [x] 55-02: malwareScanService.scanBuffer (TDD) — completed 2026-06-11
 - [ ] 55-03: wire scanFileContent + encrypted-PDF + hard-reject route
 - [ ] 55-04: cloudmersive-health-check.js + ops doc + Phase 55 closeout
 
@@ -325,7 +325,7 @@ Plans:
 | 52. Structured Reasoning in Claude Prompts | v8.0 | 6/6 | Complete | 2026-04-24 |
 | 53. Report Output Format | v8.0 | 5/5 | Complete | 2026-05-18 |
 | 54. Plaid Token Migration | v8.0 | 5/5 | Complete | 2026-06-10 |
-| 55. Upload Security & Malware Scanning | v8.0 | 1/4 | In progress | - |
+| 55. Upload Security & Malware Scanning | v8.0 | 2/4 | In progress | - |
 | 56. Auth Hardening & Encryption Audit | v8.0 | 0/? | Not started | - |
 | 57. Server-Side Pagination & API Rate Limits | v8.0 | 0/? | Not started | - |
 | 58. Multi-Tenant & Role-Based Access | v8.0 | 0/? | Not started | - |
