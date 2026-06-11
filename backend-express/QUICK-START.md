@@ -7,6 +7,40 @@ This guide gets your Mortgage Guardian backend deployed to Railway as fast as po
 - [ ] Railway account created at https://railway.app
 - [ ] Anthropic API key from https://console.anthropic.com
 - [ ] (Optional) Plaid credentials from https://dashboard.plaid.com
+- [ ] Cloudmersive API key from https://account.cloudmersive.com (required — see below)
+
+## Required Services
+
+### Malware Scanning (Cloudmersive)
+
+The upload route runs every uploaded buffer through Cloudmersive's hosted
+HTTPS virus-scan API and fails closed on any infrastructure failure. There is
+no silent dev bypass.
+
+**Hard requirement:** `CLOUDMERSIVE_API_KEY` must be set in the backend
+environment. If it is missing, the upload route returns
+`502 { reason: 'scan_unavailable' }` for every request.
+
+Local-dev options — pick one, there is no third:
+
+1. Set `CLOUDMERSIVE_API_KEY` in `backend-express/.env` and accept that
+   uploads consume from the free-tier quota (800 calls/month).
+2. Leave it unset and accept that the upload route returns 502 in dev. Other
+   routes are unaffected.
+
+Optional env (sensible defaults applied if omitted):
+
+- `CLOUDMERSIVE_BASE_URL` — default `https://api.cloudmersive.com`
+- `CLOUDMERSIVE_TIMEOUT_MS` — default `15000`
+
+Smoke test the integration after deploy or key rotation:
+
+```bash
+node scripts/cloudmersive-health-check.js
+```
+
+Operational detail (key rotation, quota monitoring, failure-mode triage)
+lives in [docs/MALWARE_SCANNING.md](docs/MALWARE_SCANNING.md).
 
 ## Step-by-Step Deployment
 

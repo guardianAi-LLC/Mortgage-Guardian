@@ -208,10 +208,10 @@ Plans:
 **Plans**: 4 (replanned mid-execution from ClamAV/Railway to Cloudmersive HTTPS API)
 
 Plans:
-- [x] 55-01: Cloudmersive scan-host setup (env + Vercel) — completed 2026-06-10
+- [x] 55-01: Cloudmersive env + live-fire (replanned from ClamAV sidecar) — completed 2026-06-10
 - [x] 55-02: malwareScanService.scanBuffer (TDD) — completed 2026-06-11
 - [x] 55-03: wire scanFileContent + encrypted-PDF + hard-reject route — completed 2026-06-11
-- [ ] 55-04: cloudmersive-health-check.js + ops doc + Phase 55 closeout
+- [x] 55-04: cloudmersive-health-check.js + ops doc + Phase 55 closeout — completed 2026-06-10
 
 #### Phase 56: Auth Hardening & Encryption Audit
 
@@ -325,12 +325,12 @@ Plans:
 | 52. Structured Reasoning in Claude Prompts | v8.0 | 6/6 | Complete | 2026-04-24 |
 | 53. Report Output Format | v8.0 | 5/5 | Complete | 2026-05-18 |
 | 54. Plaid Token Migration | v8.0 | 5/5 | Complete | 2026-06-10 |
-| 55. Upload Security & Malware Scanning | v8.0 | 2/4 | In progress | - |
+| 55. Upload Security & Malware Scanning | v8.0 | 4/4 | Complete | 2026-06-10 |
 | 56. Auth Hardening & Encryption Audit | v8.0 | 0/? | Not started | - |
 | 57. Server-Side Pagination & API Rate Limits | v8.0 | 0/? | Not started | - |
 | 58. Multi-Tenant & Role-Based Access | v8.0 | 0/? | Not started | - |
 | 59. Onboarding & Empty States | v8.0 | 0/? | Not started | - |
 | 60. Landing Page & Public Presence | v8.0 | 0/? | Not started | - |
 
-**Completed:** 200 plans across 54 phases, 6 milestones (54 phases fully complete)
-**In progress:** v8.0 Enterprise Readiness — Phase 54 Plaid Token Migration complete; ready for Phase 55 Upload Security & Malware Scanning
+**Completed:** 204 plans across 55 phases, 6 milestones (55 phases fully complete)
+**In progress:** v8.0 Enterprise Readiness — Phase 55 Upload Security & Malware Scanning complete via Cloudmersive; ready for Phase 56 Auth Hardening & Encryption Audit
