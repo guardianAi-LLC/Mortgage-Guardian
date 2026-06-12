@@ -712,6 +712,13 @@ struct InstructionsView: View {
                 (3, "Verify your email address"),
                 (4, "Copy your API key from the dashboard")
             ]
+        case .plaidItemId:
+            return [
+                (1, "Connect a bank account via Plaid Link"),
+                (2, "Retrieve the Item ID from the exchange response"),
+                (3, "Paste the Item ID here to associate it with this account"),
+                (4, "Use the Item ID for webhook routing and account lookups")
+            ]
         }
     }
 
@@ -727,6 +734,8 @@ struct InstructionsView: View {
             return URL(string: "https://realestateapi.com/documentation")
         case .federalReserve:
             return URL(string: "https://api.federalreserve.gov/documentation")
+        case .plaidItemId:
+            return URL(string: "https://plaid.com/docs/api/items/")
         }
     }
 }

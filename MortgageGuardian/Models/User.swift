@@ -1,9 +1,8 @@
 import Foundation
-import SwiftUI
-import CryptoKit
+import Combine
 
 @MainActor
-class User: Identifiable, Codable, ObservableObject {
+class User: @MainActor Codable, Identifiable, ObservableObject {
     let id = UUID()
     @Published var firstName: String
     @Published var lastName: String
@@ -34,7 +33,7 @@ class User: Identifiable, Codable, ObservableObject {
     }
 
     struct MortgageAccount: Identifiable, Codable {
-        let id = UUID()
+        var id: UUID
         var loanNumber: String
         var servicerName: String
         var servicerAddress: String?
@@ -49,6 +48,82 @@ class User: Identifiable, Codable, ObservableObject {
         var documents: [UUID]
         var isActive: Bool
         var addedDate: Date
+
+        init(
+            id: UUID = UUID(),
+            loanNumber: String,
+            servicerName: String,
+            servicerAddress: String? = nil,
+            propertyAddress: String,
+            originalLoanAmount: Double,
+            currentBalance: Double? = nil,
+            interestRate: Double,
+            loanTerm: Int,
+            loanOriginationDate: Date,
+            monthlyPayment: Double,
+            escrowAccount: Bool,
+            documents: [UUID],
+            isActive: Bool,
+            addedDate: Date
+        ) {
+            self.id = id
+            self.loanNumber = loanNumber
+            self.servicerName = servicerName
+            self.servicerAddress = servicerAddress
+            self.propertyAddress = propertyAddress
+            self.originalLoanAmount = originalLoanAmount
+            self.currentBalance = currentBalance
+            self.interestRate = interestRate
+            self.loanTerm = loanTerm
+            self.loanOriginationDate = loanOriginationDate
+            self.monthlyPayment = monthlyPayment
+            self.escrowAccount = escrowAccount
+            self.documents = documents
+            self.isActive = isActive
+            self.addedDate = addedDate
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case id, loanNumber, servicerName, servicerAddress, propertyAddress, originalLoanAmount, currentBalance, interestRate, loanTerm, loanOriginationDate, monthlyPayment, escrowAccount, documents, isActive, addedDate
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+            self.loanNumber = try container.decode(String.self, forKey: .loanNumber)
+            self.servicerName = try container.decode(String.self, forKey: .servicerName)
+            self.servicerAddress = try container.decodeIfPresent(String.self, forKey: .servicerAddress)
+            self.propertyAddress = try container.decode(String.self, forKey: .propertyAddress)
+            self.originalLoanAmount = try container.decode(Double.self, forKey: .originalLoanAmount)
+            self.currentBalance = try container.decodeIfPresent(Double.self, forKey: .currentBalance)
+            self.interestRate = try container.decode(Double.self, forKey: .interestRate)
+            self.loanTerm = try container.decode(Int.self, forKey: .loanTerm)
+            self.loanOriginationDate = try container.decode(Date.self, forKey: .loanOriginationDate)
+            self.monthlyPayment = try container.decode(Double.self, forKey: .monthlyPayment)
+            self.escrowAccount = try container.decode(Bool.self, forKey: .escrowAccount)
+            self.documents = try container.decode([UUID].self, forKey: .documents)
+            self.isActive = try container.decode(Bool.self, forKey: .isActive)
+            self.addedDate = try container.decode(Date.self, forKey: .addedDate)
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(id, forKey: .id)
+            try container.encode(loanNumber, forKey: .loanNumber)
+            try container.encode(servicerName, forKey: .servicerName)
+            try container.encodeIfPresent(servicerAddress, forKey: .servicerAddress)
+            try container.encode(propertyAddress, forKey: .propertyAddress)
+            try container.encode(originalLoanAmount, forKey: .originalLoanAmount)
+            try container.encodeIfPresent(currentBalance, forKey: .currentBalance)
+            try container.encode(interestRate, forKey: .interestRate)
+            try container.encode(loanTerm, forKey: .loanTerm)
+            try container.encode(loanOriginationDate, forKey: .loanOriginationDate)
+            try container.encode(monthlyPayment, forKey: .monthlyPayment)
+            try container.encode(escrowAccount, forKey: .escrowAccount)
+            try container.encode(documents, forKey: .documents)
+            try container.encode(isActive, forKey: .isActive)
+            try container.encode(addedDate, forKey: .addedDate)
+        }
 
         var displayName: String {
             "\(servicerName) - \(loanNumber)"
@@ -190,6 +265,7 @@ class User: Identifiable, Codable, ObservableObject {
             phoneNumber: "+1-555-123-4567",
             mortgageAccounts: [
                 MortgageAccount(
+                    id: UUID(),
                     loanNumber: "1234567890",
                     servicerName: "ABC Mortgage",
                     servicerAddress: "456 Oak Ave, Servicer City, ST 67890",
