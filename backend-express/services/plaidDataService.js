@@ -1,17 +1,21 @@
 const { createClient } = require('@supabase/supabase-js');
 const { createLogger } = require('../utils/logger');
 const logger = createLogger('plaid-data');
+// Phase 54-05: every successful token decryption emits a structured audit
+// event ('plaid_token_decrypted'). Token material is NEVER logged.
+const auditLogger = createLogger('audit');
 
-// Lazy-load the encryption service so missing PLAID_ENCRYPTION_KEY in
-// pre-Phase-54 environments degrades gracefully (writes plaintext only,
-// reads keep working) instead of crashing module load.
+// Lazy-load the encryption service so a missing PLAID_ENCRYPTION_KEY fails
+// at first use (with a clear log) instead of crashing module load. Since
+// Phase 54-05 the plaintext column is gone, so token storage and resolution
+// FAIL CLOSED when the encryption service is unavailable.
 let _tokenEncryption = null;
 function getTokenEncryption() {
   if (_tokenEncryption !== null) return _tokenEncryption;
   try {
     _tokenEncryption = require('./plaidTokenEncryptionService');
   } catch (err) {
-    logger.warn('plaidTokenEncryptionService unavailable - tokens will be stored plaintext only', { error: err.message });
+    logger.error('plaidTokenEncryptionService unavailable - Plaid token storage/resolution will fail closed', { error: err.message });
     _tokenEncryption = false; // sentinel: tried and failed
   }
   return _tokenEncryption;
@@ -46,23 +50,26 @@ class PlaidDataService {
     }
 
     try {
-      // Phase 54-01 dual-write: store plaintext (existing column) AND
-      // encrypted ciphertext (new column) so resolver can prefer ciphertext
-      // while the 54-04 backfill catches up legacy rows. Only encrypt when
-      // both a userId and accessToken are present and the service loads.
+      // Phase 54-05: the plaintext access_token column is dropped (migration
+      // 008). The encrypted column is the sole storage for tokens, so the
+      // write FAILS CLOSED if encryption is unavailable — storing nothing is
+      // safer than storing a token we could never have protected.
       let accessTokenEncrypted = null;
-      let encryptionVersion = 1;
+      const encryptionVersion = 1;
       if (accessToken && userId) {
         const tokenEnc = getTokenEncryption();
-        if (tokenEnc) {
-          try {
-            accessTokenEncrypted = tokenEnc.encryptForStorage(userId, accessToken);
-          } catch (encErr) {
-            logger.error('Failed to encrypt Plaid access token - falling back to plaintext only', {
-              error: encErr.message,
-              itemId
-            });
-          }
+        if (!tokenEnc) {
+          logger.error('Cannot store Plaid access token - encryption service unavailable', { itemId });
+          return { success: false, error: 'Token encryption unavailable - PLAID_ENCRYPTION_KEY required' };
+        }
+        try {
+          accessTokenEncrypted = tokenEnc.encryptForStorage(userId, accessToken);
+        } catch (encErr) {
+          logger.error('Failed to encrypt Plaid access token - refusing to store item', {
+            error: encErr.message,
+            itemId
+          });
+          return { success: false, error: 'Token encryption failed' };
         }
       }
 
@@ -71,7 +78,6 @@ class PlaidDataService {
         .upsert({
           item_id: itemId,
           user_id: userId,
-          access_token: accessToken,
           access_token_encrypted: accessTokenEncrypted,
           encryption_version: encryptionVersion,
           status: status || 'active',
@@ -331,12 +337,14 @@ class PlaidDataService {
    * audit pipeline (M001/S04/T02) to call plaidService.getTransactions.
    *
    * @param {string} userId
+   * @param {{ route?: string }} [context] caller label for the decrypt
+   *   audit event (e.g. 'audit-pipeline')
    * @returns {Promise<string|null>} access token, or null if user has no
    *   Plaid items linked. Errors are logged and surface as null so the
    *   audit pipeline can degrade gracefully (no Plaid evidence) rather
    *   than fail the whole document.
    */
-  async getAccessTokenForUser(userId) {
+  async getAccessTokenForUser(userId, context = {}) {
     if (!userId || typeof userId !== 'string') {
       return null;
     }
@@ -354,7 +362,7 @@ class PlaidDataService {
     try {
       const { data, error } = await supabase
         .from('plaid_items')
-        .select('item_id, access_token, access_token_encrypted, encryption_version')
+        .select('item_id, access_token_encrypted, encryption_version')
         .eq('user_id', userId)
         .eq('status', 'active')
         .limit(1);
@@ -367,7 +375,7 @@ class PlaidDataService {
       const row = (data || [])[0];
       if (!row) return null;
 
-      return this._decryptRow(userId, row);
+      return this._decryptRow(userId, row, context);
     } catch (error) {
       logger.error('getAccessTokenForUser error', { error: error.message, userId });
       return null;
@@ -384,17 +392,20 @@ class PlaidDataService {
    * or stolen access_token in another user's keychain can no longer be
    * replayed against the API.
    *
-   * Same row-level decrypt-or-fallback semantics as getAccessTokenForUser
-   * (prefer ciphertext, warn on plaintext fallback).
+   * Phase 54-05: the encrypted column is the sole token source. If the row
+   * exists but `access_token_encrypted` is missing (or cannot be decrypted),
+   * this FAILS CLOSED with `token_missing` — there is no plaintext fallback.
    *
    * @param {string} userId Clerk-derived req.user.id, never client-supplied
    * @param {string} itemId Plaid item_id from the request body
+   * @param {{ route?: string }} [context] caller label (e.g. '/v1/plaid/accounts')
+   *   recorded on the `plaid_token_decrypted` audit event
    * @returns {Promise<{ success: true, accessToken: string }
-   *                 | { success: false, code: 'not_found' | 'error' }>}
+   *                 | { success: false, code: 'not_found' | 'token_missing' | 'error' }>}
    *   `not_found` is returned for both "no such item" AND "item belongs to a
    *   different user" — same shape so callers cannot probe for existence.
    */
-  async resolveTokenByItemId(userId, itemId) {
+  async resolveTokenByItemId(userId, itemId, context = {}) {
     if (!userId || typeof userId !== 'string' || !itemId || typeof itemId !== 'string') {
       return { success: false, code: 'not_found' };
     }
@@ -411,7 +422,7 @@ class PlaidDataService {
     try {
       const { data, error } = await supabase
         .from('plaid_items')
-        .select('access_token, access_token_encrypted, encryption_version')
+        .select('access_token_encrypted, encryption_version')
         .eq('item_id', itemId)
         .eq('user_id', userId)
         .single();
@@ -425,9 +436,11 @@ class PlaidDataService {
         return { success: false, code: 'not_found' };
       }
 
-      const accessToken = this._decryptRow(userId, { ...data, item_id: itemId });
+      const accessToken = this._decryptRow(userId, { ...data, item_id: itemId }, context);
       if (!accessToken) {
-        return { success: false, code: 'not_found' };
+        // Row exists but has no usable ciphertext — fail closed. Distinct
+        // code so callers/ops can tell "needs re-link" from "no such item".
+        return { success: false, code: 'token_missing' };
       }
       return { success: true, accessToken };
     } catch (err) {
@@ -438,35 +451,53 @@ class PlaidDataService {
 
   /**
    * Private: decrypt the access token from a plaid_items row.
-   * Prefers ciphertext; falls back to plaintext (with a warn the 54-04
-   * backfill script keys off of). Returns the token string or null.
-   * NEVER logs the resolved token.
+   *
+   * Phase 54-05: ciphertext-only — the plaintext column was dropped in
+   * migration 008 and there is NO fallback. Missing ciphertext, an
+   * unavailable encryption service, or a failed decrypt all return null
+   * (callers translate that into `token_missing` / null and the user must
+   * re-link via Plaid Link). NEVER logs the resolved token.
+   *
+   * Phase 54-05: every SUCCESSFUL decrypt emits a structured
+   * `plaid_token_decrypted` audit event (userId, itemId, route, timestamp).
+   * No token material — plaintext, ciphertext, or derivatives — is logged.
    */
-  _decryptRow(userId, row) {
-    if (row.access_token_encrypted) {
-      const tokenEnc = getTokenEncryption();
-      if (tokenEnc) {
-        try {
-          return tokenEnc.decryptFromStorage(userId, row.access_token_encrypted);
-        } catch (decErr) {
-          logger.error('Failed to decrypt Plaid access token - falling back to plaintext', {
-            error: decErr.message,
-            itemId: row.item_id,
-            userId
-          });
-        }
-      }
-    }
-
-    if (row.access_token) {
-      logger.warn('Plaid access token resolved from plaintext column - needs backfill', {
+  _decryptRow(userId, row, context = {}) {
+    if (!row.access_token_encrypted) {
+      logger.error('Plaid item has no encrypted access token - failing closed (re-link required)', {
         itemId: row.item_id,
         userId
       });
-      return row.access_token;
+      return null;
     }
 
-    return null;
+    const tokenEnc = getTokenEncryption();
+    if (!tokenEnc) {
+      logger.error('Cannot decrypt Plaid access token - encryption service unavailable', {
+        itemId: row.item_id,
+        userId
+      });
+      return null;
+    }
+
+    try {
+      const accessToken = tokenEnc.decryptFromStorage(userId, row.access_token_encrypted);
+      auditLogger.info('plaid_token_decrypted', {
+        event: 'plaid_token_decrypted',
+        userId,
+        itemId: row.item_id,
+        route: context.route || 'unknown',
+        timestamp: new Date().toISOString()
+      });
+      return accessToken;
+    } catch (decErr) {
+      logger.error('Failed to decrypt Plaid access token - failing closed', {
+        error: decErr.message,
+        itemId: row.item_id,
+        userId
+      });
+      return null;
+    }
   }
 
   /**

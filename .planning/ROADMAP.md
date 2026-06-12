@@ -196,8 +196,8 @@ Plans:
 - [x] 54-01: Token Encryption Service & Schema Migration — completed 2026-06-07
 - [x] 54-02: Server-Side Token Resolution & API Refactor (itemId-based endpoints) — completed 2026-06-07
 - [x] 54-03: Frontend Migration to itemId (remove localStorage) — completed 2026-06-07
-- [ ] 54-04: iOS Migration & Production Token Backfill
-- [ ] 54-05: Drop Plaintext Column, Audit Logging, Runbook, Cleanup
+- [x] 54-04: iOS Migration & Production Token Backfill — completed 2026-06-10
+- [x] 54-05: Drop Plaintext Column, Audit Logging, Runbook, Cleanup — completed 2026-06-10
 
 #### Phase 55: Upload Security & Malware Scanning
 
@@ -321,7 +321,7 @@ Plans:
 | 51. Evidence Enrichment | v8.0 | 5/5 | Complete | 2026-04-24 |
 | 52. Structured Reasoning in Claude Prompts | v8.0 | 6/6 | Complete | 2026-04-24 |
 | 53. Report Output Format | v8.0 | 5/5 | Complete | 2026-05-18 |
-| 54. Plaid Token Migration | v8.0 | 0/? | Not started | - |
+| 54. Plaid Token Migration | v8.0 | 5/5 | Complete | 2026-06-10 |
 | 55. Upload Security & Malware Scanning | v8.0 | 0/? | Not started | - |
 | 56. Auth Hardening & Encryption Audit | v8.0 | 0/? | Not started | - |
 | 57. Server-Side Pagination & API Rate Limits | v8.0 | 0/? | Not started | - |
@@ -329,5 +329,5 @@ Plans:
 | 59. Onboarding & Empty States | v8.0 | 0/? | Not started | - |
 | 60. Landing Page & Public Presence | v8.0 | 0/? | Not started | - |
 
-**Completed:** 195 plans across 53 phases, 6 milestones (53 phases fully complete)
-**In progress:** v8.0 Enterprise Readiness — Phase 54 Plaid Token Migration (3/5 plans complete)
+**Completed:** 200 plans across 54 phases, 6 milestones (54 phases fully complete)
+**In progress:** v8.0 Enterprise Readiness — Phase 54 Plaid Token Migration complete; ready for Phase 55 Upload Security & Malware Scanning

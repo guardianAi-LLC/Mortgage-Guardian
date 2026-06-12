@@ -6,6 +6,45 @@ The Plaid API implementation has been completely overhauled to production-ready 
 
 ---
 
+## Phase 54 Update (2026-06-10): Encrypted-at-Rest Tokens, itemId-Only API
+
+This section supersedes any older guidance below that shows `access_token`
+in client request bodies or suggests clients store access tokens.
+
+**Current contract:**
+
+- **Tokens are encrypted at rest.** Plaid access tokens are stored ONLY as
+  AES-256-GCM ciphertext in `plaid_items.access_token_encrypted`, with
+  per-user keys derived from `PLAID_ENCRYPTION_KEY` (HKDF-SHA256) by
+  `services/plaidTokenEncryptionService.js`. The plaintext `access_token`
+  column was dropped in migration `008_drop_plaid_plaintext_token.sql`.
+- **Clients send `item_id`, never `access_token`.** `/v1/plaid/accounts`,
+  `/v1/plaid/transactions`, `/v1/plaid/item`, `/v1/plaid/item/webhook`, and
+  `DELETE /v1/plaid/item` accept `item_id` only; the server verifies the
+  authenticated Clerk user owns the item, then resolves and decrypts the
+  token server-side (`plaidDataService.resolveTokenByItemId`). Requests that
+  include `access_token` are rejected with 400. Foreign or missing items
+  return 404 `item_not_found`. Items whose ciphertext is missing fail closed
+  (`token_missing` → 404; the user must re-link).
+- **No client-side token storage.** iOS keeps only the `item_id` in the
+  Keychain; the web frontend keeps nothing (the legacy
+  `mg_plaid_access_tokens` localStorage cache was purged in 54-03 and the
+  cleanup code removed in 54-05).
+- **Every decryption is audited.** Successful decrypts emit a structured
+  `plaid_token_decrypted` event (userId, itemId, route, timestamp) on the
+  `audit` logger. Token material is never logged.
+- **Per-user rate limiting.** The resolution-heavy endpoints (`GET /items`,
+  `POST /accounts`, `POST /transactions`, `POST /item`) are limited to 60
+  requests per 5 minutes per user (tunable via
+  `PLAID_RESOLVE_RATE_LIMIT_MAX` / `PLAID_RESOLVE_RATE_LIMIT_WINDOW_MS`);
+  excess requests get 429 with `Retry-After`.
+- **Operations:** see the "Plaid Token Encryption — Rotation, Backfill, and
+  Incident Response" playbook in the repo-root `RUNBOOK.md`, and
+  `scripts/backfill-plaid-tokens.js` for the (completed) plaintext→ciphertext
+  backfill tooling.
+
+---
+
 ## Files Modified
 
 ### 1. Backend Service Layer
@@ -235,19 +274,21 @@ curl -X POST http://localhost:3000/v1/plaid/exchange_token \
   -d '{"public_token": "public-sandbox-..."}'
 ```
 
-4. **Get Accounts:**
+4. **Get Accounts** (Phase 54: send `item_id`, never `access_token`):
 ```bash
 curl -X POST http://localhost:3000/v1/plaid/accounts \
   -H "Content-Type: application/json" \
-  -d '{"access_token": "access-sandbox-..."}'
+  -H "Authorization: Bearer <clerk-jwt>" \
+  -d '{"item_id": "item-sandbox-..."}'
 ```
 
-5. **Get Transactions:**
+5. **Get Transactions** (Phase 54: send `item_id`, never `access_token`):
 ```bash
 curl -X POST http://localhost:3000/v1/plaid/transactions \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <clerk-jwt>" \
   -d '{
-    "access_token": "access-sandbox-...",
+    "item_id": "item-sandbox-...",
     "start_date": "2024-01-01",
     "end_date": "2024-01-31"
   }'

@@ -1,0 +1,47 @@
+-- =============================================
+-- Drop Plaintext Plaid Access Token Column (Phase 54-05)
+-- =============================================
+-- Run this migration in Supabase SQL editor
+-- Created: 2026-06-10
+--
+-- Purpose:
+--   Remove the deprecated plaintext `access_token` column from
+--   plaid_items. After this migration, `access_token_encrypted`
+--   (AES-256-GCM, HKDF-SHA256 per-user keys via PLAID_ENCRYPTION_KEY,
+--   see plaidTokenEncryptionService) is the SOLE source of truth for
+--   Plaid access tokens.
+--
+-- Prerequisites (verified before this migration was authored):
+--   - Phase 54-04 production backfill completed 2026-06-10:
+--     all rows have non-null access_token_encrypted and the plaintext
+--     column was nulled out by scripts/backfill-plaid-tokens.js.
+--   - Application code (Phase 54-05 Task 1) no longer writes or reads
+--     the plaintext column.
+--
+-- OPERATOR PRE-CHECK (run manually BEFORE applying — MUST return 0):
+--   SELECT COUNT(*) FROM plaid_items WHERE access_token IS NOT NULL;
+--
+-- If the pre-check returns > 0, STOP. Re-run the 54-04 backfill
+-- (node scripts/backfill-plaid-tokens.js --apply) and re-verify
+-- before applying this migration. Dropping the column with plaintext
+-- rows remaining would orphan those tokens (no ciphertext to read).
+-- =============================================
+
+-- Drop the plaintext column. No data backfill happens here — the
+-- 54-04 backfill script already migrated all rows to ciphertext.
+ALTER TABLE plaid_items DROP COLUMN IF EXISTS access_token;
+
+-- =============================================
+-- Migration Notes:
+-- =============================================
+-- 1. Run the operator pre-check above first; it MUST return 0.
+-- 2. Verify after applying: `\d plaid_items` (or Table Editor) no
+--    longer shows `access_token`; `access_token_encrypted` (TEXT) and
+--    `encryption_version` (SMALLINT NOT NULL DEFAULT 1) remain.
+-- 3. NOT trivially reversible: the plaintext values are gone (nulled
+--    by the backfill, column dropped here). Rollback requires users to
+--    re-link via Plaid Link (see scripts/README.md rollback note).
+-- 4. Companion code change: plaidDataService no longer dual-writes and
+--    the resolver fails closed with `token_missing` when ciphertext is
+--    absent (Phase 54-05 Task 1).
+-- =============================================

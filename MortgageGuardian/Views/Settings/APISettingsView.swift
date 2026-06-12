@@ -682,7 +682,7 @@ struct InstructionsView: View {
                 (5, "Copy the generated API key immediately (it won't be shown again)"),
                 (6, "Paste the key in this app's configuration")
             ]
-        case .plaidClientId, .plaidSecret, .plaidItemId:
+        case .plaidClientId, .plaidSecret:
             return [
                 (1, "Go to dashboard.plaid.com and log in"),
                 (2, "Navigate to Team Settings > Keys"),
@@ -712,6 +712,13 @@ struct InstructionsView: View {
                 (3, "Verify your email address"),
                 (4, "Copy your API key from the dashboard")
             ]
+        case .plaidItemId:
+            return [
+                (1, "Connect a bank account via Plaid Link"),
+                (2, "Retrieve the Item ID from the exchange response"),
+                (3, "Paste the Item ID here to associate it with this account"),
+                (4, "Use the Item ID for webhook routing and account lookups")
+            ]
         }
     }
 
@@ -719,7 +726,7 @@ struct InstructionsView: View {
         switch service {
         case .claude:
             return URL(string: "https://docs.anthropic.com/claude/reference/getting-started-with-the-api")
-        case .plaidClientId, .plaidSecret, .plaidItemId:
+        case .plaidClientId, .plaidSecret:
             return URL(string: "https://plaid.com/docs/api/")
         case .marketData:
             return URL(string: "https://marketdata.com/docs")
@@ -727,6 +734,8 @@ struct InstructionsView: View {
             return URL(string: "https://realestateapi.com/documentation")
         case .federalReserve:
             return URL(string: "https://api.federalreserve.gov/documentation")
+        case .plaidItemId:
+            return URL(string: "https://plaid.com/docs/api/items/")
         }
     }
 }

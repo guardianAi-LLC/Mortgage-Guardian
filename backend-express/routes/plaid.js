@@ -5,6 +5,12 @@ const plaidDataService = require('../services/plaidDataService');
 const { createLogger } = require('../utils/logger');
 const logger = createLogger('plaid-routes');
 const { validate } = require('../middleware/validate');
+const { createPlaidResolveLimiter } = require('../middleware/plaidRateLimit');
+
+// Phase 54-05: per-user rate limit on the token-resolution-heavy endpoints
+// (/items, /accounts, /transactions, /item). 60 req / 5 min per user by
+// default; tunable via PLAID_RESOLVE_RATE_LIMIT_MAX / _WINDOW_MS.
+const plaidResolveLimiter = createPlaidResolveLimiter();
 const {
   linkTokenSchema,
   exchangeTokenSchema,
@@ -190,11 +196,11 @@ router.post('/exchange_token', validate(exchangeTokenSchema), async (req, res, n
  * - 404 { error: 'item_not_found' } if the item does not exist OR is owned
  *   by a different user (same shape to avoid existence leakage)
  */
-router.post('/accounts', validate(accountsSchema), async (req, res, next) => {
+router.post('/accounts', plaidResolveLimiter, validate(accountsSchema), async (req, res, next) => {
   try {
     const { item_id, account_ids } = req.body;
 
-    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id);
+    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id, { route: '/v1/plaid/accounts' });
     if (!tokenResult.success) {
       logger.warn('Plaid accounts: item not found for user', { itemId: item_id, userId: req.user.id });
       return res.status(404).json({
@@ -238,7 +244,7 @@ router.post('/accounts', validate(accountsSchema), async (req, res, next) => {
  * - 400 if access_token is supplied
  * - 404 { error: 'item_not_found' } if foreign or missing item
  */
-router.post('/transactions', validate(transactionsSchema), async (req, res, next) => {
+router.post('/transactions', plaidResolveLimiter, validate(transactionsSchema), async (req, res, next) => {
   try {
     const {
       item_id,
@@ -249,7 +255,7 @@ router.post('/transactions', validate(transactionsSchema), async (req, res, next
       offset
     } = req.body;
 
-    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id);
+    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id, { route: '/v1/plaid/transactions' });
     if (!tokenResult.success) {
       logger.warn('Plaid transactions: item not found for user', { itemId: item_id, userId: req.user.id });
       return res.status(404).json({
@@ -300,11 +306,11 @@ router.post('/transactions', validate(transactionsSchema), async (req, res, next
  * - 400 if access_token is supplied
  * - 404 { error: 'item_not_found' } if foreign or missing item
  */
-router.post('/item', validate(itemSchema), async (req, res, next) => {
+router.post('/item', plaidResolveLimiter, validate(itemSchema), async (req, res, next) => {
   try {
     const { item_id } = req.body;
 
-    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id);
+    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id, { route: '/v1/plaid/item' });
     if (!tokenResult.success) {
       logger.warn('Plaid item: not found for user', { itemId: item_id, userId: req.user.id });
       return res.status(404).json({
@@ -338,7 +344,7 @@ router.post('/item', validate(itemSchema), async (req, res, next) => {
  * - 401 if req.user.id is missing (unreachable in practice — requireAuth catches it first)
  * - 500 with `{ error: 'plaid_items_fetch_failed' }` if the data layer fails
  */
-router.get('/items', async (req, res, next) => {
+router.get('/items', plaidResolveLimiter, async (req, res, next) => {
   try {
     const userId = req.user && req.user.id;
     if (!userId) {
@@ -391,7 +397,7 @@ router.post('/item/webhook', validate(updateWebhookSchema), async (req, res, nex
   try {
     const { item_id, webhook } = req.body;
 
-    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id);
+    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id, { route: '/v1/plaid/item/webhook' });
     if (!tokenResult.success) {
       logger.warn('Plaid update webhook: item not found for user', { itemId: item_id, userId: req.user.id });
       return res.status(404).json({
@@ -431,7 +437,7 @@ router.delete('/item', validate(deleteItemSchema), async (req, res, next) => {
   try {
     const { item_id } = req.body;
 
-    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id);
+    const tokenResult = await plaidDataService.resolveTokenByItemId(req.user.id, item_id, { route: 'DELETE /v1/plaid/item' });
     if (!tokenResult.success) {
       logger.warn('Plaid remove item: not found for user', { itemId: item_id, userId: req.user.id });
       return res.status(404).json({
@@ -551,7 +557,15 @@ async function handleTransactionWebhook(data) {
           return { handled: false, error: `Item not found: ${item_id}` };
         }
 
-        const { access_token, user_id } = itemResult.data;
+        const { user_id } = itemResult.data;
+
+        // Phase 54-05: the plaintext access_token column no longer exists on
+        // plaid_items rows — resolve the token via the encrypted-only resolver.
+        const tokenResult = await plaidDataService.resolveTokenByItemId(user_id, item_id, { route: 'webhook:TRANSACTIONS' });
+        if (!tokenResult.success) {
+          logger.error('Failed to resolve access token for webhook item', { itemId: item_id, code: tokenResult.code });
+          return { handled: false, error: `Token resolution failed: ${tokenResult.code}` };
+        }
 
         // 2. Fetch new transactions from Plaid
         const now = new Date();
@@ -559,7 +573,7 @@ async function handleTransactionWebhook(data) {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
         const transactionsResponse = await plaidService.getTransactions({
-          accessToken: access_token,
+          accessToken: tokenResult.accessToken,
           startDate: thirtyDaysAgo.toISOString().split('T')[0],
           endDate: now.toISOString().split('T')[0]
         });

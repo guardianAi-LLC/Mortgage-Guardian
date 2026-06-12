@@ -222,6 +222,78 @@ Run these steps in order for any P1 or P2 incident:
 5. If webhooks are failing, verify `PLAID_WEBHOOK_URL` is accessible from the internet and `PLAID_WEBHOOK_VERIFICATION_KEY` is set (required in production).
 6. Plaid sandbox has different behavior than production -- confirm environment.
 
+### 8. Plaid Token Encryption — Rotation, Backfill, and Incident Response
+
+Since Phase 54 (migration 008), Plaid access tokens exist ONLY as AES-256-GCM
+ciphertext in `plaid_items.access_token_encrypted` (per-user keys derived from
+`PLAID_ENCRYPTION_KEY` via HKDF-SHA256; see
+`backend-express/services/plaidTokenEncryptionService.js`). There is no
+plaintext column and no plaintext fallback — token reads fail closed.
+
+**Key location**
+
+- Env var: `PLAID_ENCRYPTION_KEY` (64 hex chars = 32 bytes). Required in
+  production (`utils/envValidator.js` enforces it), optional in dev/test.
+- Local dev: `backend-express/.env`. Production: the backend host's
+  environment (Railway/Vercel dashboard). ⚠️ As of 2026-06-10 the production
+  key was generated during the 54-04 cutover and lives in
+  `backend-express/.env` — it MUST be copied into the hosting environment
+  when the backend is redeployed, or every stored token becomes
+  undecryptable (users must re-link via Plaid Link).
+- Separate from `DOCUMENT_ENCRYPTION_KEY` by design: compromise of one does
+  not force rotation of the other.
+
+**How to rotate `PLAID_ENCRYPTION_KEY`**
+
+1. Generate a new key: `openssl rand -hex 32`.
+2. Rotation requires re-encrypting every `plaid_items` row: decrypt each
+   `access_token_encrypted` with the OLD key, re-encrypt with the NEW key,
+   and bump `encryption_version`. No rotation script exists yet — adapt
+   `backend-express/scripts/backfill-plaid-tokens.js` (it already has the
+   per-row decrypt/encrypt/verify loop and dry-run mode) if rotation is
+   needed before a dedicated script lands.
+3. Deploy the new key to the backend environment in the same change window
+   as the data rewrite. The old key must remain available until every row is
+   re-encrypted and verified.
+4. If the old key is LOST (not just rotated): tokens cannot be recovered.
+   Delete the affected `plaid_items` rows and have users re-link their banks
+   — Plaid issues fresh access tokens on re-link. No funds or bank data are
+   at risk; only the link must be re-established.
+
+**If the `plaid_token_decrypted` audit log goes silent**
+
+Every successful token decryption emits a structured `plaid_token_decrypted`
+event (service `audit`, fields: `userId`, `itemId`, `route`, `timestamp`).
+If these stop while users are active, token reads have stopped working:
+
+1. Check error logs for `Cannot decrypt Plaid access token - encryption
+   service unavailable` → `PLAID_ENCRYPTION_KEY` is missing/invalid in the
+   environment.
+2. Check for `Failed to decrypt Plaid access token - failing closed` → key
+   mismatch (wrong key deployed) or ciphertext corruption.
+3. Check for `Plaid item has no encrypted access token - failing closed` →
+   a row was written without ciphertext; the user must re-link.
+4. Check the rate limiter: sustained 429s on `/v1/plaid/*` (see
+   `PLAID_RESOLVE_RATE_LIMIT_MAX`, default 60 per 5 min per user) suppress
+   resolution attempts and therefore audit events.
+
+**If `mismatches` > 0 on a backfill/rotation rerun**
+
+The backfill script reports `mismatches` when an existing ciphertext decrypts
+to something different from the expected value. This means the stored
+ciphertext and the source value diverged — treat as P2:
+
+1. Do NOT let the script overwrite or null anything for those rows (it skips
+   them by design).
+2. Identify the rows from the script's ERROR log lines (itemId/userId — the
+   script never logs token material).
+3. Verify which value is live by calling Plaid (`/item/get`) with each
+   candidate token in a secure session.
+4. If the ciphertext is wrong, re-encrypt the correct token for that user;
+   if neither works, delete the row and ask the user to re-link.
+5. Investigate how divergence happened (concurrent writes during cutover is
+   the usual cause) before rerunning with `--apply`.
+
 ## Rollback Decision Matrix
 
 | Situation | Action | Reference |
