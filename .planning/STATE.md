@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 ## Current Position
 
 Phase: 56 of 60 (Auth Hardening & Encryption Audit)
-Plan: 1 of 5 complete
+Plan: 2 of 5 complete
 Status: In progress
-Last activity: 2026-06-11 - Completed 56-01-PLAN.md — csrfOriginGuard middleware (Origin/Referer gate, bearer-bypass, Plaid webhook exempt) mounted post-auth pre-routes; 8-case supertest coverage; 1683 tests passing.
+Last activity: 2026-06-11 - Completed 56-02-PLAN.md — Clerk webhook + audit helper (auditEvent allow-list + sensitive-key scrub, POST /v1/auth/clerk-webhook with svix verification, auth_failure reason codes on every middleware/auth 401 path); 1698 tests passing (+15 vs baseline 1683).
 
-Progress: ██████░░░░ 51%
+Progress: ██████░░░░ 52%
 
 ## Accumulated Context
 
@@ -56,5 +56,5 @@ In `.planning/ISSUES.md`:
 ## Session Continuity
 
 Last session: 2026-06-11
-Stopped at: Completed 56-01-PLAN.md — csrfOriginGuard middleware shipped (mount order fixed via Rule 4 auto-fix); ready for 56-02
+Stopped at: Completed 56-02-PLAN.md — Clerk webhook + audit helper shipped (svix verification, reason-coded auth_failure, CLERK_WEBHOOK_SECRET in envValidator, AUTH_SESSION_CONFIG doc); ready for 56-03 (token refresh + ISS-001)
 Resume file: None

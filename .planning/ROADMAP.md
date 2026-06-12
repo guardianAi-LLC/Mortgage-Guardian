@@ -330,11 +330,11 @@ Plans:
 | 53. Report Output Format | v8.0 | 5/5 | Complete | 2026-05-18 |
 | 54. Plaid Token Migration | v8.0 | 5/5 | Complete | 2026-06-10 |
 | 55. Upload Security & Malware Scanning | v8.0 | 4/4 | Complete | 2026-06-10 |
-| 56. Auth Hardening & Encryption Audit | v8.0 | 1/5 | In progress | - |
+| 56. Auth Hardening & Encryption Audit | v8.0 | 2/5 | In progress | - |
 | 57. Server-Side Pagination & API Rate Limits | v8.0 | 0/? | Not started | - |
 | 58. Multi-Tenant & Role-Based Access | v8.0 | 0/? | Not started | - |
 | 59. Onboarding & Empty States | v8.0 | 0/? | Not started | - |
 | 60. Landing Page & Public Presence | v8.0 | 0/? | Not started | - |
 
-**Completed:** 205 plans across 55 phases + Phase 56 plan 1, 6 milestones (55 phases fully complete)
-**In progress:** v8.0 Enterprise Readiness — Phase 56 Auth Hardening: 56-01 csrfOriginGuard middleware complete; 56-02 next.
+**Completed:** 205 plans across 55 phases + Phase 56 plans 1-2, 6 milestones (55 phases fully complete)
+**In progress:** v8.0 Enterprise Readiness — Phase 56 Auth Hardening: 56-01 csrfOriginGuard + 56-02 Clerk webhook & audit helper complete; 56-03 next (token refresh + ISS-001).
