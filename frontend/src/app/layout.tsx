@@ -42,6 +42,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
+    // Session policy (lifetime, inactivity timeout, multi-session, sign-out URL)
+    // and the backend webhook subscription are configured in the Clerk Dashboard.
+    // See docs/AUTH_SESSION_CONFIG.md for the required Dashboard values.
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
