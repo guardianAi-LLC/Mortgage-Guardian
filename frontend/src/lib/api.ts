@@ -7,15 +7,58 @@ export class ApiError extends Error {
   }
 }
 
-async function fetchWithAuth(path: string, token: string, options?: RequestInit) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
+/**
+ * Token getter contract. Implementations forward `skipCache: true` to
+ * `useAuth().getToken({ skipCache: true })` to force-refresh an expired
+ * Clerk JWT. Returning null means "no auth token available" — the request
+ * is sent without an Authorization header and 401s are not retried.
+ *
+ * Mirrors the iOS APIClient `onAuthenticationRequired` contract: one retry
+ * per request, second 401 propagates.
+ */
+export type TokenGetter = (opts?: { skipCache?: boolean }) => Promise<string | null>
+
+/**
+ * Phase 56-03: fetchWithAuth now accepts a token getter rather than a
+ * pre-fetched token string. On a 401 response, it calls `getToken` again
+ * with `{ skipCache: true }` and retries exactly once. A second 401 (or
+ * any non-401 status) propagates without further retry — no infinite loop.
+ *
+ * Mirrors `MortgageGuardian/Networking/APIClient.swift` behavior; covered
+ * by `src/lib/__tests__/api-401-retry.test.ts`.
+ */
+// Preserve the prior implicit `Promise<any>` return so call sites that
+// access response shape fields without runtime guards continue to compile.
+// Callers downstream apply their own mapping/typing (see lib/hooks.ts).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function fetchWithAuth(
+  path: string,
+  getToken: TokenGetter,
+  options: RequestInit = {}
+): Promise<any> {
+  const doFetch = async (token: string | null): Promise<Response> => {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      ...options?.headers,
-    },
-  })
+      ...(options.headers as Record<string, string> | undefined),
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    return fetch(`${API_BASE}${path}`, { ...options, headers })
+  }
+
+  const initialToken = await getToken({ skipCache: false })
+  let res = await doFetch(initialToken)
+
+  if (res.status === 401) {
+    // One-shot refresh retry. If getToken still returns null (no Clerk
+    // session), there is nothing to refresh — propagate the 401 without
+    // a second fetch.
+    const refreshed = await getToken({ skipCache: true })
+    if (refreshed) {
+      res = await doFetch(refreshed)
+    }
+  }
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: res.statusText }))
@@ -33,81 +76,81 @@ function qs(params?: Record<string, string | number | undefined>): string {
 
 export const api = {
   cases: {
-    list: (token: string, params?: { status?: string; limit?: number; offset?: number }) =>
-      fetchWithAuth(`/cases?${qs(params)}`, token),
-    get: (token: string, id: string) =>
-      fetchWithAuth(`/cases/${id}`, token),
-    create: (token: string, data: { caseName: string; borrowerName?: string; propertyAddress?: string; loanNumber?: string; servicerName?: string; notes?: string }) =>
-      fetchWithAuth('/cases', token, { method: 'POST', body: JSON.stringify(data) }),
-    update: (token: string, id: string, data: Record<string, unknown>) =>
-      fetchWithAuth(`/cases/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (token: string, id: string) =>
-      fetchWithAuth(`/cases/${id}`, token, { method: 'DELETE' }),
-    addDocument: (token: string, caseId: string, documentId: string) =>
-      fetchWithAuth(`/cases/${caseId}/documents`, token, { method: 'POST', body: JSON.stringify({ documentId }) }),
-    removeDocument: (token: string, caseId: string, documentId: string) =>
-      fetchWithAuth(`/cases/${caseId}/documents/${documentId}`, token, { method: 'DELETE' }),
+    list: (getToken: TokenGetter, params?: { status?: string; limit?: number; offset?: number }) =>
+      fetchWithAuth(`/cases?${qs(params)}`, getToken),
+    get: (getToken: TokenGetter, id: string) =>
+      fetchWithAuth(`/cases/${id}`, getToken),
+    create: (getToken: TokenGetter, data: { caseName: string; borrowerName?: string; propertyAddress?: string; loanNumber?: string; servicerName?: string; notes?: string }) =>
+      fetchWithAuth('/cases', getToken, { method: 'POST', body: JSON.stringify(data) }),
+    update: (getToken: TokenGetter, id: string, data: Record<string, unknown>) =>
+      fetchWithAuth(`/cases/${id}`, getToken, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (getToken: TokenGetter, id: string) =>
+      fetchWithAuth(`/cases/${id}`, getToken, { method: 'DELETE' }),
+    addDocument: (getToken: TokenGetter, caseId: string, documentId: string) =>
+      fetchWithAuth(`/cases/${caseId}/documents`, getToken, { method: 'POST', body: JSON.stringify({ documentId }) }),
+    removeDocument: (getToken: TokenGetter, caseId: string, documentId: string) =>
+      fetchWithAuth(`/cases/${caseId}/documents/${documentId}`, getToken, { method: 'DELETE' }),
   },
 
   documents: {
-    list: (token: string, params?: { limit?: number; offset?: number }) =>
-      fetchWithAuth(`/documents?${qs(params)}`, token),
-    get: (token: string, id: string) =>
-      fetchWithAuth(`/documents/${id}`, token),
-    upload: (token: string, data: { documentId: string; fileName: string; content: string; documentType?: string }) =>
-      fetchWithAuth('/documents/upload', token, { method: 'POST', body: JSON.stringify(data) }),
-    process: (token: string, data: { documentId: string; documentText?: string; fileBuffer?: string; documentType?: string }) =>
-      fetchWithAuth('/documents/process', token, { method: 'POST', body: JSON.stringify(data) }),
-    status: (token: string, id: string) =>
-      fetchWithAuth(`/documents/${id}/status`, token),
-    analysis: (token: string, id: string) =>
-      fetchWithAuth(`/documents/${id}/analysis`, token),
-    complete: (token: string, id: string) =>
-      fetchWithAuth(`/documents/${id}/complete`, token, { method: 'POST' }),
-    retry: (token: string, id: string) =>
-      fetchWithAuth(`/documents/${id}/retry`, token, { method: 'POST' }),
-    delete: (token: string, id: string) =>
-      fetchWithAuth(`/documents/${id}`, token, { method: 'DELETE' }),
+    list: (getToken: TokenGetter, params?: { limit?: number; offset?: number }) =>
+      fetchWithAuth(`/documents?${qs(params)}`, getToken),
+    get: (getToken: TokenGetter, id: string) =>
+      fetchWithAuth(`/documents/${id}`, getToken),
+    upload: (getToken: TokenGetter, data: { documentId: string; fileName: string; content: string; documentType?: string }) =>
+      fetchWithAuth('/documents/upload', getToken, { method: 'POST', body: JSON.stringify(data) }),
+    process: (getToken: TokenGetter, data: { documentId: string; documentText?: string; fileBuffer?: string; documentType?: string }) =>
+      fetchWithAuth('/documents/process', getToken, { method: 'POST', body: JSON.stringify(data) }),
+    status: (getToken: TokenGetter, id: string) =>
+      fetchWithAuth(`/documents/${id}/status`, getToken),
+    analysis: (getToken: TokenGetter, id: string) =>
+      fetchWithAuth(`/documents/${id}/analysis`, getToken),
+    complete: (getToken: TokenGetter, id: string) =>
+      fetchWithAuth(`/documents/${id}/complete`, getToken, { method: 'POST' }),
+    retry: (getToken: TokenGetter, id: string) =>
+      fetchWithAuth(`/documents/${id}/retry`, getToken, { method: 'POST' }),
+    delete: (getToken: TokenGetter, id: string) =>
+      fetchWithAuth(`/documents/${id}`, getToken, { method: 'DELETE' }),
   },
 
   forensic: {
-    run: (token: string, caseId: string, data?: Record<string, unknown>) =>
-      fetchWithAuth(`/cases/${caseId}/forensic-analysis`, token, { method: 'POST', body: JSON.stringify(data || {}) }),
-    get: (token: string, caseId: string) =>
-      fetchWithAuth(`/cases/${caseId}/forensic-analysis`, token),
+    run: (getToken: TokenGetter, caseId: string, data?: Record<string, unknown>) =>
+      fetchWithAuth(`/cases/${caseId}/forensic-analysis`, getToken, { method: 'POST', body: JSON.stringify(data || {}) }),
+    get: (getToken: TokenGetter, caseId: string) =>
+      fetchWithAuth(`/cases/${caseId}/forensic-analysis`, getToken),
   },
 
   compliance: {
-    evaluate: (token: string, caseId: string, data?: Record<string, unknown>) =>
-      fetchWithAuth(`/cases/${caseId}/compliance`, token, { method: 'POST', body: JSON.stringify(data || {}) }),
-    get: (token: string, caseId: string) =>
-      fetchWithAuth(`/cases/${caseId}/compliance`, token),
+    evaluate: (getToken: TokenGetter, caseId: string, data?: Record<string, unknown>) =>
+      fetchWithAuth(`/cases/${caseId}/compliance`, getToken, { method: 'POST', body: JSON.stringify(data || {}) }),
+    get: (getToken: TokenGetter, caseId: string) =>
+      fetchWithAuth(`/cases/${caseId}/compliance`, getToken),
   },
 
   reports: {
-    generate: (token: string, caseId: string, data?: { generateLetter?: boolean; letterType?: string; skipPersistence?: boolean }) =>
-      fetchWithAuth(`/cases/${caseId}/report`, token, { method: 'POST', body: JSON.stringify(data || {}) }),
-    get: (token: string, caseId: string) =>
-      fetchWithAuth(`/cases/${caseId}/report`, token),
-    generateLetter: (token: string, caseId: string, data: { letterType: string }) =>
-      fetchWithAuth(`/cases/${caseId}/report/letter`, token, { method: 'POST', body: JSON.stringify(data) }),
+    generate: (getToken: TokenGetter, caseId: string, data?: { generateLetter?: boolean; letterType?: string; skipPersistence?: boolean }) =>
+      fetchWithAuth(`/cases/${caseId}/report`, getToken, { method: 'POST', body: JSON.stringify(data || {}) }),
+    get: (getToken: TokenGetter, caseId: string) =>
+      fetchWithAuth(`/cases/${caseId}/report`, getToken),
+    generateLetter: (getToken: TokenGetter, caseId: string, data: { letterType: string }) =>
+      fetchWithAuth(`/cases/${caseId}/report/letter`, getToken, { method: 'POST', body: JSON.stringify(data) }),
   },
 
   plaid: {
-    createLinkToken: (token: string, data: { userId: string }) =>
-      fetchWithAuth('/plaid/link_token', token, { method: 'POST', body: JSON.stringify({ user_id: data.userId }) }),
-    exchangeToken: (token: string, data: { publicToken: string; institution?: object }) =>
-      fetchWithAuth('/plaid/exchange_token', token, { method: 'POST', body: JSON.stringify({ public_token: data.publicToken, institution: data.institution }) }),
-    listItems: (token: string) =>
-      fetchWithAuth('/plaid/items', token),
-    getAccounts: (token: string, itemId: string) =>
-      fetchWithAuth('/plaid/accounts', token, { method: 'POST', body: JSON.stringify({ item_id: itemId }) }),
-    getTransactions: (token: string, data: { itemId: string; startDate?: string; endDate?: string }) =>
-      fetchWithAuth('/plaid/transactions', token, { method: 'POST', body: JSON.stringify({ item_id: data.itemId, start_date: data.startDate, end_date: data.endDate }) }),
-    getItem: (token: string, itemId: string) =>
-      fetchWithAuth('/plaid/item', token, { method: 'POST', body: JSON.stringify({ item_id: itemId }) }),
-    deleteItem: (token: string, itemId: string) =>
-      fetchWithAuth('/plaid/item', token, { method: 'DELETE', body: JSON.stringify({ item_id: itemId }) }),
+    createLinkToken: (getToken: TokenGetter, data: { userId: string }) =>
+      fetchWithAuth('/plaid/link_token', getToken, { method: 'POST', body: JSON.stringify({ user_id: data.userId }) }),
+    exchangeToken: (getToken: TokenGetter, data: { publicToken: string; institution?: object }) =>
+      fetchWithAuth('/plaid/exchange_token', getToken, { method: 'POST', body: JSON.stringify({ public_token: data.publicToken, institution: data.institution }) }),
+    listItems: (getToken: TokenGetter) =>
+      fetchWithAuth('/plaid/items', getToken),
+    getAccounts: (getToken: TokenGetter, itemId: string) =>
+      fetchWithAuth('/plaid/accounts', getToken, { method: 'POST', body: JSON.stringify({ item_id: itemId }) }),
+    getTransactions: (getToken: TokenGetter, data: { itemId: string; startDate?: string; endDate?: string }) =>
+      fetchWithAuth('/plaid/transactions', getToken, { method: 'POST', body: JSON.stringify({ item_id: data.itemId, start_date: data.startDate, end_date: data.endDate }) }),
+    getItem: (getToken: TokenGetter, itemId: string) =>
+      fetchWithAuth('/plaid/item', getToken, { method: 'POST', body: JSON.stringify({ item_id: itemId }) }),
+    deleteItem: (getToken: TokenGetter, itemId: string) =>
+      fetchWithAuth('/plaid/item', getToken, { method: 'DELETE', body: JSON.stringify({ item_id: itemId }) }),
   },
 
   health: {
