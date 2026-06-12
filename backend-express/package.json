@@ -43,6 +43,7 @@
     "morgan": "^1.10.0",
     "pdf-parse": "^2.4.5",
     "plaid": "^41.3.0",
+    "svix": "^1.95.2",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^14.0.0",
     "winston": "^3.11.0"

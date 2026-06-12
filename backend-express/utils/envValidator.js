@@ -57,6 +57,12 @@ function buildSchema(isProduction) {
       : Joi.string().pattern(HEX_64).optional().allow('').messages({
           'string.pattern.base': 'PLAID_ENCRYPTION_KEY must be exactly 64 hex characters (generate with: openssl rand -hex 32)'
         }),
+    CLERK_WEBHOOK_SECRET: isProduction
+      ? Joi.string().required().messages({
+          'any.required': 'CLERK_WEBHOOK_SECRET is required (Clerk webhook signature verification)',
+          'string.empty': 'CLERK_WEBHOOK_SECRET cannot be empty'
+        })
+      : Joi.string().optional().allow(''),
 
     // ── Feature (optional but warned) ─────────────────────────
     ANTHROPIC_API_KEY: Joi.string().optional().allow(''),
@@ -183,6 +189,7 @@ function validateEnvironment() {
     documentEncryptionKey: value.DOCUMENT_ENCRYPTION_KEY,
     plaidEncryptionKey: value.PLAID_ENCRYPTION_KEY || '',
     jwtSecret: value.JWT_SECRET || '',
+    clerkWebhookSecret: value.CLERK_WEBHOOK_SECRET || '',
 
     // AI
     anthropicApiKey: value.ANTHROPIC_API_KEY || '',

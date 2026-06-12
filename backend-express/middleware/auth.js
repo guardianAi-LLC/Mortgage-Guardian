@@ -113,7 +113,10 @@ async function verifyClerkToken(token) {
  * These endpoints use their own verification mechanisms.
  */
 const PUBLIC_PATHS = [
-  { method: 'POST', path: '/v1/plaid/webhook' }
+  { method: 'POST', path: '/v1/plaid/webhook' },
+  // Clerk webhook uses svix-signature verification (not a Bearer token).
+  // See routes/auth.js — Phase 56-02.
+  { method: 'POST', path: '/v1/auth/clerk-webhook' }
 ];
 
 /**

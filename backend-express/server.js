@@ -43,6 +43,7 @@ const caseRoutes = require('./routes/cases');
 const complianceRoutes = require('./routes/compliance');
 const reportRoutes = require('./routes/reports');
 const healthRoutes = require('./routes/health');
+const authRoutes = require('./routes/auth');
 
 // API documentation
 const swaggerUi = require('swagger-ui-express');
@@ -128,7 +129,7 @@ app.use('/v1/', requireAuth);
 // Stateless — no cookies, Vercel-friendly.
 app.use(csrfOriginGuard({
   allowedOrigins: (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean),
-  exemptPaths: ['/v1/plaid/webhook'],
+  exemptPaths: ['/v1/plaid/webhook', '/v1/auth/clerk-webhook'],
 }));
 
 // ============================================
@@ -155,6 +156,7 @@ if (process.env.NODE_ENV !== 'production') {
 app.use('/', healthRoutes);
 
 // API v1 routes
+app.use('/v1/auth', authRoutes);
 app.use('/v1/ai/claude', claudeRoutes);
 app.use('/v1/plaid', plaidRoutes);
 app.use('/v1/documents', documentRoutes);
