@@ -33,6 +33,7 @@ process.on('unhandledRejection', (reason) => {
 const requestId = require('./middleware/requestId');
 const metricsMiddleware = require('./middleware/metrics');
 const { requireAuth } = require('./middleware/auth');
+const { csrfOriginGuard } = require('./middleware/csrfOriginGuard');
 
 // Import routes
 const claudeRoutes = require('./routes/claude');
@@ -95,6 +96,15 @@ const corsOptions = {
   credentials: true
 };
 app.use(cors(corsOptions));
+
+// CSRF defense-in-depth — Origin/Referer gate for state-changing browser requests.
+// Bypasses safe verbs, bearer-token clients (iOS / server-to-server), and exempt paths
+// (Plaid webhook is signature-verified and has no Origin from Plaid servers).
+// Stateless — no cookies, Vercel-friendly.
+app.use(csrfOriginGuard({
+  allowedOrigins: (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean),
+  exemptPaths: ['/v1/plaid/webhook'],
+}));
 
 // Body parsing — 25MB accommodates base64 overhead (~33% larger than binary) for a 20MB PDF limit
 app.use(express.json({ limit: '25mb' }));
