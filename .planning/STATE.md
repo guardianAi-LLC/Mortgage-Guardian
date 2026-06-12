@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 ## Current Position
 
 Phase: 56 of 60 (Auth Hardening & Encryption Audit)
-Plan: 2 of 5 complete
+Plan: 3 of 5 complete
 Status: In progress
-Last activity: 2026-06-11 - Completed 56-02-PLAN.md — Clerk webhook + audit helper (auditEvent allow-list + sensitive-key scrub, POST /v1/auth/clerk-webhook with svix verification, auth_failure reason codes on every middleware/auth 401 path); 1698 tests passing (+15 vs baseline 1683).
+Last activity: 2026-06-11 - Completed 56-03-PLAN.md — Plaid exchange-token cleanup (ISS-001 closed: access_token removed from response, plaid_token_encrypted audit emission) + web fetchWithAuth one-shot 401 refresh retry mirroring iOS APIClient (TokenGetter pattern, all call sites migrated, Vitest + 5 unit tests added); backend 1698 tests passing (baseline match), frontend 5 new tests passing, tsc/build clean.
 
-Progress: ██████░░░░ 52%
+Progress: ██████░░░░ 53%
 
 ## Accumulated Context
 
@@ -31,9 +31,12 @@ All decisions documented in PROJECT.md Key Decisions table and milestone archive
 ### Deferred Issues
 
 In `.planning/ISSUES.md`:
-- ISS-001: /exchange_token response still returns raw access token to clients (target: Phase 56)
 - ISS-002: Vestigial iOS User.plaidAccessToken model field
 - ISS-003: No dedicated PLAID_ENCRYPTION_KEY rotation script (runbook has manual procedure)
+- ISS-004: Inline encrypted-PDF heuristic replaces broken is-pdf-encrypted package (opportunistic)
+
+Closed:
+- ISS-001: /exchange_token returned raw access_token — closed by Phase 56-03
 
 ### Pending Todos
 
@@ -56,5 +59,5 @@ In `.planning/ISSUES.md`:
 ## Session Continuity
 
 Last session: 2026-06-11
-Stopped at: Completed 56-02-PLAN.md — Clerk webhook + audit helper shipped (svix verification, reason-coded auth_failure, CLERK_WEBHOOK_SECRET in envValidator, AUTH_SESSION_CONFIG doc); ready for 56-03 (token refresh + ISS-001)
+Stopped at: Completed 56-03-PLAN.md — Plaid /exchange_token cleanup (ISS-001 closed) + web fetchWithAuth one-shot 401 refresh retry shipped; ready for 56-04 (encryption rotation + ISS-003 rotate-plaid-key.js)
 Resume file: None
