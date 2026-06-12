@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
-import { Copy, Printer, Check } from 'lucide-react'
+import { Copy, Printer, Check, Download, Loader2 } from 'lucide-react'
 import type { DisputeLetter } from '@/lib/types'
 
 const letterTypeLabels: Record<string, string> = {
@@ -19,10 +19,32 @@ interface LetterViewerProps {
 
 export function LetterViewer({ letter }: LetterViewerProps) {
   const [copied, setCopied] = useState(false)
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
   const { letterType, generatedAt, content, recipientInfo } = letter
   const evidenceFootnotes = content.evidenceFootnotes ?? []
 
   const fullText = buildPlainText(letter)
+
+  async function handleDownloadPdf() {
+    setDownloadingPdf(true)
+    try {
+      const [{ pdf }, { LetterPDF }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('./letter-pdf'),
+      ])
+      const blob = await pdf(<LetterPDF letter={letter} />).toBlob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = buildFileName(letter)
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } finally {
+      setDownloadingPdf(false)
+    }
+  }
 
   async function handleCopy() {
     try {
@@ -66,6 +88,19 @@ export function LetterViewer({ letter }: LetterViewerProps) {
               <Copy className="mr-1.5 h-3.5 w-3.5" />
             )}
             {copied ? 'Copied' : 'Copy'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadPdf}
+            disabled={downloadingPdf}
+          >
+            {downloadingPdf ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            {downloadingPdf ? 'Building…' : 'Download PDF'}
           </Button>
           <Button variant="outline" size="sm" onClick={handlePrint}>
             <Printer className="mr-1.5 h-3.5 w-3.5" />
@@ -186,6 +221,18 @@ export function LetterViewer({ letter }: LetterViewerProps) {
       `}</style>
     </div>
   )
+}
+
+function buildFileName(letter: DisputeLetter): string {
+  const subject = (letter.content.subject || letter.letterType || 'dispute-letter')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
+  const dateStr = letter.generatedAt
+    ? new Date(letter.generatedAt).toISOString().slice(0, 10)
+    : 'undated'
+  return `${letter.letterType}_${subject}_${dateStr}.pdf`
 }
 
 function buildPlainText(letter: DisputeLetter): string {
