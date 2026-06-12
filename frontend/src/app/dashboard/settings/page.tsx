@@ -16,6 +16,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog'
 import { useCases, useDocuments } from '@/lib/hooks'
+import { LinkedBankAccountsCard } from '@/components/linked-bank-accounts-card'
 
 interface NotificationPrefs {
   complete: boolean
@@ -129,6 +130,9 @@ export default function SettingsPage() {
           accounts.
         </p>
       </div>
+
+      {/* Linked bank accounts section */}
+      <LinkedBankAccountsCard />
 
       {/* Notification preferences section */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
