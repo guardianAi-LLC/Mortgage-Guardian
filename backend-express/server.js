@@ -97,15 +97,6 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// CSRF defense-in-depth — Origin/Referer gate for state-changing browser requests.
-// Bypasses safe verbs, bearer-token clients (iOS / server-to-server), and exempt paths
-// (Plaid webhook is signature-verified and has no Origin from Plaid servers).
-// Stateless — no cookies, Vercel-friendly.
-app.use(csrfOriginGuard({
-  allowedOrigins: (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean),
-  exemptPaths: ['/v1/plaid/webhook'],
-}));
-
 // Body parsing — 25MB accommodates base64 overhead (~33% larger than binary) for a 20MB PDF limit
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
@@ -128,6 +119,17 @@ app.use('/v1/', limiter);
 
 // Authentication — require JWT for all /v1/ routes (public paths excluded in middleware)
 app.use('/v1/', requireAuth);
+
+// CSRF defense-in-depth — Origin/Referer gate for state-changing browser requests.
+// Mounted AFTER requireAuth so that unauthenticated requests still return 401 (preserving
+// API contract); the gate then catches authenticated-but-cross-origin browser requests.
+// Bypasses safe verbs, bearer-token clients (iOS / server-to-server), and exempt paths
+// (Plaid webhook is signature-verified and has no Origin from Plaid servers).
+// Stateless — no cookies, Vercel-friendly.
+app.use(csrfOriginGuard({
+  allowedOrigins: (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean),
+  exemptPaths: ['/v1/plaid/webhook'],
+}));
 
 // ============================================
 // ROUTES
