@@ -1,0 +1,8 @@
+# Use this workspace to collaborate
+workspace:
+  id: 6b9b6b9e-5042-4757-88e7-ee0dcbaaf68e
+
+localResources:
+  specs:
+    - ../backend-express/docs/openapi 2.yaml
+    - ../backend-express/docs/openapi.yaml
