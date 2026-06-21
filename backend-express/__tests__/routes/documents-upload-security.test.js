@@ -31,6 +31,25 @@ jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockClient)
 }));
 
+// Mock malwareScanService — default: clean scan passes; override per test for failure cases
+const mockScanBuffer = jest.fn().mockResolvedValue({ clean: true, threats: [], engine: 'cloudmersive' });
+const MockMalwareScanError = class MalwareScanError extends Error {
+  constructor(message, { code, status } = {}) {
+    super(message);
+    this.name = 'MalwareScanError';
+    this.code = code;
+    this.status = status;
+  }
+};
+jest.mock('../../services/malwareScanService', () => ({
+  scanBuffer: mockScanBuffer,
+  MalwareScanError: MockMalwareScanError
+}));
+
+// Mock is-pdf-encrypted — default: not encrypted; override per test for encrypted-PDF case
+const mockIsPdfEncrypted = jest.fn().mockResolvedValue(false);
+jest.mock('is-pdf-encrypted', () => mockIsPdfEncrypted);
+
 // Mock service modules to prevent real API calls
 jest.mock('../../services/claudeService', () => mockClaudeService);
 
@@ -180,6 +199,10 @@ beforeEach(() => {
   mockClient.reset();
   mockClaudeService.reset();
   mockUploadDocument.mockClear();
+  mockScanBuffer.mockClear();
+  mockScanBuffer.mockResolvedValue({ clean: true, threats: [], engine: 'cloudmersive' });
+  mockIsPdfEncrypted.mockClear();
+  mockIsPdfEncrypted.mockResolvedValue(false);
 
   // Configure mock Supabase to accept the auth token
   mockClient.setResponse('auth', {
@@ -594,6 +617,109 @@ describe('Document upload security integration', () => {
       // file-type can't detect it, but .txt extension is in allowed list
       // So it passes with a warning (unverifiable type)
       expect(response.status).toBe(201);
+    });
+
+  });
+
+  // =========================================================================
+  // Phase 55 — Malware scan gate
+  // =========================================================================
+  describe('malware scan gate (Phase 55)', () => {
+
+    test('EICAR-signature file is rejected with 400 and no storage call', async () => {
+      mockScanBuffer.mockResolvedValueOnce({
+        clean: false,
+        threats: ['EICAR-Test-File'],
+        engine: 'cloudmersive'
+      });
+
+      const body = buildUploadBody({
+        fileName: 'eicar-test.pdf',
+        content: VALID_PDF_BASE64
+      });
+
+      const response = await request(app)
+        .post('/v1/documents/upload')
+        .set('Authorization', AUTH_TOKEN)
+        .send(body);
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error', 'This file appears unsafe and was not accepted.');
+      expect(mockUploadDocument).not.toHaveBeenCalled();
+    });
+
+    test('password-protected PDF is rejected with 400 before any scan call', async () => {
+      mockIsPdfEncrypted.mockResolvedValueOnce(true);
+
+      const fixture = require('fs').readFileSync(
+        require('path').join(__dirname, '../fixtures/encrypted-sample.pdf')
+      );
+      const body = buildUploadBody({
+        fileName: 'encrypted.pdf',
+        content: fixture.toString('base64')
+      });
+
+      const response = await request(app)
+        .post('/v1/documents/upload')
+        .set('Authorization', AUTH_TOKEN)
+        .send(body);
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toMatch(/password-protected/i);
+      expect(mockScanBuffer).not.toHaveBeenCalled();
+      expect(mockUploadDocument).not.toHaveBeenCalled();
+    });
+
+    test('generic scan service error returns 502 with scan_unavailable reason', async () => {
+      mockScanBuffer.mockRejectedValueOnce(
+        new MockMalwareScanError('connection timeout', { code: 'SCAN_UNAVAILABLE' })
+      );
+
+      const body = buildUploadBody({ fileName: 'doc.pdf', content: VALID_PDF_BASE64 });
+
+      const response = await request(app)
+        .post('/v1/documents/upload')
+        .set('Authorization', AUTH_TOKEN)
+        .send(body);
+
+      expect(response.status).toBe(502);
+      expect(response.body.error).toMatch(/could not be safety-checked/i);
+      expect(mockUploadDocument).not.toHaveBeenCalled();
+    });
+
+    test('Cloudmersive 429 quota exhaustion returns 502 with scan_quota_exhausted reason', async () => {
+      mockScanBuffer.mockRejectedValueOnce(
+        new MockMalwareScanError('quota exhausted', { code: 'QUOTA_EXHAUSTED', status: 429 })
+      );
+
+      const body = buildUploadBody({ fileName: 'doc.pdf', content: VALID_PDF_BASE64 });
+
+      const response = await request(app)
+        .post('/v1/documents/upload')
+        .set('Authorization', AUTH_TOKEN)
+        .send(body);
+
+      expect(response.status).toBe(502);
+      expect(response.body.error).toMatch(/could not be safety-checked/i);
+      expect(mockUploadDocument).not.toHaveBeenCalled();
+    });
+
+    test('clean file passes scan and reaches storage', async () => {
+      mockScanBuffer.mockResolvedValueOnce({ clean: true, threats: [], engine: 'cloudmersive' });
+
+      const body = buildUploadBody({
+        fileName: 'clean-statement.pdf',
+        content: VALID_PDF_BASE64
+      });
+
+      const response = await request(app)
+        .post('/v1/documents/upload')
+        .set('Authorization', AUTH_TOKEN)
+        .send(body);
+
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty('success', true);
+      expect(mockUploadDocument).toHaveBeenCalledTimes(1);
     });
 
   });
