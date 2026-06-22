@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-04-20)
 
 **Core value:** The platform must reliably and securely analyze mortgage documents to detect servicing errors with high confidence, cross-verify against actual bank transaction data, and protect sensitive financial information throughout the process.
-**Current focus:** v8.0 Enterprise Readiness — Phase 54 Plaid Token Migration
+**Current focus:** v8.0 Enterprise Readiness — Phase 55 Upload Security & Malware Scanning
 
 ## Current Position
 
-Phase: 54 of 60 (Plaid Token Migration)
-Plan: 5 of 5 complete
-Status: Phase complete
-Last activity: 2026-06-10 - Completed 54-05-PLAN.md (plaintext column dropped in prod via migration 008, fail-closed resolver, decrypt audit logging, per-user rate limits, runbook). Phase 54 done; ready for Phase 55.
+Phase: 55 of 60 (Upload Security & Malware Scanning)
+Plan: 3 of 4 complete
+Status: Phase in progress — Plans 01–03 complete; Plan 04 (runbook) remains
+Last activity: 2026-06-21 - Completed Phase 55 Plans 01–03: Cloudmersive env vars wired into envValidator.js, malwareScanService.js created, scanFileContent stub replaced with real Cloudmersive integration + encrypted-PDF short-circuit, upload route now fail-closed on MalwareScanError (502), test suite expanded to 24 tests (5 new Phase 55 cases all green).
 
 Progress: ████░░░░░░ 40%
 

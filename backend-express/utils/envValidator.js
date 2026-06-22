@@ -63,6 +63,9 @@ function buildSchema(isProduction) {
     PLAID_CLIENT_ID: Joi.string().optional().allow(''),
     PLAID_SECRET: Joi.string().optional().allow(''),
     PLAID_ENV: Joi.string().valid('sandbox', 'development', 'production').optional().allow(''),
+    CLOUDMERSIVE_API_KEY: Joi.string().optional().allow(''),
+    CLOUDMERSIVE_BASE_URL: Joi.string().uri().optional().allow('').default('https://api.cloudmersive.com'),
+    CLOUDMERSIVE_TIMEOUT_MS: Joi.number().integer().positive().optional().default(10000),
 
     // ── Optional with defaults ────────────────────────────────
     PORT: Joi.number().integer().min(1).max(65535).default(3000),
@@ -134,6 +137,9 @@ function validateEnvironment() {
   if (!value.PLAID_ENV) {
     featureWarnings.push('PLAID_ENV missing — Plaid environment not configured');
   }
+  if (!value.CLOUDMERSIVE_API_KEY) {
+    featureWarnings.push('CLOUDMERSIVE_API_KEY missing — malware scanning will reject all uploads');
+  }
 
   if (featureWarnings.length > 0) {
     logger.warn('Missing feature environment variables — some features will be disabled', {
@@ -202,7 +208,12 @@ function validateEnvironment() {
     elasticsearchPassword: value.ELASTICSEARCH_PASSWORD || '',
 
     // Error Tracking
-    sentryDsn: value.SENTRY_DSN || ''
+    sentryDsn: value.SENTRY_DSN || '',
+
+    // Malware Scanning
+    cloudmersiveApiKey: value.CLOUDMERSIVE_API_KEY || '',
+    cloudmersiveBaseUrl: value.CLOUDMERSIVE_BASE_URL || 'https://api.cloudmersive.com',
+    cloudmersiveTimeoutMs: value.CLOUDMERSIVE_TIMEOUT_MS || 10000
   });
 
   logger.info('Environment validation passed');

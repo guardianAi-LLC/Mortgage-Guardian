@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const express = require('express');
 const router = express.Router();
 const documentService = require('../services/documentService');
@@ -5,7 +6,7 @@ const documentPipeline = require('../services/documentPipelineService');
 const { createLogger } = require('../utils/logger');
 const logger = createLogger('document-routes');
 const { validate } = require('../middleware/validate');
-const { validateFileContent, sanitizeFileName } = require('../utils/fileValidation');
+const { validateFileContent, sanitizeFileName, scanFileContent, MalwareScanError } = require('../utils/fileValidation');
 const {
   uploadDocumentSchema,
   getDocumentsSchema,
@@ -40,6 +41,30 @@ router.post('/upload', validate(uploadDocumentSchema), async (req, res, next) =>
         error: 'Validation Error',
         message: validationResult.error
       });
+    }
+
+    // Malware scan — must pass before any storage write
+    const detectedExt = validationResult.detectedType?.ext || null;
+    let scanResult;
+    try {
+      scanResult = await scanFileContent(fileBuffer, detectedExt);
+    } catch (err) {
+      if (err instanceof MalwareScanError) {
+        const reason = err.status === 429 ? 'scan_quota_exhausted' : 'scan_unavailable';
+        logger.error('Malware scan failed', { userId, reason, err: err.message });
+        return res.status(502).json({ error: 'Upload could not be safety-checked. Please try again.' });
+      }
+      throw err;
+    }
+
+    if (!scanResult.scanned && !scanResult.clean && scanResult.reason === 'encrypted_pdf') {
+      return res.status(400).json({ error: scanResult.message });
+    }
+
+    if (scanResult.scanned && !scanResult.clean) {
+      const sha256 = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+      logger.warn('Malware detected in upload', { userId, threats: scanResult.threats, sha256 });
+      return res.status(400).json({ error: 'This file appears unsafe and was not accepted.' });
     }
 
     // Sanitize the file name before any further use
