@@ -5,14 +5,15 @@
 See: .planning/PROJECT.md (updated 2026-04-20)
 
 **Core value:** The platform must reliably and securely analyze mortgage documents to detect servicing errors with high confidence, cross-verify against actual bank transaction data, and protect sensitive financial information throughout the process.
-**Current focus:** v8.0 Enterprise Readiness — Phase 55 Plan 04 (upload-security runbook), then Phase 56 Plans 04–05
+**Current focus:** v8.0 Enterprise Readiness — Phase 56 Auth Hardening & Encryption Audit
 
 ## Current Position
 
-Phase: 55 of 60 (Upload Security & Malware Scanning) — Plans 01–03 complete; Plan 04 (runbook) remains
-Phase 56 (Auth Hardening & Encryption Audit): Plans 01–03 complete; Plans 04–05 planned, not executed
+Phase: 56 of 60 (Auth Hardening & Encryption Audit)
+Plan: 3 of 5 complete — next: 56-04 (rotate-plaid-encryption-key.js, closes ISS-003), then 56-05
+Phase 55 (Upload Security & Malware Scanning): COMPLETE 4/4 (55-04 closeout commit 8a2468c, delivered on the merged branch)
 Status: In progress
-Last activity: 2026-11-15 - Merged worktree-phase-54-05-finalize (Phase 55-01..03 granular implementation + Phase 56-01..03) into main line. Phase 55 was implemented twice (branch 2026-06-10, main squash b6336c5 2026-06-21); branch implementation kept because main's version called is-pdf-encrypted@1.1.0, which throws ReferenceError (FileReader) under Node and made every PDF upload 500 — masked in main's tests by mocking the package (see ISS-004). is-pdf-encrypted dependency removed; plaid ^42.2.0 (main) + svix ^1.95.2 (56-02) retained.
+Last activity: 2026-11-15 - Merged worktree-phase-54-05-finalize (Phase 55-01..04 + Phase 56-01..03) into main line. Phase 55 had been implemented twice (branch 2026-06-10; main squash b6336c5 2026-06-21). Branch implementation kept: main's version called is-pdf-encrypted@1.1.0, which throws ReferenceError (FileReader) under Node 22 and made every PDF upload 500 — masked in main's tests by mocking the package (ISS-004). is-pdf-encrypted removed; plaid ^42.2.0 (main) + svix ^1.95.2 (56-02) kept. Verified: backend jest 1698 pass / 10 skip (2 suites fail on .gitignore-excluded modules, pre-existing); frontend vitest 5/5; tsc clean; 55-04 health-check exit-2 path re-verified.
 
 Progress: ██████░░░░ 53%
 
@@ -58,6 +59,6 @@ Closed:
 
 ## Session Continuity
 
-Last session: 2026-06-11
-Stopped at: Completed 56-03-PLAN.md — Plaid /exchange_token cleanup (ISS-001 closed) + web fetchWithAuth one-shot 401 refresh retry shipped; ready for 56-04 (encryption rotation + ISS-003 rotate-plaid-key.js)
+Last session: 2026-11-15
+Stopped at: Merged Phase 55/56 branch into main line (Phase 55 complete). Ready for 56-04 (rotate-plaid-encryption-key.js, ISS-003).
 Resume file: None
