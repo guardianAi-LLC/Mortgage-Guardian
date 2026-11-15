@@ -30,11 +30,11 @@ export type TokenGetter = (opts?: { skipCache?: boolean }) => Promise<string | n
 // Preserve the prior implicit `Promise<any>` return so call sites that
 // access response shape fields without runtime guards continue to compile.
 // Callers downstream apply their own mapping/typing (see lib/hooks.ts).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function fetchWithAuth(
   path: string,
   getToken: TokenGetter,
   options: RequestInit = {}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
   const doFetch = async (token: string | null): Promise<Response> => {
     const headers: Record<string, string> = {
