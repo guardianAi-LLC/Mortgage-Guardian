@@ -205,10 +205,13 @@ Plans:
 **Depends on**: Phase 54
 **Research**: Likely (new integration — malware scanning library/service)
 **Research topics**: ClamAV vs cloud-based scanning services, Node.js malware scanning libraries, upload pipeline hardening
-**Plans**: TBD
+**Plans**: 4 (replanned mid-execution from ClamAV/Railway to Cloudmersive HTTPS API)
 
 Plans:
-- [ ] 55-01: TBD
+- [x] 55-01: Cloudmersive env + live-fire (replanned from ClamAV sidecar) — completed 2026-06-10
+- [x] 55-02: malwareScanService.scanBuffer (TDD) — completed 2026-06-11
+- [x] 55-03: wire scanFileContent + encrypted-PDF + hard-reject route — completed 2026-06-11
+- [x] 55-04: cloudmersive-health-check.js + ops doc + Phase 55 closeout — completed 2026-06-10
 
 #### Phase 56: Auth Hardening & Encryption Audit
 
@@ -216,10 +219,14 @@ Plans:
 **Depends on**: Phase 55
 **Research**: Likely (CSRF, session management patterns)
 **Research topics**: Express CSRF middleware, Clerk session management best practices, encryption audit checklist
-**Plans**: TBD
+**Plans**: 5
 
 Plans:
-- [ ] 56-01: TBD
+- [x] 56-01: csrfOriginGuard middleware (Origin/Referer gate, bearer-bypass, Plaid webhook exempt) — completed 2026-06-11
+- [x] 56-02: Clerk webhook + audit helper (svix verification, AUDIT_EVENTS allow-list, auth_failure reason codes) — completed 2026-06-11
+- [x] 56-03: Plaid /exchange_token cleanup (ISS-001 closed) + web fetchWithAuth one-shot 401 refresh retry — completed 2026-06-11
+- [ ] 56-04: TBD
+- [ ] 56-05: TBD
 
 #### Phase 57: Server-Side Pagination & API Rate Limits
 
@@ -322,12 +329,12 @@ Plans:
 | 52. Structured Reasoning in Claude Prompts | v8.0 | 6/6 | Complete | 2026-04-24 |
 | 53. Report Output Format | v8.0 | 5/5 | Complete | 2026-05-18 |
 | 54. Plaid Token Migration | v8.0 | 5/5 | Complete | 2026-06-10 |
-| 55. Upload Security & Malware Scanning | v8.0 | 0/? | Not started | - |
-| 56. Auth Hardening & Encryption Audit | v8.0 | 0/? | Not started | - |
+| 55. Upload Security & Malware Scanning | v8.0 | 4/4 | Complete | 2026-06-10 |
+| 56. Auth Hardening & Encryption Audit | v8.0 | 3/5 | In progress | - |
 | 57. Server-Side Pagination & API Rate Limits | v8.0 | 0/? | Not started | - |
 | 58. Multi-Tenant & Role-Based Access | v8.0 | 0/? | Not started | - |
 | 59. Onboarding & Empty States | v8.0 | 0/? | Not started | - |
 | 60. Landing Page & Public Presence | v8.0 | 0/? | Not started | - |
 
-**Completed:** 200 plans across 54 phases, 6 milestones (54 phases fully complete)
-**In progress:** v8.0 Enterprise Readiness — Phase 54 Plaid Token Migration complete; ready for Phase 55 Upload Security & Malware Scanning
+**Completed:** 205 plans across 55 phases + Phase 56 plans 1-3, 6 milestones (55 phases fully complete)
+**In progress:** v8.0 Enterprise Readiness — Phase 56 Auth Hardening: 56-01 csrfOriginGuard + 56-02 Clerk webhook & audit helper + 56-03 Plaid /exchange_token cleanup & web 401 refresh retry (ISS-001 closed) complete; 56-04 next (encryption rotation + ISS-003).

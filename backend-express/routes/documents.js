@@ -1,12 +1,14 @@
-const crypto = require('crypto');
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const documentService = require('../services/documentService');
 const documentPipeline = require('../services/documentPipelineService');
 const { createLogger } = require('../utils/logger');
 const logger = createLogger('document-routes');
+const uploadSecurityLogger = createLogger('upload-security');
 const { validate } = require('../middleware/validate');
-const { validateFileContent, sanitizeFileName, scanFileContent, MalwareScanError } = require('../utils/fileValidation');
+const { validateFileContent, sanitizeFileName, scanFileContent } = require('../utils/fileValidation');
+const { MalwareScanError } = require('../services/malwareScanService');
 const {
   uploadDocumentSchema,
   getDocumentsSchema,
@@ -43,28 +45,39 @@ router.post('/upload', validate(uploadDocumentSchema), async (req, res, next) =>
       });
     }
 
-    // Malware scan — must pass before any storage write
-    const detectedExt = validationResult.detectedType?.ext || null;
+    // Malware scan (Phase 55-03) — fail closed.
+    // Order: magic-byte check (above) → scan → only persist on clean.
+    const detectedExt = validationResult.detectedType ? validationResult.detectedType.ext : undefined;
     let scanResult;
     try {
       scanResult = await scanFileContent(fileBuffer, detectedExt);
-    } catch (err) {
-      if (err instanceof MalwareScanError) {
-        const reason = err.status === 429 ? 'scan_quota_exhausted' : 'scan_unavailable';
-        logger.error('Malware scan failed', { userId, reason, err: err.message });
-        return res.status(502).json({ error: 'Upload could not be safety-checked. Please try again.' });
+    } catch (scanErr) {
+      if (scanErr instanceof MalwareScanError) {
+        uploadSecurityLogger.error('Malware scan infrastructure failure', {
+          userId,
+          err: scanErr.message
+        });
+        return res.status(502).json({
+          error: 'Upload could not be safety-checked. Please try again.'
+        });
       }
-      throw err;
+      throw scanErr;
     }
 
-    if (!scanResult.scanned && !scanResult.clean && scanResult.reason === 'encrypted_pdf') {
+    if (scanResult.scanned === false && scanResult.reason === 'encrypted_pdf') {
       return res.status(400).json({ error: scanResult.message });
     }
 
-    if (scanResult.scanned && !scanResult.clean) {
-      const sha256 = crypto.createHash('sha256').update(fileBuffer).digest('hex');
-      logger.warn('Malware detected in upload', { userId, threats: scanResult.threats, sha256 });
-      return res.status(400).json({ error: 'This file appears unsafe and was not accepted.' });
+    if (!(scanResult.scanned === true && scanResult.clean === true)) {
+      const sha256Hash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+      uploadSecurityLogger.warn('Malware scan rejected upload', {
+        userId,
+        threats: scanResult.threats || [],
+        sha256Hash
+      });
+      return res.status(400).json({
+        error: 'This file appears unsafe and was not accepted.'
+      });
     }
 
     // Sanitize the file name before any further use

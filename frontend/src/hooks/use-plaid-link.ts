@@ -14,8 +14,7 @@ export function usePlaidItems() {
   const query = useQuery<PlaidItem[]>({
     queryKey: ['plaid-items'],
     queryFn: async () => {
-      const token = await getToken()
-      const res = await api.plaid.listItems(token)
+      const res = await api.plaid.listItems(getToken)
       return res.items ?? []
     },
   })
@@ -27,8 +26,7 @@ export function usePlaidAccounts(itemId?: string) {
   return useQuery<PlaidAccount[]>({
     queryKey: ['plaid-accounts', itemId],
     queryFn: async () => {
-      const token = await getToken()
-      const res = await api.plaid.getAccounts(token, itemId!)
+      const res = await api.plaid.getAccounts(getToken, itemId!)
       return res.accounts ?? res
     },
     enabled: !!itemId,
@@ -43,8 +41,7 @@ export function usePlaidTransactions(
   return useQuery<PlaidTransaction[]>({
     queryKey: ['plaid-transactions', itemId, dateRange],
     queryFn: async () => {
-      const token = await getToken()
-      const res = await api.plaid.getTransactions(token, {
+      const res = await api.plaid.getTransactions(getToken, {
         itemId: itemId!,
         startDate: dateRange?.startDate,
         endDate: dateRange?.endDate,
@@ -60,8 +57,7 @@ export function usePlaidItem(itemId?: string) {
   return useQuery<PlaidItem>({
     queryKey: ['plaid-item', itemId],
     queryFn: async () => {
-      const token = await getToken()
-      const res = await api.plaid.getItem(token, itemId!)
+      const res = await api.plaid.getItem(getToken, itemId!)
       return res.item ?? res
     },
     enabled: !!itemId,
@@ -77,8 +73,7 @@ export function useDeletePlaidItem() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (itemId: string) => {
-      const token = await getToken()
-      return api.plaid.deleteItem(token, itemId)
+      return api.plaid.deleteItem(getToken, itemId)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plaid-items'] })
@@ -93,8 +88,7 @@ export function useLinkToken() {
   const getToken = useApiToken()
   return useMutation<PlaidLinkResult, Error, { userId: string }>({
     mutationFn: async (data) => {
-      const token = await getToken()
-      return api.plaid.createLinkToken(token, data)
+      return api.plaid.createLinkToken(getToken, data)
     },
   })
 }
@@ -104,8 +98,7 @@ export function useExchangeToken() {
   const queryClient = useQueryClient()
   return useMutation<PlaidExchangeResult, Error, { publicToken: string; institution?: object }>({
     mutationFn: async (data) => {
-      const token = await getToken()
-      return api.plaid.exchangeToken(token, data)
+      return api.plaid.exchangeToken(getToken, data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plaid-items'] })

@@ -288,17 +288,20 @@ describe('POST /v1/plaid/link_token', () => {
 // POST /v1/plaid/exchange_token
 // ============================================================
 describe('POST /v1/plaid/exchange_token', () => {
-  it('returns 200 with access token on success', async () => {
+  it('returns 200 with item_id and request_id, never access_token (ISS-001 / 56-03)', async () => {
     const res = await request(app)
       .post('/v1/plaid/exchange_token')
       .set('Authorization', AUTH)
       .send({ public_token: 'public-sandbox-token123' });
 
     expect(res.status).toBe(200);
-    expect(res.body.access_token).toBe('access-sandbox-exchanged');
     expect(res.body.item_id).toBe('item-exchange-001');
     expect(res.body.request_id).toBe('req-exchange-001');
     expect(res.body.warning).toBeDefined();
+    // Phase 56-03 (ISS-001): the raw access_token MUST NOT leave the server.
+    // It is persisted encrypted server-side and resolved per-request via
+    // resolveTokenByItemId. Asserting absence prevents regression.
+    expect(res.body).not.toHaveProperty('access_token');
   });
 
   it('persists item under JWT-derived userId, ignoring body user_id (T02)', async () => {

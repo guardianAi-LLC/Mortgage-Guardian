@@ -36,3 +36,37 @@ Nulling out plaintext is irreversible from this script — no plaintext backup i
 retained. If a user's encrypted token cannot be decrypted post-backfill, they
 must re-link via Plaid. Take a Supabase backup of `plaid_items` before running
 `--apply` in production (see runbook entry).
+
+## cloudmersive-health-check.js  (Phase 55-04)
+
+One-shot smoke test for the Cloudmersive malware-scan integration. Runs three
+probes — a clean buffer, an EICAR test signature, and a best-effort quota
+lookup — and reports whether the upload scan path is alive end-to-end.
+
+### Requirements
+- `CLOUDMERSIVE_API_KEY` (required)
+- `CLOUDMERSIVE_BASE_URL` (optional, default `https://api.cloudmersive.com`)
+- `CLOUDMERSIVE_TIMEOUT_MS` (optional, default `15000`)
+
+### Usage
+
+```bash
+node scripts/cloudmersive-health-check.js          # one-shot
+node scripts/cloudmersive-health-check.js --debug  # include stack traces
+```
+
+### Exit codes
+- `0` — healthy: clean probe and EICAR probe both passed.
+- `1` — reachable but failed (auth, quota, malformed response, network).
+- `2` — `missing_required_env` (no `CLOUDMERSIVE_API_KEY`).
+
+### When to run
+- Post-deploy smoke check after a Vercel release.
+- Oncall page for "uploads returning 502 / scan_unavailable".
+- After rotating `CLOUDMERSIVE_API_KEY` in Vercel (see
+  `docs/MALWARE_SCANNING.md`).
+
+### Logging discipline
+The API key, EICAR string, and clean probe body are never printed. Output is
+limited to timestamps, HTTP status codes, latency, the `CleanResult` flag, and
+quota numbers when available.

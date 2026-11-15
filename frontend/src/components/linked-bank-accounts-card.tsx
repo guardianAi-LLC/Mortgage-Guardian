@@ -86,7 +86,7 @@ export function LinkedBankAccountsCard() {
         <div className="space-y-3">
           <p className="text-sm text-gray-400">
             No bank accounts are linked yet. Connecting your accounts lets Mortgage Guardian
-            cross-check payments against your servicer's records.
+            cross-check payments against your servicer&apos;s records.
           </p>
           <div>
             <Link

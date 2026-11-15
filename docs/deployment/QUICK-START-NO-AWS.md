@@ -61,7 +61,26 @@ This guide will get your app deployed without AWS using free/low-cost alternativ
    # Optional: Supabase (uses mock if not set)
    SUPABASE_URL=https://your-project.supabase.co
    SUPABASE_SERVICE_KEY=your-service-key
+
+   # Required in production: Clerk webhook signing secret
+   # (Clerk Dashboard → Webhooks → endpoint signing secret;
+   #  see docs/AUTH_SESSION_CONFIG.md)
+   CLERK_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
    ```
+
+   **Backend env vars (summary):**
+
+   | Variable                       | Required in prod? | Description                                                       |
+   |--------------------------------|-------------------|-------------------------------------------------------------------|
+   | `ANTHROPIC_API_KEY`            | Yes               | Claude AI document analysis                                       |
+   | `SUPABASE_URL`                 | Yes               | Supabase project URL                                              |
+   | `SUPABASE_ANON_KEY`            | Yes               | Supabase anonymous key                                            |
+   | `SUPABASE_SERVICE_KEY`         | Yes               | Supabase service role key                                         |
+   | `DOCUMENT_ENCRYPTION_KEY`      | Yes               | 64-hex-char document encryption key                               |
+   | `PLAID_ENCRYPTION_KEY`         | Yes               | 64-hex-char Plaid access-token encryption key                     |
+   | `PLAID_WEBHOOK_VERIFICATION_KEY` | Yes             | Plaid webhook signature verification                              |
+   | `CLERK_WEBHOOK_SECRET`         | Yes               | Clerk webhook signing secret — see docs/AUTH_SESSION_CONFIG.md    |
+   | `PLAID_CLIENT_ID` / `PLAID_SECRET` | Optional      | Plaid integration (mock used if absent)                           |
 
 5. **Deploy!** Railway will:
    - Install dependencies

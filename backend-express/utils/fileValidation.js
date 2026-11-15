@@ -12,8 +12,26 @@
 
 const FileType = require('file-type');
 const path = require('path');
-const isPdfEncrypted = require('is-pdf-encrypted');
-const { scanBuffer, MalwareScanError } = require('../services/malwareScanService');
+const { scanBuffer } = require('../services/malwareScanService');
+
+/**
+ * Check whether a PDF buffer is password-protected / encrypted.
+ *
+ * Implementation note (Phase 55-03 deviation): the plan specified the
+ * `is-pdf-encrypted` npm package, but its v1.1.0 implementation depends
+ * on the browser-only `FileReader` global and is unusable from Node.
+ * Inlining the same heuristic the package documents — scan the file
+ * trailer for the `/Encrypt` reference — avoids pulling in pdf.js just
+ * for a four-line check. Encrypted PDFs always reference an Encrypt
+ * dictionary from the trailer per the PDF spec (§7.6).
+ *
+ * @param {Buffer} buffer - PDF file buffer
+ * @returns {boolean} true if the PDF has an encryption dictionary
+ */
+function isPdfEncryptedBuffer(buffer) {
+  if (!buffer || !Buffer.isBuffer(buffer)) return false;
+  return buffer.includes(Buffer.from('/Encrypt'));
+}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -223,29 +241,30 @@ function sanitizeFileName(fileName) {
 // ---------------------------------------------------------------------------
 
 /**
- * Scan file content for malware via Cloudmersive.
+ * Scan file content for malware (Phase 55-03).
  *
- * For PDFs, short-circuits before scanning if the file is password-protected —
- * encrypted PDFs can scan as "clean" because the scanner cannot decode the
- * content (Research pitfall #4). The short-circuit returns a rejection result
- * so the route can return a plain-English 400 without ever calling the API.
+ * Short-circuits password-protected PDFs (which Cloudmersive cannot read
+ * past the encryption layer and would otherwise report as "clean") and
+ * delegates all other buffers to `services/malwareScanService.scanBuffer`.
  *
- * On MalwareScanError the error is re-thrown — callers MUST NOT catch and
- * downgrade. The route is responsible for translating it into a 502 so no
- * unscanned file lands in storage.
+ * Contract:
+ *   - Encrypted PDF: `{ scanned: false, clean: false, reason: 'encrypted_pdf', message }`.
+ *     `scanned: false` means "we deliberately did not scan because we cannot";
+ *     it is STILL a rejection — callers must not treat it as clean.
+ *   - Clean buffer: `{ scanned: true, clean: true, threats: [], engine: 'cloudmersive' }`.
+ *   - Unclean buffer: `{ scanned: true, clean: false, threats: [...], engine: 'cloudmersive' }`.
+ *   - Infrastructure failure: propagates `MalwareScanError` from `scanBuffer`.
+ *     This function never catches it — the upload route must translate it
+ *     into a 502 so we fail closed instead of admitting an unscanned file.
  *
  * @param {Buffer} buffer - The file content buffer to scan
- * @param {string|null} detectedExt - Extension detected from magic bytes (e.g. 'pdf'), or null
- * @returns {Promise<Object>} Scan result:
- *   - { scanned: false, clean: false, reason: 'encrypted_pdf', message: string } — password-protected
- *   - { scanned: true, clean: true, threats: [], engine: 'cloudmersive' } — safe
- *   - { scanned: true, clean: false, threats: string[], engine: 'cloudmersive' } — malware found
- * @throws {MalwareScanError} if the scan service is unavailable or quota is exhausted
+ * @param {string} [detectedExt] - Extension detected by magic-byte check (from
+ *   `validateFileContent`). Passed through to avoid sniffing twice.
+ * @returns {Promise<Object>} Scan result (see contract above)
  */
 async function scanFileContent(buffer, detectedExt) {
   if (detectedExt === 'pdf') {
-    const encrypted = await isPdfEncrypted(buffer);
-    if (encrypted) {
+    if (isPdfEncryptedBuffer(buffer)) {
       return {
         scanned: false,
         clean: false,
@@ -260,7 +279,7 @@ async function scanFileContent(buffer, detectedExt) {
     scanned: true,
     clean: result.clean,
     threats: result.threats,
-    engine: result.engine
+    engine: 'cloudmersive'
   };
 }
 
@@ -273,6 +292,5 @@ module.exports = {
   sanitizeFileName,
   scanFileContent,
   ALLOWED_FILE_TYPES,
-  FILE_SIZE_LIMITS,
-  MalwareScanError
+  FILE_SIZE_LIMITS
 };

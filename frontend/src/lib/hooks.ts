@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/nextjs'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { api } from './api'
+import type { TokenGetter } from './api'
 import type { AnalysisReport, Case, ConsolidatedReport, Document, PipelineStatus } from './types'
 
 // Backend returns snake_case from Supabase; frontend uses camelCase
@@ -28,14 +29,21 @@ function mapCase(raw: any): Case {
 // Auth token hook
 // --------------------------------------------------------------------------
 
-export function useApiToken() {
+/**
+ * Phase 56-03: returns a `TokenGetter` rather than a pre-fetched token. The
+ * returned function forwards `skipCache` to `useAuth().getToken({ skipCache })`
+ * so `fetchWithAuth` can transparently refresh an expired Clerk JWT once on
+ * 401, mirroring iOS APIClient retry semantics.
+ *
+ * Returns `null` (not throws) when Clerk has no session, so anonymous calls
+ * propagate cleanly without the wrapper attempting a refresh-retry.
+ */
+export function useApiToken(): TokenGetter {
   const { getToken } = useAuth()
-  return useCallback(async () => {
+  return useCallback(async (opts?: { skipCache?: boolean }) => {
     // Use standard Clerk JWT — backend verifies via Clerk JWKS (RS256).
     // The Supabase template JWT has a different issuer and fails JWKS verification.
-    const token = await getToken()
-    if (!token) throw new Error('Not authenticated')
-    return token
+    return getToken(opts?.skipCache ? { skipCache: true } : undefined)
   }, [getToken])
 }
 
@@ -48,8 +56,7 @@ export function useCases(params?: { status?: string }) {
   return useQuery<Case[]>({
     queryKey: ['cases', params],
     queryFn: async () => {
-      const token = await getToken()
-      const res = await api.cases.list(token, params)
+      const res = await api.cases.list(getToken, params)
       // Backend returns { cases: [...], total, userId } — unwrap and map
       const list = res.cases ?? res
       return Array.isArray(list) ? list.map(mapCase) : []
@@ -62,8 +69,7 @@ export function useCase(caseId: string) {
   return useQuery<Case>({
     queryKey: ['cases', caseId],
     queryFn: async () => {
-      const token = await getToken()
-      const raw = await api.cases.get(token, caseId)
+      const raw = await api.cases.get(getToken, caseId)
       return mapCase(raw)
     },
     enabled: !!caseId,
@@ -75,8 +81,7 @@ export function useCreateCase() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (data: { caseName: string; borrowerName?: string; propertyAddress?: string; loanNumber?: string; servicerName?: string }) => {
-      const token = await getToken()
-      return api.cases.create(token, data)
+      return api.cases.create(getToken, data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cases'] })
@@ -89,8 +94,7 @@ export function useUpdateCase(caseId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (data: Record<string, unknown>) => {
-      const token = await getToken()
-      return api.cases.update(token, caseId, data)
+      return api.cases.update(getToken, caseId, data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cases'] })
@@ -103,8 +107,7 @@ export function useDeleteCase() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (caseId: string) => {
-      const token = await getToken()
-      return api.cases.delete(token, caseId)
+      return api.cases.delete(getToken, caseId)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cases'] })
@@ -121,8 +124,7 @@ export function useUploadDocument() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (data: { documentId: string; fileName: string; content: string; documentType?: string }) => {
-      const token = await getToken()
-      return api.documents.upload(token, data)
+      return api.documents.upload(getToken, data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cases'] })
@@ -134,8 +136,7 @@ export function useProcessDocument() {
   const getToken = useApiToken()
   return useMutation({
     mutationFn: async (data: { documentId: string; fileBuffer?: string; documentText?: string; documentType?: string }) => {
-      const token = await getToken()
-      return api.documents.process(token, data)
+      return api.documents.process(getToken, data)
     },
   })
 }
@@ -145,8 +146,7 @@ export function useDocumentStatus(documentId: string | null) {
   return useQuery<PipelineStatus>({
     queryKey: ['document-status', documentId],
     queryFn: async () => {
-      const token = await getToken()
-      return api.documents.status(token, documentId!)
+      return api.documents.status(getToken, documentId!)
     },
     enabled: !!documentId,
     refetchInterval: (query) => {
@@ -162,8 +162,7 @@ export function useAddDocumentToCase() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ caseId, documentId }: { caseId: string; documentId: string }) => {
-      const token = await getToken()
-      return api.cases.addDocument(token, caseId, documentId)
+      return api.cases.addDocument(getToken, caseId, documentId)
     },
     onSuccess: (_, { caseId }) => {
       queryClient.invalidateQueries({ queryKey: ['cases', caseId] })
@@ -188,8 +187,7 @@ export function useDocuments(params?: { limit?: number; offset?: number }) {
   return useQuery<{ documents: Document[]; total: number }>({
     queryKey: ['documents', params],
     queryFn: async () => {
-      const token = await getToken()
-      const res = await api.documents.list(token, params)
+      const res = await api.documents.list(getToken, params)
       const list = res.documents ?? res
       const documents = Array.isArray(list) ? list.map(mapDocument) : []
       return { documents, total: res.total ?? documents.length }
@@ -210,8 +208,7 @@ export function useDocument(documentId: string) {
   return useQuery<Document>({
     queryKey: ['documents', documentId],
     queryFn: async () => {
-      const token = await getToken()
-      const raw = await api.documents.get(token, documentId)
+      const raw = await api.documents.get(getToken, documentId)
       return mapDocument(raw)
     },
     enabled: !!documentId,
@@ -223,8 +220,7 @@ export function useDocumentAnalysis(documentId: string, enabled: boolean = false
   return useQuery<AnalysisReport>({
     queryKey: ['document-analysis', documentId],
     queryFn: async () => {
-      const token = await getToken()
-      return api.documents.analysis(token, documentId)
+      return api.documents.analysis(getToken, documentId)
     },
     enabled: !!documentId && enabled,
   })
@@ -235,8 +231,7 @@ export function useDeleteDocument() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (documentId: string) => {
-      const token = await getToken()
-      return api.documents.delete(token, documentId)
+      return api.documents.delete(getToken, documentId)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documents'] })
@@ -249,8 +244,7 @@ export function useRetryDocument() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (documentId: string) => {
-      const token = await getToken()
-      return api.documents.retry(token, documentId)
+      return api.documents.retry(getToken, documentId)
     },
     onSuccess: (_, documentId) => {
       queryClient.invalidateQueries({ queryKey: ['documents'] })
@@ -280,8 +274,7 @@ export function useRunForensicAnalysis(caseId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (data?: Record<string, unknown>) => {
-      const token = await getToken()
-      return api.forensic.run(token, caseId, data)
+      return api.forensic.run(getToken, caseId, data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['forensic', caseId] })
@@ -295,8 +288,7 @@ export function useForensicAnalysis(caseId: string) {
   return useQuery({
     queryKey: ['forensic', caseId],
     queryFn: async () => {
-      const token = await getToken()
-      return api.forensic.get(token, caseId)
+      return api.forensic.get(getToken, caseId)
     },
     enabled: !!caseId,
     retry: false,
@@ -312,8 +304,7 @@ export function useRunComplianceEvaluation(caseId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (data?: Record<string, unknown>) => {
-      const token = await getToken()
-      return api.compliance.evaluate(token, caseId, data)
+      return api.compliance.evaluate(getToken, caseId, data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['compliance', caseId] })
@@ -327,8 +318,7 @@ export function useComplianceReport(caseId: string) {
   return useQuery({
     queryKey: ['compliance', caseId],
     queryFn: async () => {
-      const token = await getToken()
-      return api.compliance.get(token, caseId)
+      return api.compliance.get(getToken, caseId)
     },
     enabled: !!caseId,
     retry: false,
@@ -344,8 +334,7 @@ export function useGenerateReport(caseId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (data?: { generateLetter?: boolean; letterType?: string }) => {
-      const token = await getToken()
-      return api.reports.generate(token, caseId, data)
+      return api.reports.generate(getToken, caseId, data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['report', caseId] })
@@ -359,8 +348,7 @@ export function useReport(caseId: string) {
   return useQuery<ConsolidatedReport>({
     queryKey: ['report', caseId],
     queryFn: async () => {
-      const token = await getToken()
-      return api.reports.get(token, caseId)
+      return api.reports.get(getToken, caseId)
     },
     enabled: !!caseId,
     retry: false,
@@ -372,8 +360,7 @@ export function useGenerateLetter(caseId: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (data: { letterType: string }) => {
-      const token = await getToken()
-      return api.reports.generateLetter(token, caseId, data)
+      return api.reports.generateLetter(getToken, caseId, data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['report', caseId] })
