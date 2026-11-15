@@ -33,6 +33,7 @@ process.on('unhandledRejection', (reason) => {
 const requestId = require('./middleware/requestId');
 const metricsMiddleware = require('./middleware/metrics');
 const { requireAuth } = require('./middleware/auth');
+const { csrfOriginGuard } = require('./middleware/csrfOriginGuard');
 
 // Import routes
 const claudeRoutes = require('./routes/claude');
@@ -42,6 +43,7 @@ const caseRoutes = require('./routes/cases');
 const complianceRoutes = require('./routes/compliance');
 const reportRoutes = require('./routes/reports');
 const healthRoutes = require('./routes/health');
+const authRoutes = require('./routes/auth');
 
 // API documentation
 const swaggerUi = require('swagger-ui-express');
@@ -119,6 +121,17 @@ app.use('/v1/', limiter);
 // Authentication — require JWT for all /v1/ routes (public paths excluded in middleware)
 app.use('/v1/', requireAuth);
 
+// CSRF defense-in-depth — Origin/Referer gate for state-changing browser requests.
+// Mounted AFTER requireAuth so that unauthenticated requests still return 401 (preserving
+// API contract); the gate then catches authenticated-but-cross-origin browser requests.
+// Bypasses safe verbs, bearer-token clients (iOS / server-to-server), and exempt paths
+// (Plaid webhook is signature-verified and has no Origin from Plaid servers).
+// Stateless — no cookies, Vercel-friendly.
+app.use(csrfOriginGuard({
+  allowedOrigins: (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean),
+  exemptPaths: ['/v1/plaid/webhook', '/v1/auth/clerk-webhook'],
+}));
+
 // ============================================
 // ROUTES
 // ============================================
@@ -143,6 +156,7 @@ if (process.env.NODE_ENV !== 'production') {
 app.use('/', healthRoutes);
 
 // API v1 routes
+app.use('/v1/auth', authRoutes);
 app.use('/v1/ai/claude', claudeRoutes);
 app.use('/v1/plaid', plaidRoutes);
 app.use('/v1/documents', documentRoutes);

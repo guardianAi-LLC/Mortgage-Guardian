@@ -3,6 +3,7 @@ const router = express.Router();
 const plaidService = require('../services/plaidService');
 const plaidDataService = require('../services/plaidDataService');
 const { createLogger } = require('../utils/logger');
+const { emitAuditEvent } = require('../utils/auditEvent');
 const logger = createLogger('plaid-routes');
 const { validate } = require('../middleware/validate');
 const { createPlaidResolveLimiter } = require('../middleware/plaidRateLimit');
@@ -116,14 +117,14 @@ router.post('/link_token', validate(linkTokenSchema), async (req, res, next) => 
  * - public_token (required): Public token from Plaid Link
  *
  * Response:
- * - access_token: Long-lived access token (store securely!)
  * - item_id: Unique identifier for this bank connection
  * - request_id: Plaid request ID for debugging
+ * - warning: Reminder that the access_token never leaves the server
  *
  * Security Note:
- * - Access tokens should NEVER be exposed to the client
- * - Store access tokens encrypted in your database
- * - Associate access tokens with user IDs securely
+ * - Access tokens are persisted encrypted server-side via
+ *   plaidDataService.upsertPlaidItem and NEVER returned to the client.
+ *   Phase 56-03 removed the legacy `access_token` field from this response.
  */
 router.post('/exchange_token', validate(exchangeTokenSchema), async (req, res, next) => {
   try {
@@ -155,13 +156,21 @@ router.post('/exchange_token', validate(exchangeTokenSchema), async (req, res, n
 
     logger.info('Plaid item stored', { itemId: result.itemId, userId });
 
-    // WARNING: In production, store access_token in database, don't return to client
-    // For this mortgage auditing use case, we're returning it so iOS can store locally
+    // Phase 56-03: emit audit event for successful encrypted-at-rest storage
+    // of the Plaid access token. The plaintext token never leaves this server.
+    emitAuditEvent('plaid_token_encrypted', {
+      userId,
+      itemId: result.itemId,
+      requestId: result.requestId
+    });
+
+    // Phase 56-03 (ISS-001): access_token removed from response. The token is
+    // persisted encrypted server-side; clients never see it. Subsequent calls
+    // resolve the token from item_id via resolveTokenByItemId.
     res.json({
-      access_token: result.accessToken,
       item_id: result.itemId,
       request_id: result.requestId,
-      warning: 'Store access_token securely. Never expose in logs or to unauthorized parties.'
+      warning: 'access_token is stored encrypted server-side and never returned to clients.'
     });
 
   } catch (error) {

@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-04-20)
 
 **Core value:** The platform must reliably and securely analyze mortgage documents to detect servicing errors with high confidence, cross-verify against actual bank transaction data, and protect sensitive financial information throughout the process.
-**Current focus:** v8.0 Enterprise Readiness — Phase 55 Upload Security & Malware Scanning
+**Current focus:** v8.0 Enterprise Readiness — Phase 55 Plan 04 (upload-security runbook), then Phase 56 Plans 04–05
 
 ## Current Position
 
-Phase: 55 of 60 (Upload Security & Malware Scanning)
-Plan: 3 of 4 complete
-Status: Phase in progress — Plans 01–03 complete; Plan 04 (runbook) remains
-Last activity: 2026-06-21 - Completed Phase 55 Plans 01–03: Cloudmersive env vars wired into envValidator.js, malwareScanService.js created, scanFileContent stub replaced with real Cloudmersive integration + encrypted-PDF short-circuit, upload route now fail-closed on MalwareScanError (502), test suite expanded to 24 tests (5 new Phase 55 cases all green).
+Phase: 55 of 60 (Upload Security & Malware Scanning) — Plans 01–03 complete; Plan 04 (runbook) remains
+Phase 56 (Auth Hardening & Encryption Audit): Plans 01–03 complete; Plans 04–05 planned, not executed
+Status: In progress
+Last activity: 2026-11-15 - Merged worktree-phase-54-05-finalize (Phase 55-01..03 granular implementation + Phase 56-01..03) into main line. Phase 55 was implemented twice (branch 2026-06-10, main squash b6336c5 2026-06-21); branch implementation kept because main's version called is-pdf-encrypted@1.1.0, which throws ReferenceError (FileReader) under Node and made every PDF upload 500 — masked in main's tests by mocking the package (see ISS-004). is-pdf-encrypted dependency removed; plaid ^42.2.0 (main) + svix ^1.95.2 (56-02) retained.
 
-Progress: ████░░░░░░ 40%
+Progress: ██████░░░░ 53%
 
 ## Accumulated Context
 
@@ -31,9 +31,12 @@ All decisions documented in PROJECT.md Key Decisions table and milestone archive
 ### Deferred Issues
 
 In `.planning/ISSUES.md`:
-- ISS-001: /exchange_token response still returns raw access token to clients (target: Phase 56)
 - ISS-002: Vestigial iOS User.plaidAccessToken model field
 - ISS-003: No dedicated PLAID_ENCRYPTION_KEY rotation script (runbook has manual procedure)
+- ISS-004: Inline encrypted-PDF heuristic replaces broken is-pdf-encrypted package (opportunistic)
+
+Closed:
+- ISS-001: /exchange_token returned raw access_token — closed by Phase 56-03
 
 ### Pending Todos
 
@@ -55,6 +58,6 @@ In `.planning/ISSUES.md`:
 
 ## Session Continuity
 
-Last session: 2026-06-10
-Stopped at: Completed 54-05-PLAN.md — Phase 54 complete (5/5); ready for Phase 55: Upload Security & Malware Scanning
+Last session: 2026-06-11
+Stopped at: Completed 56-03-PLAN.md — Plaid /exchange_token cleanup (ISS-001 closed) + web fetchWithAuth one-shot 401 refresh retry shipped; ready for 56-04 (encryption rotation + ISS-003 rotate-plaid-key.js)
 Resume file: None

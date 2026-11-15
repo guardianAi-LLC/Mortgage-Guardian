@@ -165,8 +165,7 @@ export function useAnalytics() {
   const query = useQuery<AnalyticsData>({
     queryKey: ['analytics'],
     queryFn: async () => {
-      const token = await getToken()
-      const res = await api.cases.list(token, { limit: 500 })
+      const res = await api.cases.list(getToken, { limit: 500 })
       const list = res.cases ?? res
       const cases: Case[] = Array.isArray(list) ? list.map(mapCase) : []
       return computeAnalytics(cases)

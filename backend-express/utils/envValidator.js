@@ -57,6 +57,12 @@ function buildSchema(isProduction) {
       : Joi.string().pattern(HEX_64).optional().allow('').messages({
           'string.pattern.base': 'PLAID_ENCRYPTION_KEY must be exactly 64 hex characters (generate with: openssl rand -hex 32)'
         }),
+    CLERK_WEBHOOK_SECRET: isProduction
+      ? Joi.string().required().messages({
+          'any.required': 'CLERK_WEBHOOK_SECRET is required (Clerk webhook signature verification)',
+          'string.empty': 'CLERK_WEBHOOK_SECRET cannot be empty'
+        })
+      : Joi.string().optional().allow(''),
 
     // ── Feature (optional but warned) ─────────────────────────
     ANTHROPIC_API_KEY: Joi.string().optional().allow(''),
@@ -64,8 +70,8 @@ function buildSchema(isProduction) {
     PLAID_SECRET: Joi.string().optional().allow(''),
     PLAID_ENV: Joi.string().valid('sandbox', 'development', 'production').optional().allow(''),
     CLOUDMERSIVE_API_KEY: Joi.string().optional().allow(''),
-    CLOUDMERSIVE_BASE_URL: Joi.string().uri().optional().allow('').default('https://api.cloudmersive.com'),
-    CLOUDMERSIVE_TIMEOUT_MS: Joi.number().integer().positive().optional().default(10000),
+    CLOUDMERSIVE_BASE_URL: Joi.string().uri().optional().default('https://api.cloudmersive.com'),
+    CLOUDMERSIVE_TIMEOUT_MS: Joi.number().integer().min(1000).max(60000).default(15000),
 
     // ── Optional with defaults ────────────────────────────────
     PORT: Joi.number().integer().min(1).max(65535).default(3000),
@@ -138,7 +144,7 @@ function validateEnvironment() {
     featureWarnings.push('PLAID_ENV missing — Plaid environment not configured');
   }
   if (!value.CLOUDMERSIVE_API_KEY) {
-    featureWarnings.push('CLOUDMERSIVE_API_KEY missing — malware scanning will reject all uploads');
+    featureWarnings.push('CLOUDMERSIVE_API_KEY missing — upload malware scanning will fail closed (502)');
   }
 
   if (featureWarnings.length > 0) {
@@ -183,6 +189,7 @@ function validateEnvironment() {
     documentEncryptionKey: value.DOCUMENT_ENCRYPTION_KEY,
     plaidEncryptionKey: value.PLAID_ENCRYPTION_KEY || '',
     jwtSecret: value.JWT_SECRET || '',
+    clerkWebhookSecret: value.CLERK_WEBHOOK_SECRET || '',
 
     // AI
     anthropicApiKey: value.ANTHROPIC_API_KEY || '',
@@ -193,6 +200,11 @@ function validateEnvironment() {
     plaidEnv: value.PLAID_ENV || '',
     plaidWebhookUrl: value.PLAID_WEBHOOK_URL || '',
     plaidWebhookVerificationKey: value.PLAID_WEBHOOK_VERIFICATION_KEY || '',
+
+    // Malware scanning (Cloudmersive)
+    cloudmersiveApiKey: value.CLOUDMERSIVE_API_KEY || '',
+    cloudmersiveBaseUrl: value.CLOUDMERSIVE_BASE_URL,
+    cloudmersiveTimeoutMs: value.CLOUDMERSIVE_TIMEOUT_MS,
 
     // Infrastructure
     redisHost: value.REDIS_HOST || '',
@@ -208,12 +220,7 @@ function validateEnvironment() {
     elasticsearchPassword: value.ELASTICSEARCH_PASSWORD || '',
 
     // Error Tracking
-    sentryDsn: value.SENTRY_DSN || '',
-
-    // Malware Scanning
-    cloudmersiveApiKey: value.CLOUDMERSIVE_API_KEY || '',
-    cloudmersiveBaseUrl: value.CLOUDMERSIVE_BASE_URL || 'https://api.cloudmersive.com',
-    cloudmersiveTimeoutMs: value.CLOUDMERSIVE_TIMEOUT_MS || 10000
+    sentryDsn: value.SENTRY_DSN || ''
   });
 
   logger.info('Environment validation passed');

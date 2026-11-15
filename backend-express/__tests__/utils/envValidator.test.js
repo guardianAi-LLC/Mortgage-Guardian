@@ -57,7 +57,7 @@ beforeEach(() => {
     'REDIS_HOST', 'REDIS_PORT', 'REDIS_PASSWORD', 'JWT_SECRET',
     'AWS_REGION', 'USE_CLOUD_HSM', 'VAULT_TOKEN', 'KMS_KEY_ID',
     'KMS_SIGNING_KEY_ID', 'ELASTICSEARCH_URL', 'ELASTICSEARCH_USER',
-    'ELASTICSEARCH_PASSWORD'
+    'ELASTICSEARCH_PASSWORD', 'CLERK_WEBHOOK_SECRET'
   ];
   keysToRemove.forEach(k => delete process.env[k]);
 });
@@ -157,7 +157,8 @@ describe('envValidator - production checks', () => {
     setEnv({
       NODE_ENV: 'production',
       ALLOWED_ORIGINS: '*',
-      PLAID_WEBHOOK_VERIFICATION_KEY: 'some-key'
+      PLAID_WEBHOOK_VERIFICATION_KEY: 'some-key',
+      CLERK_WEBHOOK_SECRET: 'whsec_test'
     });
     const { validateEnvironment } = loadValidator();
     expect(() => validateEnvironment()).toThrow(/ALLOWED_ORIGINS/);
@@ -166,7 +167,8 @@ describe('envValidator - production checks', () => {
   test('throws when PLAID_WEBHOOK_VERIFICATION_KEY is missing in production', () => {
     setEnv({
       NODE_ENV: 'production',
-      ALLOWED_ORIGINS: 'https://example.com'
+      ALLOWED_ORIGINS: 'https://example.com',
+      CLERK_WEBHOOK_SECRET: 'whsec_test'
     });
     delete process.env.PLAID_WEBHOOK_VERIFICATION_KEY;
     const { validateEnvironment } = loadValidator();
@@ -177,7 +179,8 @@ describe('envValidator - production checks', () => {
     setEnv({
       NODE_ENV: 'production',
       ALLOWED_ORIGINS: 'https://example.com',
-      PLAID_WEBHOOK_VERIFICATION_KEY: 'webhook-key'
+      PLAID_WEBHOOK_VERIFICATION_KEY: 'webhook-key',
+      CLERK_WEBHOOK_SECRET: 'whsec_test'
     });
     const { validateEnvironment } = loadValidator();
     expect(() => validateEnvironment()).not.toThrow();
@@ -212,7 +215,8 @@ describe('envValidator - format validation', () => {
       NODE_ENV: 'production',
       ALLOWED_ORIGINS: 'https://example.com',
       PLAID_WEBHOOK_VERIFICATION_KEY: 'webhook-key',
-      PLAID_ENCRYPTION_KEY: 'tooshort'
+      PLAID_ENCRYPTION_KEY: 'tooshort',
+      CLERK_WEBHOOK_SECRET: 'whsec_test'
     });
     const { validateEnvironment } = loadValidator();
     expect(() => validateEnvironment()).toThrow(/PLAID_ENCRYPTION_KEY/);
@@ -222,7 +226,8 @@ describe('envValidator - format validation', () => {
     setEnv({
       NODE_ENV: 'production',
       ALLOWED_ORIGINS: 'https://example.com',
-      PLAID_WEBHOOK_VERIFICATION_KEY: 'webhook-key'
+      PLAID_WEBHOOK_VERIFICATION_KEY: 'webhook-key',
+      CLERK_WEBHOOK_SECRET: 'whsec_test'
     });
     delete process.env.PLAID_ENCRYPTION_KEY;
     const { validateEnvironment } = loadValidator();
@@ -299,7 +304,8 @@ describe('envValidator - default values', () => {
     setEnv({
       NODE_ENV: 'production',
       ALLOWED_ORIGINS: 'https://example.com',
-      PLAID_WEBHOOK_VERIFICATION_KEY: 'key'
+      PLAID_WEBHOOK_VERIFICATION_KEY: 'key',
+      CLERK_WEBHOOK_SECRET: 'whsec_test'
     });
     delete process.env.LOG_LEVEL;
     const { validateEnvironment } = loadValidator();

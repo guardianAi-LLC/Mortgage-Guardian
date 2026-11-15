@@ -1,7 +1,26 @@
 const { createClient } = require('@supabase/supabase-js');
 const jwksRsa = require('jwks-rsa');
 const { createLogger } = require('../utils/logger');
+const { emitAuditEvent } = require('../utils/auditEvent');
 const logger = createLogger('auth');
+
+/**
+ * Map a thrown error from Clerk JWKS verification to one of the canonical
+ * `auth_failure` reason codes. Falls back to `malformed_token` when the
+ * error doesn't match any other known pattern.
+ *
+ * @param {Error} err
+ * @returns {string} reason code
+ */
+function classifyClerkError(err) {
+  const message = err && err.message ? String(err.message) : '';
+  if (/expired/i.test(message)) return 'expired_token';
+  if (/signature/i.test(message)) return 'invalid_signature';
+  if (/jwt structure|unsupported algorithm|invalid issuer/i.test(message)) return 'malformed_token';
+  // JWKS network/key-lookup failures (jwks-rsa surfaces "Unable to find a signing key", etc.)
+  if (/signing key|jwks|kid|network|enotfound|econnrefused/i.test(message)) return 'jwks_unavailable';
+  return 'malformed_token';
+}
 
 // Initialize Supabase client for JWT validation
 // Uses anon key (not service key) — correct for auth.getUser() token validation
@@ -94,7 +113,10 @@ async function verifyClerkToken(token) {
  * These endpoints use their own verification mechanisms.
  */
 const PUBLIC_PATHS = [
-  { method: 'POST', path: '/v1/plaid/webhook' }
+  { method: 'POST', path: '/v1/plaid/webhook' },
+  // Clerk webhook uses svix-signature verification (not a Bearer token).
+  // See routes/auth.js — Phase 56-02.
+  { method: 'POST', path: '/v1/auth/clerk-webhook' }
 ];
 
 /**
@@ -139,6 +161,12 @@ async function requireAuth(req, res, next) {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      emitAuditEvent('auth_failure', {
+        reason: 'missing_token',
+        requestId: req.requestId,
+        route: req.path,
+        method: req.method
+      });
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Missing or invalid Authorization header'
@@ -149,6 +177,12 @@ async function requireAuth(req, res, next) {
     const token = authHeader.slice(7);
 
     if (!token) {
+      emitAuditEvent('auth_failure', {
+        reason: 'missing_token',
+        requestId: req.requestId,
+        route: req.path,
+        method: req.method
+      });
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Missing or invalid Authorization header'
@@ -156,6 +190,7 @@ async function requireAuth(req, res, next) {
     }
 
     // --- Try Clerk JWKS verification first (iOS/mobile tokens) ---
+    let lastClerkError = null;
     try {
       const decoded = await verifyClerkToken(token);
       req.user = {
@@ -165,6 +200,7 @@ async function requireAuth(req, res, next) {
       };
       return next();
     } catch (clerkError) {
+      lastClerkError = clerkError;
       logger.debug('Clerk verification failed, trying Supabase fallback', {
         reason: clerkError.message
       });
@@ -175,6 +211,12 @@ async function requireAuth(req, res, next) {
       const { data, error } = await supabase.auth.getUser(token);
 
       if (error || !data || !data.user) {
+        emitAuditEvent('auth_failure', {
+          reason: classifyClerkError(lastClerkError || new Error('')),
+          requestId: req.requestId,
+          route: req.path,
+          method: req.method
+        });
         return res.status(401).json({
           error: 'Unauthorized',
           message: 'Invalid or expired token'
@@ -191,12 +233,24 @@ async function requireAuth(req, res, next) {
       logger.debug('Supabase verification also failed', {
         reason: supabaseError.message
       });
+      emitAuditEvent('auth_failure', {
+        reason: classifyClerkError(lastClerkError || supabaseError),
+        requestId: req.requestId,
+        route: req.path,
+        method: req.method
+      });
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Invalid or expired token'
       });
     }
   } catch (err) {
+    emitAuditEvent('auth_failure', {
+      reason: 'malformed_token',
+      requestId: req.requestId,
+      route: req.path,
+      method: req.method
+    });
     return res.status(401).json({
       error: 'Unauthorized',
       message: 'Token validation failed'
